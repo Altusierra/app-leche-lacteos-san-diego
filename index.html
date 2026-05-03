@@ -75,6 +75,10 @@
     .tabla-matriz th.total-col{background:#0f4d26!important;}
     .tabla-matriz tr.fila-total td{background:var(--verde3)!important;font-weight:700;color:var(--verde);}
     .tabla-matriz tr.fila-total td.col-fecha{background:#0f4d26!important;color:white;}
+    .tabla-matriz th.col-gan{position:sticky;left:0;z-index:20;background:var(--verde);text-align:left;min-width:140px;}
+    .tabla-matriz td.col-gan{position:sticky;left:0;background:white;font-weight:700;text-align:left;z-index:5;border-right:2px solid var(--verde);min-width:140px;max-width:180px;white-space:normal;}
+    .tabla-matriz tr.fila-total td.col-gan{background:#0f4d26!important;color:white;}
+    .tabla-matriz td.total-pago{background:#fff7ed!important;font-weight:700;color:var(--verde);}
     .celda-litros{font-weight:700;font-size:13px;}
     .celda-pesos{font-size:11px;color:var(--gris2);margin-top:2px;}
     /* MODAL */
@@ -347,11 +351,10 @@
     <div class="tabs">
       <button class="tab activo" onclick="cambiarTabReporte(0,this)">Por Ganadero</button>
       <button class="tab" onclick="cambiarTabReporte(1,this)">Por Día</button>
-      <button class="tab" onclick="cambiarTabReporte(2,this)">Liquidación</button>
+      <button class="tab" onclick="cambiarTabReporte(2,this)">💰 Liquidación</button>
       <button class="tab" onclick="cambiarTabReporte(3,this)">Novedades</button>
-      <button class="tab" onclick="cambiarTabReporte(4,this)">📋 Matriz</button>
-      <button class="tab" onclick="cambiarTabReporte(5,this)">📄 Detalle</button>
-      <button class="tab" onclick="cambiarTabReporte(6,this)">🚚 Intermediarios</button>
+      <button class="tab" onclick="cambiarTabReporte(4,this)">📄 Detalle</button>
+      <button class="tab" onclick="cambiarTabReporte(5,this)">🚚 Intermediarios</button>
     </div>
     <div class="card">
       <div class="card-titulo">Período</div>
@@ -366,15 +369,20 @@
         <button class="btn btn-gris btn-sm" onclick="setFiltroRapido('quincena2')">2da quincena</button>
         <button class="btn btn-gris btn-sm" onclick="setFiltroRapido('mes')">Mes</button>
       </div>
+      <div id="precio-liq-wrap" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid #e5e7eb;">
+        <label style="font-size:12px;color:var(--gris2);font-weight:600;">PRECIO POR LITRO PARA ESTA QUINCENA ($)</label>
+        <input type="number" id="rep-precio-liq" placeholder="Ej: 1100" inputmode="decimal" min="0"
+          style="width:100%;padding:12px;font-size:22px;font-weight:700;border:2px solid var(--verde2);border-radius:12px;text-align:center;color:var(--verde);margin-top:6px;">
+        <div id="rep-precio-error" style="display:none;color:#DC2626;font-size:13px;margin-top:4px;">⚠️ Debes ingresar el precio para generar la liquidación</div>
+      </div>
       <button class="btn btn-verde" style="margin-top:12px;" onclick="generarReporte()">🔍 GENERAR REPORTE</button>
     </div>
     <div id="rep-tab-0"><div class="vacio"><div class="ico">📊</div><p>Selecciona un período y genera el reporte</p></div></div>
     <div id="rep-tab-1" style="display:none;"><div class="vacio"><div class="ico">📅</div><p>Selecciona un período</p></div></div>
-    <div id="rep-tab-2" style="display:none;"><div class="vacio"><div class="ico">💰</div><p>Selecciona un período</p></div></div>
+    <div id="rep-tab-2" style="display:none;"><div class="vacio"><div class="ico">💰</div><p>Selecciona un período y el precio por litro</p></div></div>
     <div id="rep-tab-3" style="display:none;"><div class="vacio"><div class="ico">⚠️</div><p>Selecciona un período</p></div></div>
-    <div id="rep-tab-4" style="display:none;"><div class="vacio"><div class="ico">📋</div><p>Selecciona un período y genera el reporte</p></div></div>
-    <div id="rep-tab-5" style="display:none;"><div class="vacio"><div class="ico">📄</div><p>Selecciona un período</p></div></div>
-    <div id="rep-tab-6" style="display:none;"><div class="vacio"><div class="ico">🚚</div><p>Selecciona un período</p></div></div>
+    <div id="rep-tab-4" style="display:none;"><div class="vacio"><div class="ico">📄</div><p>Selecciona un período</p></div></div>
+    <div id="rep-tab-5" style="display:none;"><div class="vacio"><div class="ico">🚚</div><p>Selecciona un período</p></div></div>
   </div>
 </div>
 
@@ -1231,17 +1239,23 @@ async function actualizarPrecio(){const p=parseFloat(document.getElementById('nu
 async function histPrecios(){try{const s=await getDocs(query(collection(db,'historialPrecios'),orderBy('fechaActualizacion','desc')));const it=[];s.forEach(d=>it.push(d.data()));document.getElementById('historial-precios').innerHTML=it.length===0?'<p style="color:var(--gris2);font-size:14px;">Sin cambios aún</p>':`<div class="card" style="padding:0;overflow:hidden;"><table class="tabla"><thead><tr><th>Precio/L</th><th>Fecha</th><th>Admin</th></tr></thead><tbody>${it.slice(0,20).map(i=>`<tr><td><strong>${fmtPeso(i.precioPorLitro)}</strong></td><td>${i.fechaActualizacion}</td><td>${i.adminNombre||'-'}</td></tr>`).join('')}</tbody></table></div>`;}catch(e){}}
 
 // ── REPORTES ──
-function cambiarTabReporte(idx,btn){tabRep=idx;document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('activo',i===idx));for(let i=0;i<7;i++){const el=document.getElementById(`rep-tab-${i}`);if(el)el.style.display=i===idx?'block':'none';}}window.cambiarTabReporte=cambiarTabReporte;
+function cambiarTabReporte(idx,btn){tabRep=idx;document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('activo',i===idx));for(let i=0;i<6;i++){const el=document.getElementById(`rep-tab-${i}`);if(el)el.style.display=i===idx?'block':'none';}const pw=document.getElementById('precio-liq-wrap');if(pw)pw.style.display=idx===2?'block':'none';}window.cambiarTabReporte=cambiarTabReporte;
 function setFiltroRapido(t){const h=new Date();const y=h.getFullYear();const m=String(h.getMonth()+1).padStart(2,'0');const d=String(h.getDate()).padStart(2,'0');const D=i=>document.getElementById(i);if(t==='hoy'){D('rep-desde').value=`${y}-${m}-${d}`;D('rep-hasta').value=`${y}-${m}-${d}`;}else if(t==='semana'){const i=new Date(h);i.setDate(h.getDate()-h.getDay());D('rep-desde').value=i.toISOString().split('T')[0];D('rep-hasta').value=`${y}-${m}-${d}`;}else if(t==='quincena1'){D('rep-desde').value=`${y}-${m}-01`;D('rep-hasta').value=`${y}-${m}-15`;}else if(t==='quincena2'){const u=new Date(y,h.getMonth()+1,0).getDate();D('rep-desde').value=`${y}-${m}-16`;D('rep-hasta').value=`${y}-${m}-${u}`;}else if(t==='mes'){const u=new Date(y,h.getMonth()+1,0).getDate();D('rep-desde').value=`${y}-${m}-01`;D('rep-hasta').value=`${y}-${m}-${u}`;}}window.setFiltroRapido=setFiltroRapido;
 
 async function generarReporte(){
   const de=document.getElementById('rep-desde').value;const ha=document.getElementById('rep-hasta').value;if(!de||!ha)return;
+  if(tabRep===2){
+    const pv=parseFloat(document.getElementById('rep-precio-liq').value);
+    const pe=document.getElementById('rep-precio-error');
+    if(!pv||pv<=0){pe.style.display='block';return;}
+    pe.style.display='none';
+  }
   try{
-    const s=await getDocs(query(collection(db,'recolecciones'),where('fecha','>=',de),where('fecha','<=',ha),orderBy('fecha'),orderBy('hora')));
+    const s=await getDocs(query(collection(db,'recolecciones'),where('fecha','>=',de),where('fecha','<=',ha),orderBy('fecha')));
     datosRep=[];s.forEach(d=>datosRep.push({id:d.id,...d.data()}));
-    repGan(datosRep,de,ha);repDia(datosRep);repLiq(datosRep,de,ha);repNov(datosRep);
-    repMatriz(datosRep,de,ha);repDetalle(datosRep,de,ha);
-    // Reporte intermediarios
+    datosRep.sort((a,b)=>a.fecha.localeCompare(b.fecha)||(a.hora||'').localeCompare(b.hora||''));
+    repGan(datosRep,de,ha);repDia(datosRep);repNov(datosRep);repDetalle(datosRep,de,ha);
+    if(tabRep===2){const precio=parseFloat(document.getElementById('rep-precio-liq').value);repLiqMatriz(datosRep,de,ha,precio);}
     const sInter=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','>=',de),where('fecha','<=',ha),orderBy('fecha')));
     const datosInter=[];sInter.forEach(d=>datosInter.push({id:d.id,...d.data()}));
     repInter(datosInter,de,ha);
@@ -1255,79 +1269,74 @@ function repGan(datos,de,ha){
   document.getElementById('rep-tab-0').innerHTML=lista.length===0?'<div class="vacio"><div class="ico">📊</div><p>Sin datos</p></div>':`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><div style="font-size:14px;color:var(--gris2);">${lista.length} ganaderos · ${T.toFixed(1)}L</div><button class="btn btn-verde btn-sm" onclick="exportarCSV('ganadero')">⬇ Exportar</button></div><div class="card" style="padding:0;overflow:hidden;"><table class="tabla"><thead><tr><th>Ganadero</th><th>Total L</th><th>Desglose</th></tr></thead><tbody>${lista.map(g=>{const recs=Object.values(g.recogedores);const desgl=recs.length>1?recs.map(r=>`${r.nombre}: ${r.L.toFixed(1)}L`).join(' · '):recs[0]?.nombre||'-';return`<tr><td><strong>${g.n}</strong></td><td>${g.L.toFixed(1)}</td><td style="font-size:12px;">${desgl}</td></tr>`;}).join('')}</tbody></table></div>`;
 }
 function repDia(datos){const ag={};datos.forEach(d=>{if(!ag[d.fecha])ag[d.fecha]={L:0,r:0,rec:new Set()};ag[d.fecha].L+=parseFloat(d.litros)||0;ag[d.fecha].r++;ag[d.fecha].rec.add(d.recogedorNombre);});const lista=Object.entries(ag).sort((a,b)=>b[0].localeCompare(a[0]));document.getElementById('rep-tab-1').innerHTML=lista.length===0?'<div class="vacio"><div class="ico">📅</div><p>Sin datos</p></div>':`<div style="display:flex;justify-content:flex-end;margin-bottom:12px;"><button class="btn btn-verde btn-sm" onclick="exportarCSV('dia')">⬇ Exportar</button></div><div class="card" style="padding:0;overflow:hidden;"><table class="tabla"><thead><tr><th>Fecha</th><th>Litros</th><th>Registros</th><th>Recogedores</th></tr></thead><tbody>${lista.map(([f,v])=>`<tr><td>${f}</td><td>${v.L.toFixed(1)}</td><td>${v.r}</td><td>${[...v.rec].join(', ')}</td></tr>`).join('')}</tbody></table></div>`;}
-function repLiq(datos,de,ha){const ag={};datos.forEach(d=>{if(!ag[d.ganaderoId])ag[d.ganaderoId]={n:d.ganaderoNombre,L:0,p:d.precioPorLitro||precioActual};ag[d.ganaderoId].L+=parseFloat(d.litros)||0;if(d.precioPorLitro>0)ag[d.ganaderoId].p=d.precioPorLitro;});const lista=Object.values(ag).sort((a,b)=>a.n.localeCompare(b.n));const TP=lista.reduce((s,x)=>s+x.L*x.p,0);const TL=lista.reduce((s,x)=>s+x.L,0);document.getElementById('rep-tab-2').innerHTML=lista.length===0?'<div class="vacio"><div class="ico">💰</div><p>Sin datos</p></div>':`<div class="card" style="background:var(--verde3);border:2px solid var(--verde2);margin-bottom:12px;"><div style="font-size:13px;font-weight:700;color:var(--verde);">TOTAL A PAGAR · ${de} al ${ha}</div><div style="font-size:36px;font-weight:800;color:var(--verde);margin-top:4px;">${fmtPeso(TP)}</div><div style="font-size:14px;color:var(--verde);margin-top:4px;">${TL.toFixed(1)} litros · ${lista.length} ganaderos</div></div><div style="display:flex;justify-content:flex-end;margin-bottom:12px;"><button class="btn btn-verde btn-sm" onclick="exportarCSV('liquidacion')">⬇ Exportar</button></div><div class="card" style="padding:0;overflow:hidden;"><table class="tabla"><thead><tr><th>Ganadero</th><th>Litros</th><th>$/L</th><th>Total</th></tr></thead><tbody>${lista.map(g=>`<tr><td><strong>${g.n}</strong></td><td>${g.L.toFixed(1)}</td><td>${fmtPeso(g.p)}</td><td><strong>${fmtPeso(g.L*g.p)}</strong></td></tr>`).join('')}</tbody></table></div>`;}
-function repNov(datos){const n=datos.filter(d=>d.novedad&&d.novedad.trim()!=='');document.getElementById('rep-tab-3').innerHTML=n.length===0?'<div class="vacio"><div class="ico">✅</div><p>Sin novedades</p></div>':`<div class="card" style="padding:0;overflow:hidden;"><table class="tabla"><thead><tr><th>Fecha</th><th>Ganadero</th><th>Novedad</th><th>Recogedor</th></tr></thead><tbody>${n.map(d=>`<tr><td>${d.fecha}</td><td>${d.ganaderoNombre}</td><td>${d.novedad}</td><td>${d.recogedorNombre}</td></tr>`).join('')}</tbody></table></div>`;}
-
-// ── MATRIZ QUINCENAL ──
-function repMatriz(datos,de,ha){
-  if(datos.length===0){document.getElementById('rep-tab-4').innerHTML='<div class="vacio"><div class="ico">📋</div><p>Sin datos en este período</p></div>';return;}
-
-  // Fechas únicas ordenadas
+function repLiqMatriz(datos,de,ha,precio){
+  const tab=document.getElementById('rep-tab-2');
+  if(datos.length===0){tab.innerHTML='<div class="vacio"><div class="ico">💰</div><p>Sin datos en este período</p></div>';return;}
   const fechas=[...new Set(datos.map(d=>d.fecha))].sort();
-  // Ganaderos únicos ordenados por nombre
   const ganMap={};datos.forEach(d=>{if(!ganMap[d.ganaderoId])ganMap[d.ganaderoId]=d.ganaderoNombre;});
   const gans=Object.entries(ganMap).sort((a,b)=>a[1].localeCompare(b[1]));
-
-  // Construir datos: celda[fecha][ganaderoId] = {litros, pesos}
-  const celda={};let totalGeneral=0;let totalGeneralPesos=0;
-  const totalFila={};const totalCol={};const totalColPesos={};
-  fechas.forEach(f=>{celda[f]={};totalFila[f]={L:0,P:0};});
-  gans.forEach(([gid])=>{totalCol[gid]=0;totalColPesos[gid]=0;});
-
+  const celda={};const totalFila={};const totalColL={};
+  gans.forEach(([gid])=>{celda[gid]={};totalColL[gid]=0;});
+  fechas.forEach(f=>{totalFila[f]=0;});
   datos.forEach(d=>{
-    const f=d.fecha;const gid=d.ganaderoId;const L=parseFloat(d.litros)||0;const p=d.precioPorLitro||precioActual;const P=L*p;
-    if(!celda[f][gid])celda[f][gid]={L:0,P:0};
-    celda[f][gid].L+=L;celda[f][gid].P+=P;
-    totalFila[f].L+=L;totalFila[f].P+=P;
-    totalCol[gid]+=L;totalColPesos[gid]+=P;
-    totalGeneral+=L;totalGeneralPesos+=P;
+    const gid=d.ganaderoId;const f=d.fecha;const L=parseFloat(d.litros)||0;
+    if(!celda[gid])celda[gid]={};
+    celda[gid][f]=(celda[gid][f]||0)+L;
+    totalFila[f]=(totalFila[f]||0)+L;
+    totalColL[gid]=(totalColL[gid]||0)+L;
   });
-
-  // Render tabla
-  const thGans=gans.map(([gid,gn])=>`<th title="${gn}">${gn.length>12?gn.substring(0,12)+'…':gn}</th>`).join('');
-  const filas=fechas.map(f=>{
-    const celdas=gans.map(([gid])=>{
-      const c=celda[f][gid];
-      return c?`<td><div class="celda-litros">${c.L.toFixed(1)}L</div><div class="celda-pesos">${fmtPesoCorto(c.P)}</div></td>`:'<td class="vacio">—</td>';
-    }).join('');
-    return`<tr><td class="col-fecha">${fmtFechaCorta(f)}</td>${celdas}<td class="total-col"><div class="celda-litros">${totalFila[f].L.toFixed(1)}L</div><div class="celda-pesos">${fmtPesoCorto(totalFila[f].P)}</div></td></tr>`;
+  const TL=gans.reduce((s,[gid])=>s+totalColL[gid],0);
+  const TP=TL*precio;
+  const thFechas=fechas.map(f=>`<th style="text-align:center;">${fmtFechaCorta(f)}</th>`).join('');
+  const filas=gans.map(([gid,gn])=>{
+    const celdas=fechas.map(f=>{const L=celda[gid][f];return L?`<td style="text-align:center;">${L.toFixed(1)}</td>`:'<td class="vacio" style="text-align:center;">—</td>';}).join('');
+    const totL=totalColL[gid];
+    return`<tr><td class="col-gan">${gn}</td>${celdas}<td class="total-col" style="text-align:center;">${totL.toFixed(1)}</td><td class="total-pago" style="text-align:right;padding-right:10px;">${fmtPeso(totL*precio)}</td></tr>`;
   }).join('');
-
-  const filaTotales=gans.map(([gid])=>`<td class="total-col"><div class="celda-litros">${totalCol[gid].toFixed(1)}L</div><div class="celda-pesos">${fmtPesoCorto(totalColPesos[gid])}</div></td>`).join('');
-
-  document.getElementById('rep-tab-4').innerHTML=`
-    <div class="aviso-movil">📱 Para mejor experiencia abre esta vista en computador — hay ${gans.length} ganaderos.</div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
-      <div>
-        <div style="font-size:14px;color:var(--gris2);">${fechas.length} días · ${gans.length} ganaderos</div>
-        <div style="font-size:16px;font-weight:800;color:var(--verde);">Total: ${totalGeneral.toFixed(1)}L · ${fmtPeso(totalGeneralPesos)}</div>
-      </div>
-      <button class="btn btn-verde btn-sm" onclick="exportarMatriz()">⬇ Exportar a Excel</button>
+  const totDias=fechas.map(f=>`<td class="total-col" style="text-align:center;">${totalFila[f].toFixed(1)}</td>`).join('');
+  tab.innerHTML=`
+    <div class="card" style="background:var(--verde3);border:2px solid var(--verde2);margin-bottom:12px;">
+      <div style="font-size:13px;font-weight:700;color:var(--verde);">TOTAL A PAGAR · ${de} al ${ha}</div>
+      <div style="font-size:36px;font-weight:800;color:var(--verde);margin-top:4px;">${fmtPeso(TP)}</div>
+      <div style="font-size:14px;color:var(--verde);margin-top:4px;">${TL.toFixed(1)} litros · ${gans.length} ganaderos · ${fmtPeso(precio)}/L</div>
     </div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
+      <button class="btn btn-verde btn-sm" onclick="exportarLiqMatriz('${de}','${ha}',${precio})">⬇ Exportar Excel</button>
+    </div>
+    <div class="aviso-movil">📱 Desliza hacia los lados para ver todos los días</div>
     <div class="matriz-wrap">
       <table class="tabla-matriz">
-        <thead>
-          <tr>
-            <th class="col-fecha">Fecha</th>
-            ${thGans}
-            <th class="total-col">TOTAL DÍA</th>
-          </tr>
-        </thead>
+        <thead><tr><th class="col-gan">Ganadero</th>${thFechas}<th class="total-col" style="text-align:center;">Total L</th><th class="total-col" style="text-align:right;padding-right:10px;">A pagar</th></tr></thead>
         <tbody>
           ${filas}
           <tr class="fila-total">
-            <td class="col-fecha">TOTAL</td>
-            ${filaTotales}
-            <td class="total-col"><div class="celda-litros">${totalGeneral.toFixed(1)}L</div><div class="celda-pesos">${fmtPesoCorto(totalGeneralPesos)}</div></td>
+            <td class="col-gan">TOTAL DÍA</td>${totDias}
+            <td class="total-col" style="text-align:center;">${TL.toFixed(1)}</td>
+            <td class="total-col" style="text-align:right;padding-right:10px;">${fmtPeso(TP)}</td>
           </tr>
         </tbody>
       </table>
     </div>`;
 }
+function repNov(datos){const n=datos.filter(d=>d.novedad&&d.novedad.trim()!=='');document.getElementById('rep-tab-3').innerHTML=n.length===0?'<div class="vacio"><div class="ico">✅</div><p>Sin novedades</p></div>':`<div class="card" style="padding:0;overflow:hidden;"><table class="tabla"><thead><tr><th>Fecha</th><th>Ganadero</th><th>Novedad</th><th>Recogedor</th></tr></thead><tbody>${n.map(d=>`<tr><td>${d.fecha}</td><td>${d.ganaderoNombre}</td><td>${d.novedad}</td><td>${d.recogedorNombre}</td></tr>`).join('')}</tbody></table></div>`;}
 
+function exportarLiqMatriz(de,ha,precio){
+  if(!datosRep.length)return;
+  const fechas=[...new Set(datosRep.map(d=>d.fecha))].sort();
+  const ganMap={};datosRep.forEach(d=>{if(!ganMap[d.ganaderoId])ganMap[d.ganaderoId]=d.ganaderoNombre;});
+  const gans=Object.entries(ganMap).sort((a,b)=>a[1].localeCompare(b[1]));
+  const celda={};const totalColL={};
+  gans.forEach(([gid])=>{celda[gid]={};totalColL[gid]=0;});
+  datosRep.forEach(d=>{const gid=d.ganaderoId;const f=d.fecha;const L=parseFloat(d.litros)||0;if(!celda[gid])celda[gid]={};celda[gid][f]=(celda[gid][f]||0)+L;totalColL[gid]=(totalColL[gid]||0)+L;});
+  const TL=gans.reduce((s,[gid])=>s+totalColL[gid],0);
+  const headers=`Ganadero,${fechas.join(',')},Total L,A Pagar\n`;
+  const rows=gans.map(([gid,gn])=>{const dias=fechas.map(f=>celda[gid][f]?(celda[gid][f]).toFixed(1):'0').join(',');return`"${gn}",${dias},${totalColL[gid].toFixed(1)},${(totalColL[gid]*precio).toFixed(0)}`;}).join('\n');
+  const totRow=`TOTAL DIA,${fechas.map(f=>{let s=0;gans.forEach(([gid])=>s+=(celda[gid][f]||0));return s.toFixed(1);}).join(',')},${TL.toFixed(1)},${(TL*precio).toFixed(0)}`;
+  descargar(`LIQUIDACION QUINCENAL - ${de} al ${ha} - $${precio}/L\n${headers}${rows}\n${totRow}`,`liquidacion-${de}-${ha}.csv`);
+}window.exportarLiqMatriz=exportarLiqMatriz;
 // ── DETALLE COMPLETO ──
 function repDetalle(datos,de,ha){
-  document.getElementById('rep-tab-5').innerHTML=datos.length===0?'<div class="vacio"><div class="ico">📄</div><p>Sin datos</p></div>':`
+  document.getElementById('rep-tab-4').innerHTML=datos.length===0?'<div class="vacio"><div class="ico">📄</div><p>Sin datos</p></div>':`
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
       <div style="font-size:14px;color:var(--gris2);">${datos.length} registros · ${de} al ${ha}</div>
       <button class="btn btn-verde btn-sm" onclick="exportarCSV('detalle')">⬇ Exportar</button>
@@ -1345,51 +1354,12 @@ function exportarCSV(tipo){
   const de=document.getElementById('rep-desde').value;const ha=document.getElementById('rep-hasta').value;let csv='';
   if(tipo==='ganadero'){const ag={};datosRep.forEach(d=>{if(!ag[d.ganaderoId])ag[d.ganaderoId]={n:d.ganaderoNombre,L:0};ag[d.ganaderoId].L+=parseFloat(d.litros)||0;});csv='Ganadero,Litros\n'+Object.values(ag).map(g=>`"${g.n}",${g.L.toFixed(1)}`).join('\n');}
   else if(tipo==='dia'){csv='Fecha,Ganadero,Litros,Hora,Recogedor,Novedad\n'+datosRep.map(d=>`${d.fecha},"${d.ganaderoNombre}",${parseFloat(d.litros).toFixed(1)},${d.hora},"${d.recogedorNombre}","${d.novedad||''}"`).join('\n');}
-  else if(tipo==='liquidacion'){const ag={};datosRep.forEach(d=>{if(!ag[d.ganaderoId])ag[d.ganaderoId]={n:d.ganaderoNombre,L:0,p:d.precioPorLitro||precioActual};ag[d.ganaderoId].L+=parseFloat(d.litros)||0;if(d.precioPorLitro>0)ag[d.ganaderoId].p=d.precioPorLitro;});csv='Ganadero,Litros,Precio por Litro,Total a Pagar\n'+Object.values(ag).map(g=>`"${g.n}",${g.L.toFixed(1)},${g.p},${(g.L*g.p).toFixed(0)}`).join('\n');}
   else if(tipo==='detalle'){csv='Fecha,Ganadero,Litros,Precio/L,Total,Hora,Recogedor,Novedad\n'+datosRep.map(d=>{const L=parseFloat(d.litros)||0;const p=d.precioPorLitro||precioActual;return`${d.fecha},"${d.ganaderoNombre}",${L.toFixed(1)},${p},${(L*p).toFixed(0)},${d.hora||''},"${d.recogedorNombre}","${d.novedad||''}"`;}).join('\n');}
   descargar(csv,`reporte-${tipo}-${de}-${ha}.csv`);
 }window.exportarCSV=exportarCSV;
 
-function exportarMatriz(){
-  const de=document.getElementById('rep-desde').value;const ha=document.getElementById('rep-hasta').value;
-  if(datosRep.length===0)return;
-  // Fechas únicas ordenadas
-  const fechas=[...new Set(datosRep.map(d=>d.fecha))].sort();
-  // Ganaderos únicos ordenados por nombre
-  const ganMap={};datosRep.forEach(d=>{if(!ganMap[d.ganaderoId])ganMap[d.ganaderoId]=d.ganaderoNombre;});
-  const gans=Object.entries(ganMap).sort((a,b)=>a[1].localeCompare(b[1]));
-  // Construir datos: celda[fecha][ganaderoId]
-  const celda={};const totalFila={};const totalColL={};const totalColP={};
-  fechas.forEach(f=>{celda[f]={};totalFila[f]={L:0,P:0};});
-  gans.forEach(([gid])=>{totalColL[gid]=0;totalColP[gid]=0;});
-  datosRep.forEach(d=>{
-    const f=d.fecha;const gid=d.ganaderoId;
-    const L=parseFloat(d.litros)||0;const p=d.precioPorLitro||precioActual;const P=L*p;
-    if(!celda[f][gid])celda[f][gid]={L:0,P:0};
-    celda[f][gid].L+=L;celda[f][gid].P+=P;
-    totalFila[f].L+=L;totalFila[f].P+=P;
-    totalColL[gid]+=L;totalColP[gid]+=P;
-  });
-  let grandTotalL=0;let grandTotalP=0;
-  gans.forEach(([gid])=>{grandTotalL+=totalColL[gid];grandTotalP+=totalColP[gid];});
-  // Encabezados: una columna por ganadero + TOTAL DÍA L + TOTAL DÍA $
-  const ganHeaders=gans.map(([,gn])=>`"${gn}"`).join(',');
-  let csv=`LIQUIDACIÓN QUINCENAL — ${de} al ${ha}\n`;
-  csv+=`Fecha,${ganHeaders},TOTAL DÍA L,TOTAL DÍA $\n`;
-  // Filas de días — litros en cada celda, — si no hubo recolección
-  fechas.forEach(f=>{
-    const vals=gans.map(([gid])=>celda[f][gid]?celda[f][gid].L.toFixed(1):'—').join(',');
-    csv+=`${f},${vals},${totalFila[f].L.toFixed(1)},${totalFila[f].P.toFixed(0)}\n`;
-  });
-  // Fila TOTAL LITROS
-  csv+=`TOTAL L,${gans.map(([gid])=>totalColL[gid].toFixed(1)).join(',')},${grandTotalL.toFixed(1)},\n`;
-  // Fila TOTAL $ a pagar por ganadero + gran total
-  csv+=`TOTAL $,${gans.map(([gid])=>totalColP[gid].toFixed(0)).join(',')},,"${grandTotalP.toFixed(0)}"\n`;
-  descargar(csv,`liquidacion-matriz-${de}-${ha}.csv`);
-}window.exportarMatriz=exportarMatriz;
-
 function repInter(datos,de,ha){
-  const tab=document.getElementById('rep-tab-6');if(!tab)return;
+  const tab=document.getElementById('rep-tab-5');if(!tab)return;
   if(datos.length===0){tab.innerHTML='<div class="vacio"><div class="ico">🚚</div><p>Sin registros de intermediarios en este período</p></div>';return;}
   const ag={};
   datos.forEach(d=>{
