@@ -575,6 +575,7 @@ function ir(id){
   document.getElementById(id).classList.add('active');
   document.getElementById('bottom-nav').style.display=id.startsWith('screen-admin')?'flex':'none';
   if(id==='screen-recibi-registrar'){cargarRecogedoresParaRecibidor();cargarInter();}
+  if(id==='screen-recibi-home'&&typeof resumenRecibidor==='function'){resumenRecibidor();}
   if(id==='screen-rec-buscar'){
     const inp=document.getElementById('buscar-input');
     if(inp)inp.value='';
