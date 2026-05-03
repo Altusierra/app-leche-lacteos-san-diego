@@ -163,6 +163,7 @@
     </div>
     <div id="reg-ya-existe" style="display:none;background:var(--amarillo2);border:2px solid var(--amarillo);border-radius:12px;padding:14px;margin-bottom:16px;font-size:14px;color:var(--amarillo);font-weight:600;"></div>
     <div class="alerta alerta-rojo" id="reg-error"></div>
+    <div id="reg-fecha-wrap" style="display:none;" class="form-grupo"><label class="form-label">📅 Fecha de recolección</label><div class="form-grande"><input type="date" id="reg-fecha"></div></div>
     <div class="form-grupo"><label class="form-label">🥛 ¿Cuántos LITROS?</label><div class="form-grande"><input type="number" id="reg-litros" placeholder="0" inputmode="decimal" min="0" step="0.5"></div></div>
     <div class="form-grupo"><label class="form-label">🕐 Hora de recolección</label><div class="form-grande"><input type="time" id="reg-hora"></div></div>
     <div class="form-grupo"><label class="form-label">📝 Novedad (opcional)</label><div class="form-grande"><textarea id="reg-novedad" placeholder="Ej: Vaca enferma, acceso difícil..."></textarea></div></div>
@@ -339,6 +340,12 @@
     <button class="btn btn-verde" onclick="actualizarPrecio()">💾 ACTUALIZAR PRECIO</button>
     <div class="alerta alerta-verde" id="precio-ok" style="margin-top:16px;"></div>
     <div class="alerta alerta-rojo" id="precio-error" style="margin-top:16px;"></div>
+    <div style="margin-top:28px;padding:20px;background:var(--crema);border:2px solid var(--verde2);border-radius:16px;">
+      <div style="font-size:16px;font-weight:700;color:var(--gris3);margin-bottom:8px;">📅 Modo Carga Histórica</div>
+      <div style="font-size:14px;color:var(--gris2);margin-bottom:12px;">Permite a los recogedores registrar días anteriores del mes actual. Actívalo para cargar datos pasados y desactívalo cuando termines.</div>
+      <div id="modo-historico-estado" style="font-size:15px;font-weight:700;margin-bottom:12px;"></div>
+      <button id="btn-modo-historico" class="btn btn-verde" onclick="toggleModoHistorico()">Cargando...</button>
+    </div>
     <div style="margin-top:28px;font-size:16px;font-weight:700;color:var(--gris3);margin-bottom:12px;">📋 Historial</div>
     <div id="historial-precios"><div class="loading">Cargando...</div></div>
   </div>
@@ -577,7 +584,7 @@ const app=initializeApp(cfg);const auth=getAuth(app);const db=getFirestore(app);
 const app2=initializeApp(cfg,'secondary');const auth2=getAuth(app2);
 
 let UA=null,rol=null,ganList=[],precioActual=0,tabRep=0,editGanId=null,datosRep=[];
-let recibSeleccionado=null,ganSel=null,listaRecogedores=[];
+let recibSeleccionado=null,ganSel=null,listaRecogedores=[],modoHistorico=false,fechaReg=null;
 
 // ── HELPERS ──
 function ir(id){
@@ -598,6 +605,7 @@ function ocult(id){const e=document.getElementById(id);if(e)e.classList.remove('
 function cerrarModal(id){document.getElementById(id).classList.remove('show');}window.cerrarModal=cerrarModal;
 function abrirModal(id){document.getElementById(id).classList.add('show');}
 function hoy(){const n=new Date();return`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;}
+function getFechaReg(){return fechaReg||hoy();}
 function horaAhora(){const n=new Date();return`${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;}
 function fmtFecha(f){return new Date(f+'T00:00:00').toLocaleDateString('es-CO',{weekday:'long',day:'numeric',month:'long'});}
 function fmtFechaCorta(f){const d=new Date(f+'T00:00:00');return`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;}
@@ -659,15 +667,28 @@ async function cerrarSesion(){await signOut(auth);}window.cerrarSesion=cerrarSes
 // ══════════════════════════════════════════
 async function initRec(){
   document.getElementById('rec-nombre-header').textContent=UA.nombre||'Recogedor';
-  document.getElementById('rec-fecha').textContent=fmtFecha(hoy());
+  const s=await getDocs(query(collection(db,'configuracion'),limit(1)));
+  if(!s.empty){const d=s.docs[0].data();precioActual=d.precioPorLitro||0;modoHistorico=d.modoHistorico||false;}
+  fechaReg=hoy();
+  document.getElementById('rec-fecha').textContent=fmtFecha(fechaReg);
+  const wrap=document.getElementById('reg-fecha-wrap');
+  if(wrap)wrap.style.display=modoHistorico?'block':'none';
+  if(modoHistorico){
+    const inp=document.getElementById('reg-fecha');
+    if(inp){
+      const h=new Date();
+      inp.max=hoy();
+      inp.min=`${h.getFullYear()}-${String(h.getMonth()+1).padStart(2,'0')}-01`;
+      inp.value=hoy();
+      inp.onchange=()=>{fechaReg=inp.value||hoy();document.getElementById('rec-fecha').textContent=fmtFecha(fechaReg);cargarRecoleccionesHoy();}
+    }
+  }
   ir('screen-rec-home');
   await cargarGanaderos();await resumenRec();
-  const s=await getDocs(query(collection(db,'configuracion'),limit(1)));
-  if(!s.empty)precioActual=s.docs[0].data().precioPorLitro||0;
 }
 async function resumenRec(){
   try{
-    const s=await getDocs(query(collection(db,'recolecciones'),where('recogedorId','==',UA.uid),where('fecha','==',hoy())));
+    const s=await getDocs(query(collection(db,'recolecciones'),where('recogedorId','==',UA.uid),where('fecha','==',getFechaReg())));
     let L=0;const it=[];
     s.forEach(d=>{const da=d.data();L+=parseFloat(da.litros)||0;it.push(da);});
     document.getElementById('rec-litros-hoy').textContent=L.toFixed(1);
@@ -681,7 +702,7 @@ async function resumenRec(){
             <div><div class="nombre">${x.ganaderoNombre}</div><div class="detalle">${x.hora} · ${parseFloat(x.litros).toFixed(1)}L${x.novedad?' · ⚠️ '+x.novedad:''}</div></div>
             <span class="badge badge-verde">${parseFloat(x.litros).toFixed(1)}L</span>
           </div>
-          <button data-docid="${UA.uid}_${x.ganaderoId}_${hoy()}" data-nombre="${x.ganaderoNombre}" data-litros="${parseFloat(x.litros).toFixed(1)}" data-hora="${x.hora}" class="btn-elim-reg" style="background:var(--rojo2);color:var(--rojo);border:1px solid var(--rojo);border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;width:100%;text-align:center;">🗑️ Eliminar este registro</button>
+          <button data-docid="${UA.uid}_${x.ganaderoId}_${getFechaReg()}" data-nombre="${x.ganaderoNombre}" data-litros="${parseFloat(x.litros).toFixed(1)}" data-hora="${x.hora}" class="btn-elim-reg" style="background:var(--rojo2);color:var(--rojo);border:1px solid var(--rojo);border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;width:100%;text-align:center;">🗑️ Eliminar este registro</button>
         </div>`).join('');
       listaEl.querySelectorAll('.btn-elim-reg').forEach(function(btn){
         btn.addEventListener('click',function(){abrirEliminarRegistro(this.dataset.docid,this.dataset.nombre,this.dataset.litros,this.dataset.hora);});
@@ -708,7 +729,7 @@ async function selGan(id){
   document.getElementById('reg-ganadero-tel').textContent=ganSel.telefono||'';
   document.getElementById('reg-litros').value='';document.getElementById('reg-hora').value=horaAhora();document.getElementById('reg-novedad').value='';
   ocult('reg-error');
-  const docId=`${UA.uid}_${ganSel.id}_${hoy()}`;
+  const docId=`${UA.uid}_${ganSel.id}_${getFechaReg()}`;
   const ex=await getDoc(doc(db,'recolecciones',docId));
   const av=document.getElementById('reg-ya-existe');
   if(ex.exists()){av.style.display='block';av.textContent=`⚠️ Ya registraste ${ex.data().litros}L de este ganadero hoy. Si guardas, se reemplazará.`;}
@@ -720,8 +741,8 @@ async function guardarRecoleccion(){
   if(!L||L<=0){alerta('reg-error','Ingresa los litros','rojo');return;}if(!h){alerta('reg-error','Ingresa la hora','rojo');return;}
   if(!navigator.onLine){alerta('reg-error','⚠️ Sin internet. El registro no se guardó. Conéctate e intenta de nuevo.','rojo');return;}
   try{
-    const docId=`${UA.uid}_${ganSel.id}_${hoy()}`;
-    await setDoc(doc(db,'recolecciones',docId),{ganaderoId:ganSel.id,ganaderoNombre:ganSel.nombre,litros:L,hora:h,novedad:n,fecha:hoy(),precioPorLitro:precioActual,recogedorId:UA.uid,recogedorNombre:UA.nombre||UA.email,timestamp:serverTimestamp()});
+    const docId=`${UA.uid}_${ganSel.id}_${getFechaReg()}`;
+    await setDoc(doc(db,'recolecciones',docId),{ganaderoId:ganSel.id,ganaderoNombre:ganSel.nombre,litros:L,hora:h,novedad:n,fecha:getFechaReg(),precioPorLitro:precioActual,recogedorId:UA.uid,recogedorNombre:UA.nombre||UA.email,timestamp:serverTimestamp()});
     document.getElementById('exito-detalle').textContent=`${L} litros de ${ganSel.nombre} a las ${h}`;
     ir('screen-rec-exito');resumenRec();
   }catch(e){alerta('reg-error','Error al guardar. Verifica tu conexión.','rojo');}
@@ -1237,7 +1258,9 @@ async function eliminarInter(){
   }catch(e){alerta('m-inter-error','Error al eliminar','rojo');}
 }window.eliminarInter=eliminarInter;
 
-async function precioAdmin(){try{const s=await getDocs(query(collection(db,'configuracion'),limit(1)));if(!s.empty){const d=s.docs[0].data();precioActual=d.precioPorLitro||0;document.getElementById('precio-actual-display').textContent=fmtPeso(precioActual);document.getElementById('precio-fecha-display').textContent=d.fechaActualizacion?`Actualizado el ${d.fechaActualizacion} por ${d.adminNombre||'admin'}`:'Sin fecha';}else{document.getElementById('precio-actual-display').textContent='$0';document.getElementById('precio-fecha-display').textContent='No configurado';}await histPrecios();}catch(e){}}
+async function precioAdmin(){try{const s=await getDocs(query(collection(db,'configuracion'),limit(1)));if(!s.empty){const d=s.docs[0].data();precioActual=d.precioPorLitro||0;modoHistorico=d.modoHistorico||false;document.getElementById('precio-actual-display').textContent=fmtPeso(precioActual);document.getElementById('precio-fecha-display').textContent=d.fechaActualizacion?`Actualizado el ${d.fechaActualizacion} por ${d.adminNombre||'admin'}`:'Sin fecha';}else{document.getElementById('precio-actual-display').textContent='$0';document.getElementById('precio-fecha-display').textContent='No configurado';}actualizarUIHistorico();await histPrecios();}catch(e){}}
+function actualizarUIHistorico(){const est=document.getElementById('modo-historico-estado');const btn=document.getElementById('btn-modo-historico');if(!est||!btn)return;if(modoHistorico){est.innerHTML='🟢 <span style="color:#15803d;">ACTIVO — Los recogedores pueden registrar días anteriores</span>';btn.textContent='🔴 Desactivar modo histórico';btn.style.background='#dc2626';}else{est.innerHTML='⚫ <span style="color:var(--gris2);">INACTIVO — Los recogedores solo ven el día de hoy</span>';btn.textContent='🟢 Activar modo histórico';btn.style.background='';}}
+async function toggleModoHistorico(){const nuevo=!modoHistorico;try{const s=await getDocs(query(collection(db,'configuracion'),limit(1)));if(!s.empty){await updateDoc(doc(db,'configuracion',s.docs[0].id),{modoHistorico:nuevo});}else{await addDoc(collection(db,'configuracion'),{modoHistorico:nuevo});}modoHistorico=nuevo;actualizarUIHistorico();}catch(e){alert('Error al cambiar modo');}}window.toggleModoHistorico=toggleModoHistorico;
 async function actualizarPrecio(){const p=parseFloat(document.getElementById('nuevo-precio-input').value);if(!p||p<=0){alerta('precio-error','Ingresa un precio válido','rojo');return;}ocult('precio-error');try{const s=await getDocs(query(collection(db,'configuracion'),limit(1)));const d={precioPorLitro:p,fechaActualizacion:hoy(),adminId:UA.uid,adminNombre:UA.nombre||UA.email};if(!s.empty){await updateDoc(doc(db,'configuracion',s.docs[0].id),d);}else{await addDoc(collection(db,'configuracion'),d);}await addDoc(collection(db,'historialPrecios'),{...d,timestamp:serverTimestamp()});precioActual=p;document.getElementById('precio-actual-display').textContent=fmtPeso(p);document.getElementById('precio-fecha-display').textContent=`Actualizado el ${hoy()} por ${UA.nombre||'admin'}`;document.getElementById('nuevo-precio-input').value='';alerta('precio-ok',`✅ Precio actualizado a ${fmtPeso(p)}/litro`,'verde');await histPrecios();}catch(e){alerta('precio-error','Error al actualizar','rojo');}}window.actualizarPrecio=actualizarPrecio;
 async function histPrecios(){try{const s=await getDocs(query(collection(db,'historialPrecios'),orderBy('fechaActualizacion','desc')));const it=[];s.forEach(d=>it.push(d.data()));document.getElementById('historial-precios').innerHTML=it.length===0?'<p style="color:var(--gris2);font-size:14px;">Sin cambios aún</p>':`<div class="card" style="padding:0;overflow:hidden;"><table class="tabla"><thead><tr><th>Precio/L</th><th>Fecha</th><th>Admin</th></tr></thead><tbody>${it.slice(0,20).map(i=>`<tr><td><strong>${fmtPeso(i.precioPorLitro)}</strong></td><td>${i.fechaActualizacion}</td><td>${i.adminNombre||'-'}</td></tr>`).join('')}</tbody></table></div>`;}catch(e){}}
 
