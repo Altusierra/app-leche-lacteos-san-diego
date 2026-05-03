@@ -326,30 +326,7 @@
   </div>
 </div>
 
-<div id="screen-admin-precio" class="screen">
-  <div class="header"><h1>💰 Precio por Litro</h1></div>
-  <div style="padding:20px;">
-    <div class="precio-display">
-      <div class="label">Precio actual por litro</div>
-      <div class="valor" id="precio-actual-display">$0</div>
-      <div class="sub" id="precio-fecha-display">Sin configurar</div>
-    </div>
-    <div class="campo"><label>Nuevo precio por litro ($)</label>
-      <input type="number" id="nuevo-precio-input" placeholder="Ej: 1200" inputmode="decimal" min="0" style="width:100%;padding:20px;font-size:28px;font-weight:700;border:3px solid #d1d5db;border-radius:14px;text-align:center;color:var(--verde);">
-    </div>
-    <button class="btn btn-verde" onclick="actualizarPrecio()">💾 ACTUALIZAR PRECIO</button>
-    <div class="alerta alerta-verde" id="precio-ok" style="margin-top:16px;"></div>
-    <div class="alerta alerta-rojo" id="precio-error" style="margin-top:16px;"></div>
-    <div style="margin-top:28px;padding:20px;background:var(--crema);border:2px solid var(--verde2);border-radius:16px;">
-      <div style="font-size:16px;font-weight:700;color:var(--gris3);margin-bottom:8px;">📅 Modo Carga Histórica</div>
-      <div style="font-size:14px;color:var(--gris2);margin-bottom:12px;">Permite a los recogedores registrar días anteriores del mes actual. Actívalo para cargar datos pasados y desactívalo cuando termines.</div>
-      <div id="modo-historico-estado" style="font-size:15px;font-weight:700;margin-bottom:12px;"></div>
-      <button id="btn-modo-historico" class="btn btn-verde" onclick="toggleModoHistorico()">Cargando...</button>
-    </div>
-    <div style="margin-top:28px;font-size:16px;font-weight:700;color:var(--gris3);margin-bottom:12px;">📋 Historial</div>
-    <div id="historial-precios"><div class="loading">Cargando...</div></div>
-  </div>
-</div>
+
 
 <!-- ══ ADMIN REPORTES ══ -->
 <div id="screen-admin-reportes" class="screen" style="max-width:100%;padding:20px;">
@@ -395,11 +372,23 @@
 
 <!-- ══ ADMIN USUARIOS ══ -->
 <div id="screen-admin-usuarios" class="screen">
-  <div class="header"><div><h1>👤 Usuarios</h1></div><button class="btn-salir" onclick="abrirModalUsuario()" style="background:var(--verde2);">+ Nuevo</button></div>
+  <div class="header"><div><h1>⚙️ Administración</h1></div></div>
   <div style="padding:20px;">
+    <div style="font-size:16px;font-weight:700;color:var(--gris3);margin-bottom:12px;">👤 Usuarios</div>
+    <button class="btn btn-verde btn-sm" onclick="abrirModalUsuario()" style="margin-bottom:12px;">+ Nuevo usuario</button>
     <div class="alerta alerta-rojo" id="usr-error"></div>
     <div class="alerta alerta-verde" id="usr-ok"></div>
     <div id="lista-usuarios"><div class="loading">Cargando...</div></div>
+    <div style="margin-top:28px;font-size:16px;font-weight:700;color:var(--gris3);margin-bottom:12px;">🚚 Intermediarios</div>
+    <button class="btn btn-verde btn-sm" onclick="abrirModalInter()" style="margin-bottom:12px;">+ Nuevo intermediario</button>
+    <div class="alerta alerta-rojo" id="inter-error2"></div>
+    <div id="lista-intermediarios2"><div class="loading">Cargando...</div></div>
+    <div style="margin-top:28px;padding:20px;background:var(--crema);border:2px solid var(--verde2);border-radius:16px;">
+      <div style="font-size:16px;font-weight:700;color:var(--gris3);margin-bottom:8px;">📅 Modo Carga Histórica</div>
+      <div style="font-size:14px;color:var(--gris2);margin-bottom:12px;">Permite a los recogedores registrar días anteriores del mes actual. Actívalo para cargar datos pasados y desactívalo cuando termines.</div>
+      <div id="modo-historico-estado" style="font-size:15px;font-weight:700;margin-bottom:12px;"></div>
+      <button id="btn-modo-historico" class="btn btn-verde" onclick="toggleModoHistorico()">Cargando...</button>
+    </div>
   </div>
 </div>
 
@@ -407,10 +396,8 @@
 <div class="bottom-nav" id="bottom-nav" style="display:none;">
   <button class="nav-item activo" onclick="navAdmin('screen-admin-dashboard',this)"><span class="nav-ico">🏠</span><span class="nav-txt">Inicio</span></button>
   <button class="nav-item" onclick="navAdmin('screen-admin-ganaderos',this)"><span class="nav-ico">🐄</span><span class="nav-txt">Ganaderos</span></button>
-  <button class="nav-item" onclick="navAdmin('screen-admin-precio',this)"><span class="nav-ico">💰</span><span class="nav-txt">Precio</span></button>
-  <button class="nav-item" onclick="navAdmin('screen-admin-intermediarios',this)"><span class="nav-ico">🚚</span><span class="nav-txt">Interm.</span></button>
   <button class="nav-item" onclick="navAdmin('screen-admin-reportes',this)"><span class="nav-ico">📊</span><span class="nav-txt">Reportes</span></button>
-  <button class="nav-item" onclick="navAdmin('screen-admin-usuarios',this)"><span class="nav-ico">👤</span><span class="nav-txt">Usuarios</span></button>
+  <button class="nav-item" onclick="navAdmin('screen-admin-usuarios',this)"><span class="nav-ico">⚙️</span><span class="nav-txt">Admin</span></button>
 </div>
 
 <!-- MODALES -->
@@ -981,7 +968,7 @@ async function initAdmin(){
   document.getElementById('admin-nombre-header').textContent=UA.nombre||'Admin';
   document.getElementById('admin-fecha').textContent=fmtFecha(hoy());
   ir('screen-admin-dashboard');
-  dashAdmin();ganAdmin();precioAdmin();usuAdmin();interAdmin();
+  dashAdmin();ganAdmin();usuAdmin();interAdmin();interAdmin2();actualizarUIHistorico();
   document.getElementById('rep-desde').value=hoy();document.getElementById('rep-hasta').value=hoy();
 }
 async function dashAdmin(){
@@ -1208,6 +1195,17 @@ function renderInterAdmin(lista){
     </div><button class="btn btn-gris btn-sm" onclick="abrirModalInter('${i.id}')">Editar</button></div>`).join('');
 }
 
+async function interAdmin2(){
+  try{
+    const s=await getDocs(query(collection(db,'intermediarios')));
+    const lista=[];s.forEach(d=>lista.push({id:d.id,...d.data()}));
+    lista.sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es'));
+    const el=document.getElementById('lista-intermediarios2');if(!el)return;
+    el.innerHTML=lista.length===0?'<p style="color:var(--gris2);font-size:14px;">Sin intermediarios aún</p>'
+      :`<div class="card" style="padding:0;overflow:hidden;"><table class="tabla"><thead><tr><th>Nombre</th><th>Estado</th><th></th></tr></thead><tbody>${lista.map(i=>`<tr><td><strong>${i.nombre}</strong>${i.telefono?`<br><span style="font-size:12px;color:var(--gris2);">${i.telefono}</span>`:''}</td><td><span class="badge ${i.activo?'badge-verde':'badge-rojo'}">${i.activo?'Activo':'Inactivo'}</span></td><td><button class="btn btn-gris btn-sm" onclick="abrirModalInter('${i.id}')">✏️</button></td></tr>`).join('')}</tbody></table></div>`;
+  }catch(e){console.error(e);}
+}window.interAdmin2=interAdmin2;
+
 function filtrarInterAdmin(){
   const t=document.getElementById('buscar-inter-admin')?.value.toLowerCase()||'';
   // Re-cargar y filtrar
@@ -1258,7 +1256,7 @@ async function eliminarInter(){
   }catch(e){alerta('m-inter-error','Error al eliminar','rojo');}
 }window.eliminarInter=eliminarInter;
 
-async function precioAdmin(){try{const s=await getDocs(query(collection(db,'configuracion'),limit(1)));if(!s.empty){const d=s.docs[0].data();precioActual=d.precioPorLitro||0;modoHistorico=d.modoHistorico||false;document.getElementById('precio-actual-display').textContent=fmtPeso(precioActual);document.getElementById('precio-fecha-display').textContent=d.fechaActualizacion?`Actualizado el ${d.fechaActualizacion} por ${d.adminNombre||'admin'}`:'Sin fecha';}else{document.getElementById('precio-actual-display').textContent='$0';document.getElementById('precio-fecha-display').textContent='No configurado';}actualizarUIHistorico();await histPrecios();}catch(e){}}
+async function precioAdmin(){try{const s=await getDocs(query(collection(db,'configuracion'),limit(1)));if(!s.empty){const d=s.docs[0].data();precioActual=d.precioPorLitro||0;modoHistorico=d.modoHistorico||false;}actualizarUIHistorico();}catch(e){}}
 function actualizarUIHistorico(){const est=document.getElementById('modo-historico-estado');const btn=document.getElementById('btn-modo-historico');if(!est||!btn)return;if(modoHistorico){est.innerHTML='🟢 <span style="color:#15803d;">ACTIVO — Los recogedores pueden registrar días anteriores</span>';btn.textContent='🔴 Desactivar modo histórico';btn.style.background='#dc2626';}else{est.innerHTML='⚫ <span style="color:var(--gris2);">INACTIVO — Los recogedores solo ven el día de hoy</span>';btn.textContent='🟢 Activar modo histórico';btn.style.background='';}}
 async function toggleModoHistorico(){const nuevo=!modoHistorico;try{const s=await getDocs(query(collection(db,'configuracion'),limit(1)));if(!s.empty){await updateDoc(doc(db,'configuracion',s.docs[0].id),{modoHistorico:nuevo});}else{await addDoc(collection(db,'configuracion'),{modoHistorico:nuevo});}modoHistorico=nuevo;actualizarUIHistorico();}catch(e){alert('Error al cambiar modo');}}window.toggleModoHistorico=toggleModoHistorico;
 async function actualizarPrecio(){const p=parseFloat(document.getElementById('nuevo-precio-input').value);if(!p||p<=0){alerta('precio-error','Ingresa un precio válido','rojo');return;}ocult('precio-error');try{const s=await getDocs(query(collection(db,'configuracion'),limit(1)));const d={precioPorLitro:p,fechaActualizacion:hoy(),adminId:UA.uid,adminNombre:UA.nombre||UA.email};if(!s.empty){await updateDoc(doc(db,'configuracion',s.docs[0].id),d);}else{await addDoc(collection(db,'configuracion'),d);}await addDoc(collection(db,'historialPrecios'),{...d,timestamp:serverTimestamp()});precioActual=p;document.getElementById('precio-actual-display').textContent=fmtPeso(p);document.getElementById('precio-fecha-display').textContent=`Actualizado el ${hoy()} por ${UA.nombre||'admin'}`;document.getElementById('nuevo-precio-input').value='';alerta('precio-ok',`✅ Precio actualizado a ${fmtPeso(p)}/litro`,'verde');await histPrecios();}catch(e){alerta('precio-error','Error al actualizar','rojo');}}window.actualizarPrecio=actualizarPrecio;
@@ -1614,7 +1612,7 @@ async function confirmarEliminarRegistro(){
   }catch(e){alerta('m-elim-error','Error al eliminar. Verifica tu conexión.','rojo');console.error(e);}
 }window.confirmarEliminarRegistro=confirmarEliminarRegistro;
 
-function navAdmin(p,b){ir(p);document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('activo'));b.classList.add('activo');if(p==='screen-admin-dashboard')dashAdmin();if(p==='screen-admin-ganaderos')ganAdmin();if(p==='screen-admin-precio')precioAdmin();if(p==='screen-admin-usuarios')usuAdmin();if(p==='screen-admin-intermediarios')interAdmin();}window.navAdmin=navAdmin;
+function navAdmin(p,b){ir(p);document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('activo'));b.classList.add('activo');if(p==='screen-admin-dashboard')dashAdmin();if(p==='screen-admin-ganaderos')ganAdmin();if(p==='screen-admin-usuarios'){usuAdmin();interAdmin2();actualizarUIHistorico();}}window.navAdmin=navAdmin;
 document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')hacerLogin();});
 // iOS fix: usar tanto click como touchend
 const btnEntrar=document.getElementById('btn-entrar');
