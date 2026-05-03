@@ -368,7 +368,7 @@
     </div>
     <div id="rep-tab-0"><div class="vacio"><div class="ico">💰</div><p>Selecciona un período y el precio por litro</p></div></div>
     <div id="rep-tab-1" style="display:none;"><div class="vacio"><div class="ico">🚚</div><p>Selecciona un período y el precio</p></div></div>
-    <div id="rep-tab-2" style="display:none;"><div style="text-align:right;margin-bottom:10px;"><button id="btn-filtro-nov-global" class="btn btn-sm" style="border:2px solid var(--amarillo);background:transparent;color:var(--amarillo);font-weight:700;" onclick="toggleSoloNov()">⚠️ Solo novedades</button></div><div id="rep-tab-2-content"><div class="vacio"><div class="ico">📄</div><p>Selecciona un período y genera el reporte</p></div></div></div>
+    <div id="rep-tab-2" style="display:none;"><div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px;flex-wrap:wrap;"><button id="btn-filtro-nov-global" class="btn btn-sm" style="border:2px solid var(--amarillo);background:transparent;color:var(--amarillo);font-weight:700;" onclick="toggleSoloNov()">⚠️ Solo novedades</button><button id="btn-filtro-elim-global" class="btn btn-sm" style="border:2px solid var(--rojo);background:transparent;color:var(--rojo);font-weight:700;" onclick="toggleElim()">🗑️ Eliminaciones</button></div><div id="rep-tab-2-content"><div class="vacio"><div class="ico">📄</div><p>Selecciona un período y genera el reporte</p></div></div></div>
     <div id="rep-tab-3" style="display:none;"><div class="vacio"><div class="ico">📅</div><p>Selecciona un período</p></div></div>
     <div id="rep-tab-4" style="display:none;"><div class="vacio"><div class="ico">📊</div><p>Selecciona un período y genera el reporte</p></div></div>
   </div>
@@ -574,7 +574,7 @@ const cfg={apiKey:"AIzaSyDBNDl2kokNqXdKwPEEwUX0MC5ziZVgXQ4",authDomain:"app-lech
 const app=initializeApp(cfg);const auth=getAuth(app);const db=getFirestore(app);
 const app2=initializeApp(cfg,'secondary');const auth2=getAuth(app2);
 
-let UA=null,rol=null,ganList=[],precioActual=0,tabRep=0,editGanId=null,datosRep=[],datosInter=[],soloNovGlobal=false;
+let UA=null,rol=null,ganList=[],precioActual=0,tabRep=0,editGanId=null,datosRep=[],datosInter=[],soloNovGlobal=false,modoElim=false;
 let recibSeleccionado=null,ganSel=null,listaRecogedores=[],modoHistorico=false,fechaReg=null;
 
 // ── HELPERS ──
@@ -1386,8 +1386,35 @@ function repDetalle(datos,de,ha){
       </table>
     </div>`;
 }
-function actualizarBtnNov(){const b=document.getElementById('btn-filtro-nov-global');if(!b)return;b.style.background=soloNovGlobal?'var(--amarillo)':'transparent';b.style.color=soloNovGlobal?'white':'var(--amarillo)';b.textContent=soloNovGlobal?'⚠️ Ver todo':'⚠️ Solo novedades';}
-function toggleSoloNov(){soloNovGlobal=!soloNovGlobal;actualizarBtnNov();if(datosRep.length>0){const de=document.getElementById('rep-desde').value;const ha=document.getElementById('rep-hasta').value;repDetalle(datosRep,de,ha);}else{generarReporte();}}window.toggleSoloNov=toggleSoloNov;
+function actualizarBtnNov(){
+  const b=document.getElementById('btn-filtro-nov-global');if(b){b.style.background=soloNovGlobal?'var(--amarillo)':'transparent';b.style.color=soloNovGlobal?'white':'var(--amarillo)';b.textContent=soloNovGlobal?'⚠️ Ver todo':'⚠️ Solo novedades';}
+  const e=document.getElementById('btn-filtro-elim-global');if(e){e.style.background=modoElim?'var(--rojo)':'transparent';e.style.color=modoElim?'white':'var(--rojo)';}
+}
+function toggleSoloNov(){soloNovGlobal=!soloNovGlobal;if(soloNovGlobal)modoElim=false;actualizarBtnNov();if(datosRep.length>0){const de=document.getElementById('rep-desde').value;const ha=document.getElementById('rep-hasta').value;repDetalle(datosRep,de,ha);}else{generarReporte();}}window.toggleSoloNov=toggleSoloNov;
+async function toggleElim(){modoElim=!modoElim;if(modoElim)soloNovGlobal=false;actualizarBtnNov();if(modoElim){await cargarEliminaciones();}else{const de=document.getElementById('rep-desde').value;const ha=document.getElementById('rep-hasta').value;if(datosRep.length>0)repDetalle(datosRep,de,ha);else{const cont=document.getElementById('rep-tab-2-content');if(cont)cont.innerHTML='<div class="vacio"><div class="ico">📄</div><p>Selecciona un período y genera el reporte</p></div>';}}}window.toggleElim=toggleElim;
+async function cargarEliminaciones(){
+  const cont=document.getElementById('rep-tab-2-content');if(!cont)return;
+  cont.innerHTML='<div class="loading">Cargando...</div>';
+  try{
+    const de=document.getElementById('rep-desde').value;
+    const ha=document.getElementById('rep-hasta').value;
+    let q;
+    if(de&&ha){q=query(collection(db,'eliminaciones'),where('eliminadoEn','>=',de),where('eliminadoEn','<=',ha),orderBy('eliminadoEn','desc'));}
+    else{q=query(collection(db,'eliminaciones'),orderBy('eliminadoEn','desc'));}
+    const s=await getDocs(q);
+    const lista=[];s.forEach(d=>lista.push(d.data()));
+    if(lista.length===0){cont.innerHTML='<div class="vacio"><div class="ico">🗑️</div><p>Sin eliminaciones en este período</p></div>';return;}
+    cont.innerHTML=`
+      <div style="font-size:14px;color:var(--gris2);margin-bottom:12px;">${lista.length} eliminaciones</div>
+      <div class="card" style="padding:0;overflow:hidden;overflow-x:auto;">
+        <table class="tabla" style="min-width:600px;">
+          <thead><tr><th>Fecha reg.</th><th>Ganadero</th><th>Litros</th><th>Hora</th><th>Recogedor</th><th>Motivo</th><th>Eliminado</th></tr></thead>
+          <tbody>${lista.map(d=>`<tr style="background:#fff5f5;"><td>${d.fecha||'-'}</td><td><strong>${d.ganaderoNombre||'-'}</strong></td><td>${parseFloat(d.litros||0).toFixed(1)}</td><td>${d.hora||'-'}</td><td>${d.recogedorNombre||'-'}</td><td style="font-size:12px;color:var(--rojo);">${d.motivo||'-'}</td><td style="font-size:11px;color:var(--gris2);">${d.eliminadoEn||''} ${d.eliminadoHora||''}</td></tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  }catch(e){cont.innerHTML='<div class="alerta alerta-rojo">Error al cargar eliminaciones</div>';console.error(e);}
+}window.cargarEliminaciones=cargarEliminaciones;
 
 function exportarLiqMatriz(de,ha,precio){
   if(!datosRep.length)return;
