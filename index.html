@@ -1102,7 +1102,6 @@ async function usuAdmin(){
           <button class="btn btn-azul btn-sm" onclick="resetearContrasena('${x.email}')">📧 Restablecer clave</button>
           ${x.id!==UA.uid?`<button class="btn btn-gris btn-sm" data-cambiarid="${x.id}" data-cambiarrol="${x.rol}" data-cambiarnombre="${x.nombre||x.email}" style="cursor:pointer;">🔄 Cambiar rol</button>`:''}
           ${x.bloqueado?`<button class="btn btn-verde btn-sm" onclick="toggleBloqueo('${x.id}',false)">🔓 Desbloquear</button>`:x.id!==UA.uid?`<button class="btn btn-rojo btn-sm" onclick="toggleBloqueo('${x.id}',true)">🔒 Bloquear</button>`:''}
-          ${x.id!==UA.uid?`<button class="btn btn-gris btn-sm" data-uid="${x.id}" data-rol="${x.rol}" data-nombre="${x.nombre||x.email}" class="btn-cambiar-rol">🔄 Cambiar rol</button>`:''}
         </div>
       </div>`).join('');
     // Event delegation para botones cambiar rol
