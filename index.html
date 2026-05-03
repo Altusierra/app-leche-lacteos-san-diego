@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>🐄 Lácteos San Diego</title>
+  <style>
+    :root{--verde:#c2410c;--verde2:#ea580c;--verde3:#fed7aa;--crema:#fff7ed;--gris1:#f3f4f6;--gris2:#9ca3af;--gris3:#374151;--rojo:#dc2626;--rojo2:#fee2e2;--amarillo:#d97706;--amarillo2:#fef3c7;--azul:#1d4ed8;--azul2:#dbeafe;--naranja:#ea580c;--naranja2:#ffedd5;}
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+    body{font-family:'Segoe UI',Arial,sans-serif;background:var(--crema);min-height:100vh;max-width:500px;margin:0 auto;padding-bottom:80px;}
+    /* En reportes quitamos el max-width para la matriz */
+    body.modo-reporte{max-width:100%;}
+    .header{background:var(--verde);color:white;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+    .header h1{font-size:20px;font-weight:700;}.header .sub{font-size:12px;opacity:0.8;}
+    .btn-salir{background:rgba(255,255,255,0.2);border:none;color:white;padding:8px 14px;border-radius:8px;font-size:13px;cursor:pointer;}
+    .screen{display:none;padding:20px;}.screen.active{display:block;}
+    #screen-login{flex-direction:column;justify-content:center;min-height:100vh;padding:40px 24px;}#screen-login.active{display:flex;}
+    .login-logo{text-align:center;margin-bottom:40px;}.login-logo .emoji{font-size:64px;}
+    .login-logo h1{font-size:28px;font-weight:900;color:var(--verde);margin-top:8px;letter-spacing:-0.5px;}
+    .login-logo p{color:var(--gris2);font-size:15px;margin-top:4px;}
+    .campo{margin-bottom:16px;}.campo label{display:block;font-size:15px;font-weight:600;color:var(--gris3);margin-bottom:6px;}
+    .campo input{width:100%;padding:16px;font-size:18px;border:2px solid #d1d5db;border-radius:12px;background:white;}
+    .campo input:focus{outline:none;border-color:var(--verde2);}
+    .btn{width:100%;padding:18px;font-size:18px;font-weight:700;border:none;border-radius:14px;cursor:pointer;transition:all 0.15s;}
+    .btn:active{transform:scale(0.97);}
+    .btn-verde{background:var(--verde);color:white;}.btn-verde2{background:var(--verde2);color:white;}
+    .btn-gris{background:var(--gris1);color:var(--gris3);}.btn-amarillo{background:var(--amarillo);color:white;}
+    .btn-naranja{background:var(--naranja);color:white;}.btn-rojo{background:var(--rojo);color:white;}
+    .btn-azul{background:var(--azul);color:white;}
+    .btn-sm{padding:10px 16px;font-size:14px;font-weight:600;width:auto;border-radius:10px;}
+    .card{background:white;border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,0.08);}
+    .card-titulo{font-size:13px;font-weight:600;color:var(--gris2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;}
+    .card-valor{font-size:36px;font-weight:800;color:var(--verde);}.card-sub{font-size:14px;color:var(--gris2);margin-top:4px;}
+    .buscador{position:relative;margin-bottom:16px;}
+    .buscador input{width:100%;padding:16px 16px 16px 48px;font-size:16px;border:2px solid #d1d5db;border-radius:12px;background:white;}
+    .buscador input:focus{outline:none;border-color:var(--verde2);}.buscador .ico{position:absolute;left:16px;top:50%;transform:translateY(-50%);font-size:20px;}
+    .lista-item{background:white;border-radius:12px;padding:18px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 1px 4px rgba(0,0,0,0.06);cursor:pointer;border:2px solid transparent;transition:border-color 0.15s;}
+    .lista-item:active{border-color:var(--verde2);background:var(--crema);}
+    .lista-item .nombre{font-size:17px;font-weight:600;}.lista-item .detalle{font-size:13px;color:var(--gris2);margin-top:2px;}.lista-item .flecha{font-size:20px;color:var(--verde2);}
+    .form-grande input,.form-grande textarea{width:100%;padding:20px;font-size:28px;font-weight:700;border:3px solid #d1d5db;border-radius:14px;background:white;text-align:center;color:var(--verde);}
+    .form-grande textarea{font-size:16px;font-weight:400;text-align:left;height:100px;resize:none;}
+    .form-grande input:focus,.form-grande textarea:focus{outline:none;border-color:var(--verde2);}
+    .form-label{font-size:16px;font-weight:700;color:var(--gris3);margin-bottom:10px;display:block;}.form-grupo{margin-bottom:24px;}
+    .badge{display:inline-block;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;}
+    .badge-verde{background:var(--verde3);color:var(--verde);}.badge-rojo{background:var(--rojo2);color:var(--rojo);}
+    .badge-amarillo{background:var(--amarillo2);color:var(--amarillo);}.badge-azul{background:var(--azul2);color:var(--azul);}
+    .badge-naranja{background:var(--naranja2);color:var(--naranja);}.badge-gris{background:var(--gris1);color:var(--gris3);}
+    .bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:500px;background:white;border-top:1px solid #e5e7eb;display:flex;z-index:200;}
+    .nav-item{flex:1;padding:10px 4px;text-align:center;cursor:pointer;border:none;background:none;}
+    .nav-item .nav-ico{font-size:22px;display:block;}.nav-item .nav-txt{font-size:10px;color:var(--gris2);margin-top:2px;font-weight:600;}
+    .nav-item.activo .nav-txt{color:var(--verde);}
+    .alerta{padding:14px 16px;border-radius:12px;margin-bottom:16px;font-size:14px;font-weight:600;display:none;}
+    .alerta.show{display:block;}.alerta-rojo{background:var(--rojo2);color:var(--rojo);}.alerta-verde{background:var(--verde3);color:var(--verde);}
+    .alerta-naranja{background:var(--naranja2);color:var(--naranja);}
+    .tabs{display:flex;background:var(--gris1);border-radius:12px;padding:4px;margin-bottom:20px;overflow-x:auto;gap:4px;flex-wrap:nowrap;}
+    .tab{padding:10px 12px;border-radius:10px;border:none;background:none;font-size:11px;font-weight:600;color:var(--gris2);cursor:pointer;white-space:nowrap;flex-shrink:0;}
+    .tab.activo{background:white;color:var(--verde);box-shadow:0 1px 4px rgba(0,0,0,0.1);}
+    /* TABLA ESTÁNDAR */
+    .tabla{width:100%;border-collapse:collapse;font-size:13px;}
+    .tabla th{background:var(--verde);color:white;padding:10px 8px;text-align:left;font-size:11px;}
+    .tabla td{padding:8px;border-bottom:1px solid var(--gris1);}
+    .tabla tr:nth-child(even) td{background:var(--crema);}
+    .tabla .fila-alerta td{background:var(--naranja2)!important;color:var(--naranja);font-weight:700;}
+    /* MATRIZ */
+    .matriz-wrap{overflow-x:auto;overflow-y:auto;max-height:70vh;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.1);}
+    .tabla-matriz{border-collapse:collapse;font-size:12px;white-space:nowrap;}
+    .tabla-matriz th{background:var(--verde);color:white;padding:8px 10px;text-align:center;font-size:11px;position:sticky;top:0;z-index:10;border:1px solid rgba(255,255,255,0.2);}
+    .tabla-matriz th.col-fecha{position:sticky;left:0;z-index:20;background:var(--verde);text-align:left;}
+    .tabla-matriz td{padding:8px 10px;border:1px solid #e5e7eb;text-align:center;vertical-align:middle;}
+    .tabla-matriz td.col-fecha{position:sticky;left:0;background:white;font-weight:700;text-align:left;z-index:5;border-right:2px solid var(--verde);}
+    .tabla-matriz tr:nth-child(even) td{background:#f9fafb;}
+    .tabla-matriz tr:nth-child(even) td.col-fecha{background:#f3f4f6;}
+    .tabla-matriz td.vacio{color:#d1d5db;font-size:16px;}
+    .tabla-matriz td.total-col{background:var(--verde3)!important;font-weight:700;color:var(--verde);}
+    .tabla-matriz th.total-col{background:#0f4d26!important;}
+    .tabla-matriz tr.fila-total td{background:var(--verde3)!important;font-weight:700;color:var(--verde);}
+    .tabla-matriz tr.fila-total td.col-fecha{background:#0f4d26!important;color:white;}
+    .celda-litros{font-weight:700;font-size:13px;}
+    .celda-pesos{font-size:11px;color:var(--gris2);margin-top:2px;}
+    /* MODAL */
+    .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;align-items:flex-end;}
+    .modal-overlay.show{display:flex;}
+    .modal{background:white;border-radius:24px 24px 0 0;padding:24px;width:100%;max-width:500px;margin:0 auto;max-height:90vh;overflow-y:auto;}
+    .modal-titulo{font-size:20px;font-weight:800;margin-bottom:20px;}
+    .fila{display:flex;gap:12px;}.fila>*{flex:1;}
+    .loading{text-align:center;padding:40px;color:var(--gris2);font-size:16px;}
+    .vacio{text-align:center;padding:40px 20px;color:var(--gris2);}.vacio .ico{font-size:48px;margin-bottom:12px;}
+    .check-exito{text-align:center;padding:40px 20px;}.check-exito .ico{font-size:80px;}
+    .check-exito h2{font-size:28px;font-weight:800;color:var(--verde);margin-top:16px;}
+    .check-exito p{color:var(--gris2);margin-top:8px;font-size:16px;}
+    .precio-display{background:var(--verde3);border:3px solid var(--verde2);border-radius:16px;padding:24px;text-align:center;margin-bottom:20px;}
+    .precio-display .label{font-size:13px;font-weight:700;color:var(--verde);text-transform:uppercase;}
+    .precio-display .valor{font-size:42px;font-weight:800;color:var(--verde);margin:8px 0;}
+    .precio-display .sub{font-size:13px;color:var(--verde);opacity:0.8;}
+    .alerta-grande{border-radius:16px;padding:20px;margin-bottom:16px;border:3px solid;}
+    .alerta-grande.naranja{background:var(--naranja2);border-color:var(--naranja);}
+    .usr-card{background:white;border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,0.07);}
+    .usr-card.bloqueado{background:var(--rojo2);border:2px solid var(--rojo);}
+    .usr-card .usr-nombre{font-size:17px;font-weight:700;}
+    .usr-card .usr-email{font-size:13px;color:var(--gris2);margin-top:2px;}
+    .usr-card .usr-acciones{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+    input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
+    /* Aviso móvil para matriz */
+    .aviso-movil{display:none;background:var(--amarillo2);border:2px solid var(--amarillo);border-radius:12px;padding:14px;margin-bottom:16px;font-size:14px;color:var(--amarillo);font-weight:600;}
+    @media(max-width:600px){.aviso-movil{display:block;}}
+    /* Pantalla reportes sin límite de ancho */
+    #screen-admin-reportes{max-width:100%;padding:20px;}
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="screen-login" class="screen active">
+  <div style="background:#1a1a1a;border-radius:14px;padding:12px 20px;margin-bottom:24px;text-align:center;"><span style="color:#ea580c;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;">Vereda Guan Cantería · Cumbal - Nariño</span></div><div class="login-logo"><div class="emoji">🐄</div><h1>Lácteos San Diego</h1><p>Sistema de recolección de leche</p></div>
+  <div class="alerta alerta-rojo" id="login-error"></div>
+  <div class="campo"><label>Correo electrónico</label><input type="email" id="login-email" placeholder="tu@correo.com" inputmode="email" autocomplete="username"></div>
+  <div class="campo"><label>Contraseña</label><input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password"></div>
+  <button class="btn btn-verde" id="btn-entrar" style="margin-top:8px;cursor:pointer;">ENTRAR</button>
+  <p style="text-align:center;color:var(--gris2);font-size:13px;margin-top:20px;">¿Problemas? Contacta al administrador</p>
+</div>
+
+<!-- ══ RECOGEDOR ══ -->
+<div id="screen-rec-home" class="screen">
+  <div class="header"><div><div class="sub">🐄 Lácteos San Diego</div><h1 id="rec-nombre-header">Recogedor</h1></div><button class="btn-salir" onclick="cerrarSesion()">Salir</button></div>
+  <div style="padding:20px;">
+    <div id="rec-fecha" style="font-size:15px;color:var(--gris2);margin-bottom:16px;"></div>
+    <div class="card"><div class="card-titulo">🐄 Ganaderos registrados hoy</div><div class="card-valor" id="rec-litros-hoy" style="display:none;">0</div><div class="card-valor" id="rec-registros-hoy" style="font-size:42px;font-weight:800;color:var(--verde);">0</div><div class="card-sub">ganaderos hoy</div></div>
+    <div class="fila" style="margin-bottom:16px;">
+      <button class="btn btn-verde2" style="font-size:17px;padding:20px;" onclick="irPantalla('screen-rec-buscar')">➕ REGISTRAR</button>
+      <button class="btn btn-amarillo" style="font-size:17px;padding:20px;" onclick="abrirModalNuevoGanaderoRec()">🐄 NUEVO GANADERO</button>
+    </div>
+    <div style="margin-bottom:12px;font-size:16px;font-weight:700;color:var(--gris3);">Mis registros de hoy</div>
+    <div id="rec-lista-hoy"><div class="loading">Cargando...</div></div>
+  </div>
+</div>
+
+<div id="screen-rec-buscar" class="screen">
+  <div class="header">
+    <button style="background:none;border:none;color:white;font-size:24px;cursor:pointer;" onclick="irPantalla('screen-rec-home')">←</button>
+    <h1>Buscar Ganadero</h1><div style="width:40px;"></div>
+  </div>
+  <div style="padding:20px;">
+    <div class="buscador"><span class="ico">🔍</span><input type="text" id="buscar-input" placeholder="Escriba el nombre..." oninput="filtrarGanaderos()" autocomplete="off"></div>
+    <div id="lista-ganaderos"><div class="loading">Cargando...</div></div>
+  </div>
+</div>
+
+<div id="screen-rec-registrar" class="screen">
+  <div class="header">
+    <button style="background:none;border:none;color:white;font-size:24px;cursor:pointer;" onclick="irPantalla('screen-rec-buscar')">←</button>
+    <h1>Registrar</h1><div style="width:40px;"></div>
+  </div>
+  <div style="padding:20px;">
+    <div class="card" style="background:var(--verde3);border:2px solid var(--verde2);">
+      <div style="font-size:13px;color:var(--verde);font-weight:600;">GANADERO</div>
+      <div id="reg-ganadero-nombre" style="font-size:22px;font-weight:800;color:var(--verde);margin-top:4px;"></div>
+      <div id="reg-ganadero-tel" style="font-size:14px;color:var(--verde);margin-top:2px;"></div>
+    </div>
+    <div id="reg-ya-existe" style="display:none;background:var(--amarillo2);border:2px solid var(--amarillo);border-radius:12px;padding:14px;margin-bottom:16px;font-size:14px;color:var(--amarillo);font-weight:600;"></div>
+    <div class="alerta alerta-rojo" id="reg-error"></div>
+    <div class="form-grupo"><label class="form-label">🥛 ¿Cuántos LITROS?</label><div class="form-grande"><input type="number" id="reg-litros" placeholder="0" inputmode="decimal" min="0" step="0.5"></div></div>
+    <div class="form-grupo"><label class="form-label">🕐 Hora de recolección</label><div class="form-grande"><input type="time" id="reg-hora"></div></div>
+    <div class="form-grupo"><label class="form-label">📝 Novedad (opcional)</label><div class="form-grande"><textarea id="reg-novedad" placeholder="Ej: Vaca enferma, acceso difícil..."></textarea></div></div>
+    <button class="btn btn-verde" onclick="guardarRecoleccion()">✅ GUARDAR</button>
+  </div>
+</div>
+
+<div id="screen-rec-exito" class="screen">
+  <div style="padding:20px;">
+    <div class="check-exito"><div class="ico">✅</div><h2>¡Guardado!</h2><p id="exito-detalle"></p></div>
+    <button class="btn btn-verde2" onclick="irPantalla('screen-rec-buscar')">REGISTRAR OTRO</button>
+    <button class="btn btn-gris" onclick="irPantalla('screen-rec-home')" style="margin-top:12px;">IR AL INICIO</button>
+  </div>
+</div>
+
+<!-- ══ RECIBIDOR ══ -->
+<div id="screen-recibi-home" class="screen">
+  <div class="header"><div><div class="sub">🐄 Lácteos San Diego</div><h1 id="recibi-nombre-header">Recibidor</h1></div><button class="btn-salir" onclick="cerrarSesion()">Salir</button></div>
+  <div style="padding:20px;">
+    <div id="recibi-fecha" style="font-size:15px;color:var(--gris2);margin-bottom:16px;"></div>
+    <div id="recibi-alertas-container"></div>
+    <div class="card"><div class="card-titulo">🏭 Total recibido hoy</div><div class="card-valor" id="recibi-total-hoy">0</div><div class="card-sub">litros</div></div>
+    <button class="btn btn-naranja" style="font-size:18px;padding:22px;margin-bottom:20px;" onclick="irPantalla('screen-recibi-registrar')">📥 REGISTRAR LLEGADA</button>
+    <div style="margin-bottom:12px;font-size:16px;font-weight:700;color:var(--gris3);">Registros de hoy</div>
+    <div id="recibi-lista-hoy"><div class="loading">Cargando...</div></div>
+  </div>
+</div>
+
+<div id="screen-recibi-registrar" class="screen">
+  <div class="header">
+    <button style="background:none;border:none;color:white;font-size:24px;cursor:pointer;" onclick="irPantalla('screen-recibi-home')">←</button>
+    <h1>Registrar Llegada</h1><div style="width:40px;"></div>
+  </div>
+  <div style="padding:20px;">
+    <div class="card" style="background:var(--naranja2);border:2px solid var(--naranja);">
+      <div style="font-size:13px;color:var(--naranja);font-weight:700;">📋 INSTRUCCIÓN</div>
+      <div style="font-size:14px;color:var(--gris3);margin-top:6px;">Selecciona el recogedor. Si te equivocas hoy, vuelve a seleccionarlo y el valor se corrige.</div>
+    </div>
+    <div style="margin-bottom:12px;font-size:16px;font-weight:700;color:var(--gris3);">Selecciona el recogedor:</div>
+    <div id="lista-recogedores-recibi"><div class="loading">Cargando...</div></div>
+  </div>
+</div>
+
+<div id="screen-recibi-form" class="screen">
+  <div class="header">
+    <button style="background:none;border:none;color:white;font-size:24px;cursor:pointer;" onclick="irPantalla('screen-recibi-registrar')">←</button>
+    <h1>Litros Recibidos</h1><div style="width:40px;"></div>
+  </div>
+  <div style="padding:20px;">
+    <div class="card" style="background:var(--naranja2);border:2px solid var(--naranja);">
+      <div style="font-size:13px;color:var(--naranja);font-weight:600;">RECOGEDOR</div>
+      <div id="recibi-recogedor-nombre" style="font-size:22px;font-weight:800;color:var(--naranja);margin-top:4px;"></div>
+      <div id="recibi-recogedor-ruta-total" style="font-size:14px;color:var(--naranja);margin-top:2px;"></div>
+    </div>
+    <div id="recibi-ya-registrado" style="display:none;background:var(--amarillo2);border:2px solid var(--amarillo);border-radius:12px;padding:14px;margin-bottom:16px;font-size:14px;color:var(--amarillo);font-weight:600;"></div>
+    <div class="alerta alerta-rojo" id="recibi-form-error"></div>
+    <div class="form-grupo"><label class="form-label">🥛 Litros que llegaron</label><div class="form-grande"><input type="number" id="recibi-litros-input" placeholder="0" inputmode="decimal" min="0" step="0.5"></div></div>
+    <div class="form-grupo"><label class="form-label">📝 Novedad (opcional)</label><div class="form-grande"><textarea id="recibi-novedad-input" placeholder="Ej: Llegó tarde, envase roto..."></textarea></div></div>
+    <button class="btn btn-naranja" onclick="guardarRecepcion()">💾 GUARDAR</button>
+  </div>
+</div>
+
+<div id="screen-recibi-exito" class="screen">
+  <div style="padding:20px;">
+    <div class="check-exito"><div class="ico">✅</div><h2>¡Registrado!</h2><p id="recibi-exito-detalle"></p></div>
+    <div id="recibi-exito-alerta" style="display:none;" class="alerta-grande naranja">
+      <div style="font-weight:800;color:var(--naranja);margin-bottom:6px;">⚠️ DIFERENCIA DETECTADA</div>
+      <div id="recibi-exito-alerta-msg" style="color:var(--naranja);font-size:14px;"></div>
+    </div>
+    <button class="btn btn-naranja" onclick="irPantalla('screen-recibi-registrar')">REGISTRAR OTRO</button>
+    <button class="btn btn-gris" onclick="irPantalla('screen-recibi-home')" style="margin-top:12px;">IR AL INICIO</button>
+  </div>
+</div>
+
+<!-- ══ ADMIN DASHBOARD ══ -->
+<div id="screen-admin-dashboard" class="screen">
+  <div class="header"><div><div class="sub">🐄 Lácteos San Diego</div><h1 id="admin-nombre-header">Admin</h1></div><button class="btn-salir" onclick="cerrarSesion()">Salir</button></div>
+  <div style="padding:20px;">
+    <div id="admin-fecha" style="font-size:15px;color:var(--gris2);margin-bottom:16px;"></div>
+    <div id="admin-alertas-container"></div>
+    <div class="fila">
+      <div class="card" style="text-align:center;"><div class="card-titulo">Recolectado</div><div class="card-valor" id="admin-total-rec">-</div><div class="card-sub">litros ruta</div></div>
+      <div class="card" style="text-align:center;"><div class="card-titulo">En planta</div><div class="card-valor" id="admin-total-planta">-</div><div class="card-sub">litros planta</div></div>
+    </div>
+    <div class="card">
+      <div class="card-titulo">📊 Conciliación — hoy</div>
+      <div id="admin-conciliacion"><div class="loading">Cargando...</div></div>
+    </div>
+    <div class="card">
+      <div class="card-titulo">📅 Esta semana — litros por día</div>
+      <div id="admin-semana"><div class="loading">Cargando...</div></div>
+    </div>
+    <div id="quincena-pago-card" class="card" style="display:none;background:var(--verde3);border:3px solid var(--verde2);">
+      <div class="card-titulo" style="color:var(--verde);">💰 QUINCENA LISTA PARA EXPORTAR</div>
+      <div id="quincena-pago-label" style="font-size:18px;font-weight:800;color:var(--verde);margin:8px 0;"></div>
+      <button class="btn btn-verde" onclick="exportarQuincenaPago()" style="padding:14px;">⬇ EXPORTAR PARA PAGAR</button>
+    </div>
+    <div class="card">
+      <div class="card-titulo">📋 Historial de quincenas</div>
+      <div id="admin-historial-quincenas"><div class="loading">Cargando...</div></div>
+    </div>
+    <div class="card">
+      <div class="card-titulo">🔴 Ganaderos sin recolectar (3+ días)</div>
+      <div id="admin-sin-recolectar"><div class="loading">Cargando...</div></div>
+    </div>
+    <div class="card">
+      <div class="card-titulo">🐄 Desglose ganaderos — hoy</div>
+      <div id="admin-desglose-ganaderos"><div class="loading">Cargando...</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ADMIN GANADEROS ══ -->
+<div id="screen-admin-ganaderos" class="screen">
+  <div class="header"><div><h1>🐄 Ganaderos</h1></div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn-salir" onclick="document.getElementById('input-importar').click()" style="background:var(--azul);">⬆ Importar</button>
+      <button class="btn-salir" onclick="abrirModalGanadero(null)" style="background:var(--verde2);">+ Nuevo</button>
+    </div>
+  </div>
+  <input type="file" id="input-importar" accept=".xlsx,.csv" style="display:none;" onchange="importarGanaderos(event)">
+  <div style="padding:20px;">
+    <div class="buscador"><span class="ico">🔍</span><input type="text" id="buscar-ganadero-admin" placeholder="Buscar..." oninput="filtrarGanaderosAdmin()"></div>
+    <div id="lista-ganaderos-admin"><div class="loading">Cargando...</div></div>
+  </div>
+</div>
+
+<!-- ══ ADMIN PRECIO ══ -->
+<div id="screen-admin-precio" class="screen">
+  <div class="header"><h1>💰 Precio por Litro</h1></div>
+  <div style="padding:20px;">
+    <div class="precio-display">
+      <div class="label">Precio actual por litro</div>
+      <div class="valor" id="precio-actual-display">$0</div>
+      <div class="sub" id="precio-fecha-display">Sin configurar</div>
+    </div>
+    <div class="campo"><label>Nuevo precio por litro ($)</label>
+      <input type="number" id="nuevo-precio-input" placeholder="Ej: 1200" inputmode="decimal" min="0" style="width:100%;padding:20px;font-size:28px;font-weight:700;border:3px solid #d1d5db;border-radius:14px;text-align:center;color:var(--verde);">
+    </div>
+    <button class="btn btn-verde" onclick="actualizarPrecio()">💾 ACTUALIZAR PRECIO</button>
+    <div class="alerta alerta-verde" id="precio-ok" style="margin-top:16px;"></div>
+    <div class="alerta alerta-rojo" id="precio-error" style="margin-top:16px;"></div>
+    <div style="margin-top:28px;font-size:16px;font-weight:700;color:var(--gris3);margin-bottom:12px;">📋 Historial</div>
+    <div id="historial-precios"><div class="loading">Cargando...</div></div>
+  </div>
+</div>
+
+<!-- ══ ADMIN REPORTES ══ -->
+<div id="screen-admin-reportes" class="screen" style="max-width:100%;padding:20px;">
+  <div class="header" style="max-width:100%;"><h1>📊 Reportes</h1></div>
+  <div style="padding:20px;">
+    <div class="tabs">
+      <button class="tab activo" onclick="cambiarTabReporte(0,this)">Por Ganadero</button>
+      <button class="tab" onclick="cambiarTabReporte(1,this)">Por Día</button>
+      <button class="tab" onclick="cambiarTabReporte(2,this)">Liquidación</button>
+      <button class="tab" onclick="cambiarTabReporte(3,this)">Novedades</button>
+      <button class="tab" onclick="cambiarTabReporte(4,this)">📋 Matriz</button>
+      <button class="tab" onclick="cambiarTabReporte(5,this)">📄 Detalle</button>
+    </div>
+    <div class="card">
+      <div class="card-titulo">Período</div>
+      <div class="fila" style="margin-top:8px;">
+        <div><label style="font-size:12px;color:var(--gris2);font-weight:600;">DESDE</label><input type="date" id="rep-desde" style="width:100%;padding:10px;border:2px solid #d1d5db;border-radius:10px;font-size:14px;margin-top:4px;"></div>
+        <div><label style="font-size:12px;color:var(--gris2);font-weight:600;">HASTA</label><input type="date" id="rep-hasta" style="width:100%;padding:10px;border:2px solid #d1d5db;border-radius:10px;font-size:14px;margin-top:4px;"></div>
+      </div>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-gris btn-sm" onclick="setFiltroRapido('hoy')">Hoy</button>
+        <button class="btn btn-gris btn-sm" onclick="setFiltroRapido('semana')">Semana</button>
+        <button class="btn btn-gris btn-sm" onclick="setFiltroRapido('quincena1')">1ra quincena</button>
+        <button class="btn btn-gris btn-sm" onclick="setFiltroRapido('quincena2')">2da quincena</button>
+        <button class="btn btn-gris btn-sm" onclick="setFiltroRapido('mes')">Mes</button>
+      </div>
+      <button class="btn btn-verde" style="margin-top:12px;" onclick="generarReporte()">🔍 GENERAR REPORTE</button>
+    </div>
+    <div id="rep-tab-0"><div class="vacio"><div class="ico">📊</div><p>Selecciona un período y genera el reporte</p></div></div>
+    <div id="rep-tab-1" style="display:none;"><div class="vacio"><div class="ico">📅</div><p>Selecciona un período</p></div></div>
+    <div id="rep-tab-2" style="display:none;"><div class="vacio"><div class="ico">💰</div><p>Selecciona un período</p></div></div>
+    <div id="rep-tab-3" style="display:none;"><div class="vacio"><div class="ico">⚠️</div><p>Selecciona un período</p></div></div>
+    <div id="rep-tab-4" style="display:none;"><div class="vacio"><div class="ico">📋</div><p>Selecciona un período y genera el reporte</p></div></div>
+    <div id="rep-tab-5" style="display:none;"><div class="vacio"><div class="ico">📄</div><p>Selecciona un período</p></div></div>
+  </div>
+</div>
+
+<!-- ══ ADMIN USUARIOS ══ -->
+<div id="screen-admin-usuarios" class="screen">
+  <div class="header"><div><h1>👤 Usuarios</h1></div><button class="btn-salir" onclick="abrirModalUsuario()" style="background:var(--verde2);">+ Nuevo</button></div>
+  <div style="padding:20px;">
+    <div class="alerta alerta-rojo" id="usr-error"></div>
+    <div class="alerta alerta-verde" id="usr-ok"></div>
+    <div id="lista-usuarios"><div class="loading">Cargando...</div></div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav" id="bottom-nav" style="display:none;">
+  <button class="nav-item activo" onclick="navAdmin('screen-admin-dashboard',this)"><span class="nav-ico">🏠</span><span class="nav-txt">Inicio</span></button>
+  <button class="nav-item" onclick="navAdmin('screen-admin-ganaderos',this)"><span class="nav-ico">🐄</span><span class="nav-txt">Ganaderos</span></button>
+  <button class="nav-item" onclick="navAdmin('screen-admin-precio',this)"><span class="nav-ico">💰</span><span class="nav-txt">Precio</span></button>
+  <button class="nav-item" onclick="navAdmin('screen-admin-reportes',this)"><span class="nav-ico">📊</span><span class="nav-txt">Reportes</span></button>
+  <button class="nav-item" onclick="navAdmin('screen-admin-usuarios',this)"><span class="nav-ico">👤</span><span class="nav-txt">Usuarios</span></button>
+</div>
+
+<!-- MODALES -->
+<div class="modal-overlay" id="modal-importar">
+  <div class="modal">
+    <div class="modal-titulo">⬆ Importar Ganaderos</div>
+    <div class="alerta alerta-rojo" id="m-imp-error"></div>
+    <div class="alerta alerta-verde" id="m-imp-ok"></div>
+    <div id="m-imp-preview"></div>
+    <div class="fila" style="margin-top:16px;" id="m-imp-botones" style="display:none;">
+      <button class="btn btn-gris" onclick="cerrarModal('modal-importar')">Cancelar</button>
+      <button class="btn btn-verde" onclick="confirmarImportacion()">✅ Confirmar importación</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-ganadero">
+  <div class="modal">
+    <div class="modal-titulo" id="modal-ganadero-titulo">Nuevo Ganadero</div>
+    <div class="alerta alerta-rojo" id="m-gan-error"></div>
+    <div class="campo"><label>Nombre completo *</label><input type="text" id="m-gan-nombre" placeholder="Ej: Carlos Pérez"></div>
+    <div class="campo"><label>Teléfono (opcional)</label><input type="tel" id="m-gan-tel" placeholder="3XX XXX XXXX"></div>
+    <div class="campo"><label>Vereda / Sector (opcional)</label><input type="text" id="m-gan-vereda" placeholder="Ej: Vereda El Rosario"></div>
+    <div class="campo"><label>Estado</label>
+      <select id="m-gan-activo" style="width:100%;padding:14px;font-size:16px;border:2px solid #d1d5db;border-radius:12px;">
+        <option value="true">Activo</option><option value="false">Inactivo</option>
+      </select>
+    </div>
+    <div class="fila" style="margin-top:8px;">
+      <button class="btn btn-gris" onclick="cerrarModal('modal-ganadero')">Cancelar</button>
+      <button class="btn btn-verde" onclick="guardarGanadero()">Guardar</button>
+    </div>
+    <div id="m-gan-eliminar-container" style="display:none;margin-top:12px;border-top:1px solid #e5e7eb;padding-top:12px;">
+      <button class="btn btn-rojo btn-sm" onclick="eliminarGanadero()" style="width:100%;">🗑️ Eliminar ganadero permanentemente</button>
+      <p style="font-size:12px;color:var(--gris2);margin-top:6px;text-align:center;">Solo disponible si no tiene registros de recolección</p>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay"
+<div class="modal-overlay" id="modal-confirmar-borrado">
+  <div class="modal">
+    <div class="modal-titulo" style="color:var(--rojo);">⚠️ ¿Eliminar ganadero?</div>
+    <div style="background:var(--rojo2);border:2px solid var(--rojo);border-radius:12px;padding:16px;margin-bottom:16px;">
+      <div style="font-weight:700;color:var(--rojo);margin-bottom:6px;">Esta acción NO se puede deshacer</div>
+      <div id="m-borrar-nombre" style="font-size:18px;font-weight:800;color:var(--rojo);margin:8px 0;"></div>
+      <div style="font-size:14px;color:var(--rojo);">Si tiene registros históricos, esos datos quedarán sin referencia.</div>
+    </div>
+    <div class="fila">
+      <button class="btn btn-gris" onclick="cerrarModal('modal-confirmar-borrado')">Cancelar</button>
+      <button class="btn btn-rojo" onclick="ejecutarBorrado()">Sí, eliminar</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-eliminar-registro">
+  <div class="modal">
+    <div class="modal-titulo">🗑️ Eliminar Registro</div>
+    <div id="m-elim-detalle" style="background:var(--rojo2);border:2px solid var(--rojo);border-radius:12px;padding:14px;margin-bottom:16px;font-size:14px;color:var(--rojo);font-weight:600;"></div>
+    <div class="campo">
+      <label>¿Por qué eliminas este registro? *</label>
+      <textarea id="m-elim-motivo" placeholder="Ej: Me equivoqué de ganadero, era del recogedor Pedro..." style="width:100%;padding:14px;font-size:15px;border:2px solid #d1d5db;border-radius:12px;height:100px;resize:none;"></textarea>
+    </div>
+    <div class="alerta alerta-rojo" id="m-elim-error"></div>
+    <div class="fila" style="margin-top:8px;">
+      <button class="btn btn-gris" onclick="cerrarModal('modal-eliminar-registro')">Cancelar</button>
+      <button class="btn btn-rojo" onclick="confirmarEliminarRegistro()">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-ganadero-rec">
+  <div class="modal">
+    <div class="modal-titulo">🐄 Nuevo Ganadero</div>
+    <div style="background:var(--amarillo2);border:1px solid var(--amarillo);border-radius:10px;padding:12px;margin-bottom:16px;font-size:13px;color:var(--amarillo);font-weight:600;">ℹ️ Quedará registrado que tú agregaste este ganadero</div>
+    <div class="alerta alerta-rojo" id="m-gan-rec-error"></div>
+    <div class="campo"><label>Nombre completo *</label>
+      <input type="text" id="m-gan-rec-nombre" placeholder="Ej: Carlos Pérez" oninput="mostrarSugerenciasGanadero()" autocomplete="off">
+      <div id="sugerencias-ganadero" style="display:none;background:white;border:2px solid var(--verde2);border-radius:12px;margin-top:6px;overflow:hidden;"></div>
+    </div>
+    <div class="campo"><label>Teléfono (opcional)</label><input type="tel" id="m-gan-rec-tel" placeholder="3XX XXX XXXX"></div>
+    <div class="campo"><label>Vereda / Sector (opcional)</label><input type="text" id="m-gan-rec-vereda" placeholder="Ej: Vereda El Rosal"></div>
+    <div class="fila" style="margin-top:8px;">
+      <button class="btn btn-gris" onclick="cerrarModal('modal-ganadero-rec')">Cancelar</button>
+      <button class="btn btn-verde" onclick="guardarGanaderoRecogedor()">Agregar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-usuario">
+  <div class="modal">
+    <div class="modal-titulo">Nuevo Usuario</div>
+    <div class="alerta alerta-rojo" id="m-usr-error"></div>
+    <div class="campo"><label>Nombre completo *</label><input type="text" id="m-usr-nombre"></div>
+    <div class="campo"><label>Correo electrónico *</label><input type="email" id="m-usr-email"></div>
+    <div class="campo"><label>Contraseña *</label><input type="password" id="m-usr-pass" placeholder="Mínimo 6 caracteres"></div>
+    <div class="campo"><label>Rol *</label>
+      <select id="m-usr-rol" style="width:100%;padding:14px;font-size:16px;border:2px solid #d1d5db;border-radius:12px;">
+        <option value="recogedor">Recogedor</option>
+        <option value="recibidor">Recibidor (planta)</option>
+        <option value="admin">Administrador</option>
+      </select>
+    </div>
+    <div class="fila" style="margin-top:8px;">
+      <button class="btn btn-gris" onclick="cerrarModal('modal-usuario')">Cancelar</button>
+      <button class="btn btn-verde" onclick="crearUsuario()">Crear</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import{getAuth,signInWithEmailAndPassword,signOut,createUserWithEmailAndPassword,onAuthStateChanged,sendPasswordResetEmail}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import{getFirestore,collection,doc,addDoc,getDocs,getDoc,setDoc,updateDoc,query,where,orderBy,serverTimestamp,limit}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const cfg={apiKey:"AIzaSyDBNDl2kokNqXdKwPEEwUX0MC5ziZVgXQ4",authDomain:"app-leche-d4ca0.firebaseapp.com",projectId:"app-leche-d4ca0",storageBucket:"app-leche-d4ca0.firebasestorage.app",messagingSenderId:"98393589536",appId:"1:98393589536:web:af757abb3b03545396f945"};
+const app=initializeApp(cfg);const auth=getAuth(app);const db=getFirestore(app);
+const app2=initializeApp(cfg,'secondary');const auth2=getAuth(app2);
+
+let UA=null,rol=null,ganList=[],precioActual=0,tabRep=0,editGanId=null,datosRep=[];
+let recibSeleccionado=null,ganSel=null,listaRecogedores=[];
+
+// ── HELPERS ──
+function ir(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.getElementById('bottom-nav').style.display=id.startsWith('screen-admin')?'flex':'none';
+  if(id==='screen-recibi-registrar')cargarRecogedoresParaRecibidor();
+  if(id==='screen-rec-buscar'){
+    const inp=document.getElementById('buscar-input');
+    if(inp)inp.value='';
+    renderGan(ganList);
+  }
+}
+window.irPantalla=ir;
+function alerta(id,msg,tipo){const e=document.getElementById(id);if(!e)return;e.className=`alerta alerta-${tipo} show`;e.textContent=msg;if(tipo!=='rojo')setTimeout(()=>e.classList.remove('show'),4000);}
+function ocult(id){const e=document.getElementById(id);if(e)e.classList.remove('show');}
+function cerrarModal(id){document.getElementById(id).classList.remove('show');}window.cerrarModal=cerrarModal;
+function abrirModal(id){document.getElementById(id).classList.add('show');}
+function hoy(){const n=new Date();return`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;}
+function horaAhora(){const n=new Date();return`${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;}
+function fmtFecha(f){return new Date(f+'T00:00:00').toLocaleDateString('es-CO',{weekday:'long',day:'numeric',month:'long'});}
+function fmtFechaCorta(f){const d=new Date(f+'T00:00:00');return`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;}
+function fmtPeso(v){return new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(v);}
+function fmtPesoCorto(v){if(v>=1000000)return`$${(v/1000000).toFixed(1)}M`;if(v>=1000)return`$${(v/1000).toFixed(0)}k`;return`$${v.toFixed(0)}`;}
+
+// ── AUTH ──
+onAuthStateChanged(auth,async u=>{
+  if(!u){
+    // Limpiar caché al cerrar sesión
+    localStorage.removeItem('lsd_perfil');
+    ir('screen-login');return;
+  }
+  try{
+    // Intentar usar caché primero para velocidad
+    const cache=localStorage.getItem('lsd_perfil');
+    if(cache){
+      const cached=JSON.parse(cache);
+      if(cached.uid===u.uid){
+        UA={uid:u.uid,email:u.email,...cached};rol=cached.rol;
+        if(rol==='admin')initAdmin();else if(rol==='recibidor')initRecibidor();else initRec();
+        // Verificar en background si el perfil cambió (bloqueado, etc)
+        getDoc(doc(db,'usuarios',u.uid)).then(s=>{
+          if(!s.exists()||s.data().bloqueado===true){signOut(auth);localStorage.removeItem('lsd_perfil');}
+          else{localStorage.setItem('lsd_perfil',JSON.stringify({uid:u.uid,...s.data()}));}
+        }).catch(()=>{});
+        return;
+      }
+    }
+    // Sin caché: consulta normal a Firestore
+    const s=await getDoc(doc(db,'usuarios',u.uid));
+    if(!s.exists()){await signOut(auth);alerta('login-error','Usuario no encontrado','rojo');return;}
+    const datos=s.data();
+    if(datos.bloqueado===true){await signOut(auth);alerta('login-error','Tu cuenta está bloqueada. Contacta al administrador.','rojo');return;}
+    // Guardar en caché
+    localStorage.setItem('lsd_perfil',JSON.stringify({uid:u.uid,...datos}));
+    UA={uid:u.uid,email:u.email,...datos};rol=datos.rol;
+    if(rol==='admin')initAdmin();else if(rol==='recibidor')initRecibidor();else initRec();
+  }catch(e){
+    // Si hay caché y falla la red, usar caché igual
+    const cache=localStorage.getItem('lsd_perfil');
+    if(cache){
+      const cached=JSON.parse(cache);
+      if(cached.uid===u.uid){
+        UA={uid:u.uid,email:u.email,...cached};rol=cached.rol;
+        if(rol==='admin')initAdmin();else if(rol==='recibidor')initRecibidor();else initRec();
+        return;
+      }
+    }
+    alerta('login-error','Error de conexión. Verifica tu internet.','rojo');
+    await signOut(auth);
+  }
+});
+async function hacerLogin(){const e=document.getElementById('login-email').value.trim();const p=document.getElementById('login-pass').value;if(!e||!p){alerta('login-error','Completa todos los campos','rojo');return;}ocult('login-error');try{await signInWithEmailAndPassword(auth,e,p);}catch(err){alerta('login-error',err.code==='auth/network-request-failed'?'Sin conexión':'Correo o contraseña incorrectos','rojo');}}window.hacerLogin=hacerLogin;
+async function cerrarSesion(){await signOut(auth);}window.cerrarSesion=cerrarSesion;
+
+// ══════════════════════════════════════════
+//  RECOGEDOR
+// ══════════════════════════════════════════
+async function initRec(){
+  document.getElementById('rec-nombre-header').textContent=UA.nombre||'Recogedor';
+  document.getElementById('rec-fecha').textContent=fmtFecha(hoy());
+  ir('screen-rec-home');
+  await cargarGanaderos();await resumenRec();
+  const s=await getDocs(query(collection(db,'configuracion'),limit(1)));
+  if(!s.empty)precioActual=s.docs[0].data().precioPorLitro||0;
+}
+async function resumenRec(){
+  try{
+    const s=await getDocs(query(collection(db,'recolecciones'),where('recogedorId','==',UA.uid),where('fecha','==',hoy())));
+    let L=0;const it=[];
+    s.forEach(d=>{const da=d.data();L+=parseFloat(da.litros)||0;it.push(da);});
+    document.getElementById('rec-litros-hoy').textContent=L.toFixed(1);
+    document.getElementById('rec-registros-hoy').textContent=it.length;
+    const listaEl=document.getElementById('rec-lista-hoy');
+    if(it.length===0){listaEl.innerHTML='<div class="vacio"><div class="ico">🐄</div><p>Sin registros hoy</p></div>';}
+    else{
+      listaEl.innerHTML=it.sort((a,b)=>b.hora>a.hora?1:-1).map(x=>`
+        <div class="lista-item" style="cursor:default;flex-direction:column;align-items:stretch;gap:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div><div class="nombre">${x.ganaderoNombre}</div><div class="detalle">${x.hora} · ${parseFloat(x.litros).toFixed(1)}L${x.novedad?' · ⚠️ '+x.novedad:''}</div></div>
+            <span class="badge badge-verde">${parseFloat(x.litros).toFixed(1)}L</span>
+          </div>
+          <button data-docid="${UA.uid}_${x.ganaderoId}_${hoy()}" data-nombre="${x.ganaderoNombre}" data-litros="${parseFloat(x.litros).toFixed(1)}" data-hora="${x.hora}" class="btn-elim-reg" style="background:var(--rojo2);color:var(--rojo);border:1px solid var(--rojo);border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;width:100%;text-align:center;">🗑️ Eliminar este registro</button>
+        </div>`).join('');
+      listaEl.querySelectorAll('.btn-elim-reg').forEach(function(btn){
+        btn.addEventListener('click',function(){abrirEliminarRegistro(this.dataset.docid,this.dataset.nombre,this.dataset.litros,this.dataset.hora);});
+      });
+    }
+  }catch(e){}
+}
+async function cargarGanaderos(){
+  try{const s=await getDocs(query(collection(db,'ganaderos'),where('activo','==',true)));ganList=[];s.forEach(d=>ganList.push({id:d.id,...d.data()}));ganList.sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));renderGan(ganList);}catch(e){console.error('Error cargando ganaderos:',e);}
+}
+function renderGan(lista){
+  const c=document.getElementById('lista-ganaderos');
+  if(lista.length===0){c.innerHTML='<div class="vacio"><div class="ico">🔍</div><p>No se encontraron ganaderos</p></div>';return;}
+  c.innerHTML=lista.map(g=>`<div class="lista-item" data-ganid="${g.id}"><div><div class="nombre">${g.nombre}</div><div class="detalle">${g.telefono||'Sin teléfono'}</div></div><span class="flecha">›</span></div>`).join('');
+  // Listener directo en cada item
+  c.querySelectorAll('[data-ganid]').forEach(function(el){
+    el.addEventListener('click',function(){selGan(this.getAttribute('data-ganid'));});
+  });
+}
+function filtrarGanaderos(){const t=document.getElementById('buscar-input').value.toLowerCase();renderGan(ganList.filter(g=>g.nombre.toLowerCase().includes(t)));}window.filtrarGanaderos=filtrarGanaderos;
+async function selGan(id){
+  ganSel=ganList.find(g=>g.id===id);if(!ganSel)return;
+  document.getElementById('reg-ganadero-nombre').textContent=ganSel.nombre;
+  document.getElementById('reg-ganadero-tel').textContent=ganSel.telefono||'';
+  document.getElementById('reg-litros').value='';document.getElementById('reg-hora').value=horaAhora();document.getElementById('reg-novedad').value='';
+  ocult('reg-error');
+  const docId=`${UA.uid}_${ganSel.id}_${hoy()}`;
+  const ex=await getDoc(doc(db,'recolecciones',docId));
+  const av=document.getElementById('reg-ya-existe');
+  if(ex.exists()){av.style.display='block';av.textContent=`⚠️ Ya registraste ${ex.data().litros}L de este ganadero hoy. Si guardas, se reemplazará.`;}
+  else{av.style.display='none';}
+  ir('screen-rec-registrar');
+}window.seleccionarGanadero=selGan;window.selGan=selGan;
+async function guardarRecoleccion(){
+  const L=parseFloat(document.getElementById('reg-litros').value);const h=document.getElementById('reg-hora').value;const n=document.getElementById('reg-novedad').value.trim();
+  if(!L||L<=0){alerta('reg-error','Ingresa los litros','rojo');return;}if(!h){alerta('reg-error','Ingresa la hora','rojo');return;}
+  try{
+    const docId=`${UA.uid}_${ganSel.id}_${hoy()}`;
+    await setDoc(doc(db,'recolecciones',docId),{ganaderoId:ganSel.id,ganaderoNombre:ganSel.nombre,litros:L,hora:h,novedad:n,fecha:hoy(),precioPorLitro:precioActual,recogedorId:UA.uid,recogedorNombre:UA.nombre||UA.email,timestamp:serverTimestamp()});
+    document.getElementById('exito-detalle').textContent=`${L} litros de ${ganSel.nombre} a las ${h}`;
+    ir('screen-rec-exito');resumenRec();
+  }catch(e){alerta('reg-error','Error al guardar. Verifica tu conexión.','rojo');}
+}window.guardarRecoleccion=guardarRecoleccion;
+function abrirModalNuevoGanaderoRec(){
+  document.getElementById('m-gan-rec-nombre').value='';
+  document.getElementById('m-gan-rec-tel').value='';
+  document.getElementById('m-gan-rec-vereda').value='';
+  const sg=document.getElementById('sugerencias-ganadero');if(sg)sg.style.display='none';
+  ocult('m-gan-rec-error');abrirModal('modal-ganadero-rec');
+}window.abrirModalNuevoGanaderoRec=abrirModalNuevoGanaderoRec;
+function mostrarSugerenciasGanadero(){
+  const val=document.getElementById('m-gan-rec-nombre').value.trim();
+  const cont=document.getElementById('sugerencias-ganadero');
+  if(val.length<2){cont.style.display='none';return;}
+  const norm=normalizarNombre(val);
+  const similares=ganList.filter(g=>{
+    const gNorm=normalizarNombre(g.nombre);
+    return gNorm.includes(norm)||norm.includes(gNorm)||gNorm.startsWith(norm.substring(0,3));
+  }).slice(0,5);
+  if(similares.length===0){cont.style.display='none';return;}
+  cont.style.display='block';
+  cont.innerHTML=`<div style="padding:8px 12px;font-size:11px;color:var(--gris2);font-weight:700;border-bottom:1px solid var(--gris1);">¿Ya existe este ganadero?</div>`+
+    similares.map(g=>`<div onclick="seleccionarSugerencia('${g.id}')" style="padding:12px;border-bottom:1px solid var(--gris1);cursor:pointer;display:flex;align-items:center;gap:10px;" onmouseover="this.style.background='var(--crema)'" onmouseout="this.style.background='white'">
+      <span style="font-size:20px;">🐄</span>
+      <div><div style="font-weight:700;font-size:15px;">${g.nombre}</div><div style="font-size:12px;color:var(--gris2);">${g.telefono||''}${g.vereda?' · '+g.vereda:''}</div></div>
+    </div>`).join('');
+}window.mostrarSugerenciasGanadero=mostrarSugerenciasGanadero;
+
+function seleccionarSugerencia(id){
+  const g=ganList.find(x=>x.id===id);if(!g)return;
+  // Cerrar modal y mostrar alerta
+  cerrarModal('modal-ganadero-rec');
+  alert(`"${g.nombre}" ya está registrado. Si necesitas registrar leche de este ganadero, búscalo en la lista principal.`);
+}window.seleccionarSugerencia=seleccionarSugerencia;
+
+async function guardarGanaderoRecogedor(){const n=document.getElementById('m-gan-rec-nombre').value.trim();const t=document.getElementById('m-gan-rec-tel').value.trim();const v=document.getElementById('m-gan-rec-vereda').value.trim();if(!n){alerta('m-gan-rec-error','El nombre es obligatorio','rojo');return;}
+  // Validar duplicado
+  const nNorm=normalizarNombre(n);
+  const duplicado=ganList.find(g=>normalizarNombre(g.nombre)===nNorm);
+  if(duplicado){alerta('m-gan-rec-error',`⚠️ Ya existe un ganadero con ese nombre: "${duplicado.nombre}"` ,'rojo');return;}
+  try{await addDoc(collection(db,'ganaderos'),{nombre:n,telefono:t,vereda:v,activo:true,agregadoPor:UA.uid,agregadoPorNombre:UA.nombre||UA.email,fechaAgregado:hoy()});cerrarModal('modal-ganadero-rec');await cargarGanaderos();}catch(e){alerta('m-gan-rec-error','Error al guardar','rojo');}}window.guardarGanaderoRecogedor=guardarGanaderoRecogedor;
+
+// ══════════════════════════════════════════
+//  RECIBIDOR
+// ══════════════════════════════════════════
+async function initRecibidor(){document.getElementById('recibi-nombre-header').textContent=UA.nombre||'Recibidor';document.getElementById('recibi-fecha').textContent=fmtFecha(hoy());ir('screen-recibi-home');await resumenRecibidor();}
+async function resumenRecibidor(){
+  try{
+    // Solo los registros que hizo el recibidor actual hoy
+    const sRec=await getDocs(query(collection(db,'recepciones'),where('fecha','==',hoy()),where('recibidorId','==',UA.uid)));
+    let totalMio=0;const receps={};
+    sRec.forEach(d=>{const da=d.data();totalMio+=parseFloat(da.litros)||0;receps[da.recogedorId]={litros:parseFloat(da.litros)||0,nombre:da.recogedorNombre,novedad:da.novedad||''};});
+    document.getElementById('recibi-total-hoy').textContent=totalMio.toFixed(1);
+    const items=Object.entries(receps);
+    document.getElementById('recibi-lista-hoy').innerHTML=items.length===0
+      ?'<div class="vacio"><div class="ico">🏭</div><p>Sin registros hoy</p></div>'
+      :items.map(([rid,rv])=>`
+        <div class="lista-item" style="cursor:default;">
+          <div>
+            <div class="nombre">${rv.nombre}</div>
+            <div class="detalle">${rv.litros.toFixed(1)}L recibidos${rv.novedad?' · '+rv.novedad:''}</div>
+          </div>
+          <span class="badge badge-verde">${rv.litros.toFixed(1)}L</span>
+        </div>`).join('');
+  }catch(e){console.error(e);}
+}
+async function cargarRecogedoresParaRecibidor(){
+  try{
+    const s=await getDocs(query(collection(db,'usuarios'),where('rol','==','recogedor'),orderBy('nombre')));
+    listaRecogedores=[];s.forEach(d=>listaRecogedores.push({id:d.id,...d.data()}));
+    const sCol=await getDocs(query(collection(db,'recolecciones'),where('fecha','==',hoy())));
+    const rutaTot={};sCol.forEach(d=>{const da=d.data();if(!rutaTot[da.recogedorId])rutaTot[da.recogedorId]=0;rutaTot[da.recogedorId]+=parseFloat(da.litros)||0;});
+    const sRec=await getDocs(query(collection(db,'recepciones'),where('fecha','==',hoy())));
+    const yaReg={};sRec.forEach(d=>{const da=d.data();yaReg[da.recogedorId]=parseFloat(da.litros)||0;});
+    document.getElementById('lista-recogedores-recibi').innerHTML=listaRecogedores.length===0?'<div class="vacio"><div class="ico">👤</div><p>No hay recogedores</p></div>':listaRecogedores.map(r=>{const rutaL=rutaTot[r.id]||0;const tieneReg=yaReg[r.id]!==undefined;return`<div class="lista-item" onclick="selRecibidor('${r.id}')"><div><div class="nombre">${r.nombre||r.email}</div><div class="detalle">Ruta: ${rutaL.toFixed(1)}L${tieneReg?' · ✅ Registrado: '+yaReg[r.id].toFixed(1)+'L':' · ⏳ Pendiente'}</div></div><span class="flecha">›</span></div>`;}).join('');
+  }catch(e){console.error(e);}
+}
+async function selRecibidor(id){
+  recibSeleccionado=listaRecogedores.find(r=>r.id===id);if(!recibSeleccionado)return;
+  const sCol=await getDocs(query(collection(db,'recolecciones'),where('recogedorId','==',id),where('fecha','==',hoy())));
+  let rutaTotal=0;sCol.forEach(d=>{rutaTotal+=parseFloat(d.data().litros)||0;});
+  const docId=`${id}_${hoy()}`;const ex=await getDoc(doc(db,'recepciones',docId));
+  document.getElementById('recibi-recogedor-nombre').textContent=recibSeleccionado.nombre||recibSeleccionado.email;
+  document.getElementById('recibi-recogedor-ruta-total').textContent=`Total ruta hoy: ${rutaTotal.toFixed(1)} litros`;
+  const av=document.getElementById('recibi-ya-registrado');
+  if(ex.exists()){av.style.display='block';av.textContent=`⚠️ Ya registraste ${ex.data().litros}L para este recogedor hoy. Si guardas, se reemplazará.`;}else{av.style.display='none';}
+  document.getElementById('recibi-litros-input').value='';document.getElementById('recibi-novedad-input').value='';ocult('recibi-form-error');
+  ir('screen-recibi-form');
+}window.seleccionarRecogedorRecibidor=selRecibidor;
+async function guardarRecepcion(){
+  const L=parseFloat(document.getElementById('recibi-litros-input').value);const novedad=document.getElementById('recibi-novedad-input').value.trim();
+  if(!L||L<=0){alerta('recibi-form-error','Ingresa los litros recibidos','rojo');return;}
+  try{
+    const sCol=await getDocs(query(collection(db,'recolecciones'),where('recogedorId','==',recibSeleccionado.id),where('fecha','==',hoy())));
+    let rutaTotal=0;sCol.forEach(d=>{rutaTotal+=parseFloat(d.data().litros)||0;});
+    const docId=`${recibSeleccionado.id}_${hoy()}`;
+    await setDoc(doc(db,'recepciones',docId),{recogedorId:recibSeleccionado.id,recogedorNombre:recibSeleccionado.nombre||recibSeleccionado.email,litros:L,novedad,fecha:hoy(),recibidorId:UA.uid,recibidorNombre:UA.nombre||UA.email,timestamp:serverTimestamp()});
+    const hayAlerta=L>rutaTotal;
+    document.getElementById('recibi-exito-detalle').textContent=`${L}L de ${recibSeleccionado.nombre||recibSeleccionado.email}. Ruta: ${rutaTotal.toFixed(1)}L`;
+    const ad=document.getElementById('recibi-exito-alerta');
+    if(hayAlerta){ad.style.display='block';document.getElementById('recibi-exito-alerta-msg').textContent=`Recibiste ${L}L pero ruta reportó ${rutaTotal.toFixed(1)}L. Diferencia: +${(L-rutaTotal).toFixed(1)}L`;}else{ad.style.display='none';}
+    ir('screen-recibi-exito');resumenRecibidor();
+  }catch(e){alerta('recibi-form-error','Error al guardar. Verifica tu conexión.','rojo');}
+}window.guardarRecepcion=guardarRecepcion;
+
+// ══════════════════════════════════════════
+//  ADMIN
+// ══════════════════════════════════════════
+async function initAdmin(){
+  document.getElementById('admin-nombre-header').textContent=UA.nombre||'Admin';
+  document.getElementById('admin-fecha').textContent=fmtFecha(hoy());
+  ir('screen-admin-dashboard');
+  dashAdmin();ganAdmin();precioAdmin();usuAdmin();
+  document.getElementById('rep-desde').value=hoy();document.getElementById('rep-hasta').value=hoy();
+}
+async function dashAdmin(){
+  try{
+    const sCol=await getDocs(query(collection(db,'recolecciones'),where('fecha','==',hoy())));
+    let totalRuta=0;const porRec={};const porGan={};
+    sCol.forEach(d=>{const da=d.data();const L=parseFloat(da.litros)||0;totalRuta+=L;if(!porRec[da.recogedorId])porRec[da.recogedorId]={nombre:da.recogedorNombre,litros:0,reg:0};porRec[da.recogedorId].litros+=L;porRec[da.recogedorId].reg++;if(!porGan[da.ganaderoId])porGan[da.ganaderoId]={nombre:da.ganaderoNombre,total:0,recogedores:[]};porGan[da.ganaderoId].total+=L;porGan[da.ganaderoId].recogedores.push({nombre:da.recogedorNombre,litros:L,hora:da.hora});});
+    const sRec=await getDocs(query(collection(db,'recepciones'),where('fecha','==',hoy())));
+    let totalPlanta=0;const porRecPlanta={};
+    sRec.forEach(d=>{const da=d.data();totalPlanta+=parseFloat(da.litros)||0;porRecPlanta[da.recogedorId]={litros:parseFloat(da.litros)||0,nombre:da.recogedorNombre};});
+    document.getElementById('admin-total-rec').textContent=totalRuta.toFixed(1);
+    document.getElementById('admin-total-planta').textContent=totalPlanta.toFixed(1);
+    const alertas=[];Object.entries(porRecPlanta).forEach(([rid,rv])=>{const rutaL=porRec[rid]?.litros||0;if(rv.litros>rutaL)alertas.push({nombre:rv.nombre,recibido:rv.litros,ruta:rutaL,dif:rv.litros-rutaL});});
+    document.getElementById('admin-alertas-container').innerHTML=alertas.map(a=>`<div class="alerta-grande naranja"><div style="font-weight:800;color:var(--naranja);margin-bottom:4px;">⚠️ ALERTA — ${a.nombre}</div><div style="color:var(--naranja);font-size:14px;">Planta: ${a.recibido.toFixed(1)}L · Ruta: ${a.ruta.toFixed(1)}L · Diferencia: +${a.dif.toFixed(1)}L</div></div>`).join('');
+    const todosRec=new Set([...Object.keys(porRec),...Object.keys(porRecPlanta)]);
+    document.getElementById('admin-conciliacion').innerHTML=todosRec.size===0?'<p style="color:var(--gris2);font-size:14px;">Sin datos hoy</p>':`<div style="overflow:hidden;border-radius:12px;"><table class="tabla"><thead><tr><th>Recogedor</th><th>Ruta</th><th>Planta</th><th>Diferencia</th></tr></thead><tbody>${[...todosRec].map(rid=>{const rutaL=porRec[rid]?.litros||0;const plantaL=porRecPlanta[rid]?.litros;const nombre=porRec[rid]?.nombre||porRecPlanta[rid]?.nombre||'?';const pend=plantaL===undefined;const esA=!pend&&plantaL>rutaL;const dv=pend?'—':(plantaL-rutaL).toFixed(1);return`<tr class="${esA?'fila-alerta':''}"><td><strong>${nombre}</strong></td><td>${rutaL.toFixed(1)}</td><td>${pend?'—':plantaL.toFixed(1)}</td><td>${pend?'<span class="badge badge-amarillo">⏳</span>':esA?`<span class="badge badge-naranja">⚠️ +${dv}L</span>`:`<span class="badge badge-verde">${dv}L</span>`}</td></tr>`;}).join('')}</tbody></table></div>`;
+    const ganArr=Object.values(porGan).sort((a,b)=>b.total-a.total);
+    document.getElementById('admin-desglose-ganaderos').innerHTML=ganArr.length===0?'<p style="color:var(--gris2);font-size:14px;">Sin datos hoy</p>':ganArr.map(g=>`<div style="padding:12px 0;border-bottom:1px solid var(--gris1);"><div style="display:flex;justify-content:space-between;align-items:center;"><div style="font-weight:700;font-size:15px;">${g.nombre}</div><span class="badge badge-verde">Total: ${g.total.toFixed(1)}L</span></div>${g.recogedores.length>1?`<div style="margin-top:6px;">${g.recogedores.map(r=>`<div style="font-size:13px;color:var(--gris2);padding-left:12px;">↳ ${r.nombre}: ${r.litros.toFixed(1)}L · ${r.hora}</div>`).join('')}</div>`:`<div style="font-size:13px;color:var(--gris2);margin-top:2px;">${g.recogedores[0]?.nombre||''} · ${g.recogedores[0]?.hora||''}</div>`}</div>`).join('');
+    // Resumen semanal
+    await cargarResumenSemanal();
+    // Ganaderos sin recolectar
+    await cargarSinRecolectar();
+    // Quincena para pago
+    calcularQuincenaPago();
+    // Historial quincenas
+    renderHistorialQuincenas();
+  }catch(e){console.error(e);}
+}
+
+async function cargarResumenSemanal(){
+  try{
+    // Usar fecha LOCAL no UTC
+    function fechaLocal(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+    const hoyD=new Date();
+    const diaSemana=(hoyD.getDay()+6)%7; // 0=lunes
+    const lunes=new Date(hoyD);lunes.setDate(hoyD.getDate()-diaSemana);
+    const dias=[];for(let i=0;i<7;i++){const d=new Date(lunes);d.setDate(lunes.getDate()+i);dias.push(fechaLocal(d));}
+    const snap=await getDocs(query(collection(db,'recolecciones'),where('fecha','>=',dias[0]),where('fecha','<=',dias[6])));
+    const porDia={};dias.forEach(d=>{porDia[d]=0;});
+    snap.forEach(d=>{const da=d.data();if(porDia[da.fecha]!==undefined)porDia[da.fecha]+=parseFloat(da.litros)||0;});
+    const nomDia=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+    const hoyStr=hoy();
+    document.getElementById('admin-semana').innerHTML=`<div style="display:flex;gap:6px;flex-wrap:wrap;">${dias.map((d,i)=>{const L=porDia[d]||0;const esHoy=d===hoyStr;const esFut=d>hoyStr;return`<div style="flex:1;min-width:36px;text-align:center;padding:8px 4px;border-radius:10px;background:${esHoy?'var(--verde)':esFut?'var(--gris1)':'var(--verde3)'};"><div style="font-size:10px;font-weight:700;color:${esHoy?'white':'var(--gris3)'};">${nomDia[i]}</div><div style="font-size:14px;font-weight:800;color:${esHoy?'white':esFut?'var(--gris2)':'var(--verde)'};">${esFut?'—':L.toFixed(0)}</div>${!esFut?`<div style="font-size:10px;color:${esHoy?'rgba(255,255,255,0.8)':'var(--gris2)'};">L</div>`:''}</div>`;}).join('')}</div>`;
+  }catch(e){}
+}
+
+async function cargarSinRecolectar(){
+  try{
+    function fLocal(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+    const hace3=new Date();hace3.setDate(hace3.getDate()-3);const hace3str=fLocal(hace3);
+    const snapGan=await getDocs(query(collection(db,'ganaderos'),where('activo','==',true)));
+    const ganaderos=[];snapGan.forEach(d=>ganaderos.push({id:d.id,...d.data()}));
+    const hace7=new Date();hace7.setDate(hace7.getDate()-7);const hace7str=fLocal(hace7);
+    const snap=await getDocs(query(collection(db,'recolecciones'),where('fecha','>=',hace7str)));
+    const ultimaFecha={};snap.forEach(d=>{const da=d.data();if(!ultimaFecha[da.ganaderoId]||da.fecha>ultimaFecha[da.ganaderoId])ultimaFecha[da.ganaderoId]=da.fecha;});
+    const sinRecolectar=ganaderos.filter(g=>!ultimaFecha[g.id]||(ultimaFecha[g.id]<hace3str));
+    const cont=document.getElementById('admin-sin-recolectar');
+    if(sinRecolectar.length===0){cont.innerHTML='<p style="color:var(--gris2);font-size:14px;">✅ Todos los ganaderos recogidos recientemente</p>';return;}
+    cont.innerHTML=sinRecolectar.map(g=>{const ult=ultimaFecha[g.id]||'Nunca';return`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--gris1);"><div><div style="font-weight:600;">${g.nombre}</div><div style="font-size:12px;color:var(--gris2);">Última: ${ult==='Nunca'?'Sin registros':ult}</div></div><span class="badge badge-rojo">🔴 +3 días</span></div>`;}).join('');
+  }catch(e){}
+}
+
+function calcularQuincenaPago(){
+  const h=new Date();const dia=h.getDate();const mes=h.getMonth();const anio=h.getFullYear();
+  let deLabel,haLabel,de,ha;
+  if(dia>=16){
+    // Pagamos quincena 1 del mes actual (1-15)
+    de=`${anio}-${String(mes+1).padStart(2,'0')}-01`;
+    ha=`${anio}-${String(mes+1).padStart(2,'0')}-15`;
+    deLabel=`1 al 15 de ${nombreMes(mes)} ${anio}`;
+  } else {
+    // Pagamos quincena 2 del mes anterior (16-fin)
+    const mesPrev=mes===0?11:mes-1;const anioPrev=mes===0?anio-1:anio;
+    const ultDia=new Date(anioPrev,mesPrev+1,0).getDate();
+    de=`${anioPrev}-${String(mesPrev+1).padStart(2,'0')}-16`;
+    ha=`${anioPrev}-${String(mesPrev+1).padStart(2,'0')}-${ultDia}`;
+    deLabel=`16 al ${ultDia} de ${nombreMes(mesPrev)} ${anioPrev}`;
+  }
+  window._quincenaPago={de,ha,label:deLabel};
+  const card=document.getElementById('quincena-pago-card');
+  card.style.display='block';
+  document.getElementById('quincena-pago-label').textContent=`Quincena: ${deLabel}`;
+}
+
+function renderHistorialQuincenas(){
+  const h=new Date();const dia=h.getDate();const mes=h.getMonth();const anio=h.getFullYear();
+  // Empezar desde la quincena más reciente YA COMPLETADA
+  // Si hoy es 1-15: la última completada es Q2 del mes anterior
+  // Si hoy es 16-31: la última completada es Q1 del mes actual
+  let mCur,aCur,parteCur; // parteCur: 1=primera(1-15), 2=segunda(16-fin)
+  if(dia<16){
+    mCur=mes===0?11:mes-1;aCur=mes===0?anio-1:anio;parteCur=2;
+  } else {
+    mCur=mes;aCur=anio;parteCur=1;
+  }
+  const ultimas=[];
+  for(let i=0;i<6;i++){
+    const ultDia=new Date(aCur,mCur+1,0).getDate();
+    if(parteCur===1){
+      ultimas.push({label:`1 al 15 de ${nombreMes(mCur)} ${aCur}`,de:`${aCur}-${String(mCur+1).padStart(2,'0')}-01`,ha:`${aCur}-${String(mCur+1).padStart(2,'0')}-15`});
+      // Anterior: Q2 del mes anterior
+      parteCur=2;mCur=mCur===0?11:mCur-1;if(mCur===11)aCur--;
+    } else {
+      ultimas.push({label:`16 al ${ultDia} de ${nombreMes(mCur)} ${aCur}`,de:`${aCur}-${String(mCur+1).padStart(2,'0')}-16`,ha:`${aCur}-${String(mCur+1).padStart(2,'0')}-${ultDia}`});
+      // Anterior: Q1 del mismo mes
+      parteCur=1;
+    }
+  }
+  document.getElementById('admin-historial-quincenas').innerHTML=ultimas.map(q=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--gris1);"><div><div style="font-weight:600;font-size:14px;">${q.label}</div><div style="font-size:12px;color:var(--gris2);">${q.de} → ${q.ha}</div></div><button class="btn btn-gris btn-sm" onclick="exportarQuincenaHistorial('${q.de}','${q.ha}','${q.label}')">⬇ Exportar</button></div>`).join('');
+}
+
+function nombreMes(m){return['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'][m];}
+
+async function exportarQuincenaPago(){
+  if(!window._quincenaPago)return;
+  const {de,ha,label}=window._quincenaPago;
+  await exportarMatrizConFechas(de,ha,label);
+}window.exportarQuincenaPago=exportarQuincenaPago;
+
+async function exportarQuincenaHistorial(de,ha,label){
+  await exportarMatrizConFechas(de,ha,label);
+}window.exportarQuincenaHistorial=exportarQuincenaHistorial;
+
+async function exportarMatrizConFechas(de,ha,label){
+  try{
+    const snap=await getDocs(query(collection(db,'recolecciones'),where('fecha','>=',de),where('fecha','<=',ha),orderBy('fecha')));
+    const datos=[];snap.forEach(d=>datos.push({id:d.id,...d.data()}));
+    if(datos.length===0){alert('No hay datos en este período');return;}
+    const fechas=[...new Set(datos.map(d=>d.fecha))].sort();
+    const ganMap={};datos.forEach(d=>{if(!ganMap[d.ganaderoId])ganMap[d.ganaderoId]=d.ganaderoNombre;});
+    const gans=Object.entries(ganMap).sort((a,b)=>a[1].localeCompare(b[1]));
+    const celda={};const totalFila={};const totalColL={};const totalColP={};
+    fechas.forEach(f=>{celda[f]={};totalFila[f]={L:0,P:0};});
+    gans.forEach(([gid])=>{totalColL[gid]=0;totalColP[gid]=0;});
+    datos.forEach(d=>{const f=d.fecha;const gid=d.ganaderoId;const L=parseFloat(d.litros)||0;const p=d.precioPorLitro||precioActual;const P=L*p;if(!celda[f][gid])celda[f][gid]={L:0,P:0};celda[f][gid].L+=L;celda[f][gid].P+=P;totalFila[f].L+=L;totalFila[f].P+=P;totalColL[gid]+=L;totalColP[gid]+=P;});
+    let grandL=0,grandP=0;gans.forEach(([gid])=>{grandL+=totalColL[gid];grandP+=totalColP[gid];});
+    const ganHeaders=gans.map(([,gn])=>`"${gn}"`).join(',');
+    let csv=`LÁCTEOS SAN DIEGO — Liquidación ${label}
+Precio por litro: $${precioActual}
+
+`;
+    csv+=`Fecha,${ganHeaders},TOTAL DÍA L,TOTAL DÍA $
+`;
+    fechas.forEach(f=>{const vals=gans.map(([gid])=>celda[f][gid]?celda[f][gid].L.toFixed(1):'—').join(',');csv+=`${f},${vals},${totalFila[f].L.toFixed(1)},${totalFila[f].P.toFixed(0)}
+`;});
+    csv+=`TOTAL L,${gans.map(([gid])=>totalColL[gid].toFixed(1)).join(',')},${grandL.toFixed(1)},
+`;
+    csv+=`TOTAL $,${gans.map(([gid])=>totalColP[gid].toFixed(0)).join(',')},,"${grandP.toFixed(0)}"
+`;
+    descargar(csv,`lacteos-san-diego-${de}-${ha}.csv`);
+  }catch(e){console.error(e);}
+}
+
+async function ganAdmin(){try{const s=await getDocs(query(collection(db,'ganaderos'),orderBy('nombre')));ganList=[];s.forEach(d=>ganList.push({id:d.id,...d.data()}));renderGanAdmin(ganList);}catch(e){}}
+function renderGanAdmin(lista){document.getElementById('lista-ganaderos-admin').innerHTML=lista.length===0?'<div class="vacio"><div class="ico">🐄</div><p>No hay ganaderos</p></div>':lista.map(g=>`<div class="lista-item"><div><div class="nombre">${g.nombre} ${!g.activo?'<span class="badge badge-rojo">Inactivo</span>':''}</div><div class="detalle">${g.telefono||'Sin teléfono'}${g.vereda?' · '+g.vereda:''}</div>${g.agregadoPorNombre?`<div class="detalle" style="font-size:11px;">Agregado por: ${g.agregadoPorNombre} · ${g.fechaAgregado||''}</div>`:''}</div><button class="btn btn-gris btn-sm" onclick="abrirModalGanadero('${g.id}')">Editar</button></div>`).join('');}
+function filtrarGanaderosAdmin(){const t=document.getElementById('buscar-ganadero-admin').value.toLowerCase();renderGanAdmin(ganList.filter(g=>g.nombre.toLowerCase().includes(t)));}window.filtrarGanaderosAdmin=filtrarGanaderosAdmin;
+async function abrirModalGanadero(id){editGanId=id;const g=id?ganList.find(x=>x.id===id):null;document.getElementById('modal-ganadero-titulo').textContent=g?'Editar Ganadero':'Nuevo Ganadero';document.getElementById('m-gan-nombre').value=g?.nombre||'';document.getElementById('m-gan-tel').value=g?.telefono||'';document.getElementById('m-gan-vereda').value=g?.vereda||'';document.getElementById('m-gan-activo').value=g?String(g.activo!==false):'true';ocult('m-gan-error');
+  // Mostrar botón eliminar solo si es edición
+  const elimCont=document.getElementById('m-gan-eliminar-container');
+  if(id){
+    // Verificar si tiene registros
+    const snap=await getDocs(query(collection(db,'recolecciones'),where('ganaderoId','==',id),limit(1)));
+    elimCont.style.display=snap.empty?'block':'none';
+  } else {elimCont.style.display='none';}
+  abrirModal('modal-ganadero');}window.abrirModalGanadero=abrirModalGanadero;
+
+function confirmarBorrado(){cerrarModal('modal-ganadero');abrirModal('modal-confirmar-borrado');}window.confirmarBorrado=confirmarBorrado;
+async function ejecutarBorrado(){if(!editGanId)return;try{const {deleteDoc,doc:docFn}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');await deleteDoc(docFn(db,'ganaderos',editGanId));cerrarModal('modal-confirmar-borrado');editGanId=null;await ganAdmin();await cargarGanaderos();}catch(e){alert('Error al eliminar. Intenta de nuevo.');}}window.ejecutarBorrado=ejecutarBorrado;
+function normalizarNombre(n){return n.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();}
+
+async function guardarGanadero(){const n=document.getElementById('m-gan-nombre').value.trim();const t=document.getElementById('m-gan-tel').value.trim();const v=document.getElementById('m-gan-vereda').value.trim();const a=document.getElementById('m-gan-activo').value==='true';if(!n){alerta('m-gan-error','El nombre es obligatorio','rojo');return;}
+  // Validar duplicado
+  const nNorm=normalizarNombre(n);
+  const duplicado=ganList.find(g=>g.id!==editGanId&&normalizarNombre(g.nombre)===nNorm);
+  if(duplicado){alerta('m-gan-error',`⚠️ Ya existe un ganadero con ese nombre: "${duplicado.nombre}"`,'rojo');return;}
+  try{if(editGanId){await updateDoc(doc(db,'ganaderos',editGanId),{nombre:n,telefono:t,vereda:v,activo:a});}else{await addDoc(collection(db,'ganaderos'),{nombre:n,telefono:t,vereda:v,activo:true,agregadoPor:UA.uid,agregadoPorNombre:UA.nombre||UA.email,fechaAgregado:hoy()});}cerrarModal('modal-ganadero');await ganAdmin();await cargarGanaderos();}catch(e){alerta('m-gan-error','Error al guardar','rojo');}}window.guardarGanadero=guardarGanadero;
+
+async function eliminarGanadero(){
+  if(!editGanId)return;
+  const g=ganList.find(x=>x.id===editGanId);
+  if(!confirm(`¿Eliminar permanentemente a "${g?.nombre}"? Esta acción no se puede deshacer.`))return;
+  try{
+    // Verificar de nuevo que no tiene registros
+    const snap=await getDocs(query(collection(db,'recolecciones'),where('ganaderoId','==',editGanId),limit(1)));
+    if(!snap.empty){alerta('m-gan-error','No se puede eliminar: tiene registros de recolección. Márcalo como Inactivo.','rojo');return;}
+    await updateDoc(doc(db,'ganaderos',editGanId),{activo:false,eliminado:true});
+    cerrarModal('modal-ganadero');await ganAdmin();await cargarGanaderos();
+    alerta('usr-ok','✅ Ganadero eliminado correctamente','verde');
+  }catch(e){alerta('m-gan-error','Error al eliminar','rojo');}
+}window.eliminarGanadero=eliminarGanadero;
+
+async function precioAdmin(){try{const s=await getDocs(query(collection(db,'configuracion'),limit(1)));if(!s.empty){const d=s.docs[0].data();precioActual=d.precioPorLitro||0;document.getElementById('precio-actual-display').textContent=fmtPeso(precioActual);document.getElementById('precio-fecha-display').textContent=d.fechaActualizacion?`Actualizado el ${d.fechaActualizacion} por ${d.adminNombre||'admin'}`:'Sin fecha';}else{document.getElementById('precio-actual-display').textContent='$0';document.getElementById('precio-fecha-display').textContent='No configurado';}await histPrecios();}catch(e){}}
+async function actualizarPrecio(){const p=parseFloat(document.getElementById('nuevo-precio-input').value);if(!p||p<=0){alerta('precio-error','Ingresa un precio válido','rojo');return;}ocult('precio-error');try{const s=await getDocs(query(collection(db,'configuracion'),limit(1)));const d={precioPorLitro:p,fechaActualizacion:hoy(),adminId:UA.uid,adminNombre:UA.nombre||UA.email};if(!s.empty){await updateDoc(doc(db,'configuracion',s.docs[0].id),d);}else{await addDoc(collection(db,'configuracion'),d);}await addDoc(collection(db,'historialPrecios'),{...d,timestamp:serverTimestamp()});precioActual=p;document.getElementById('precio-actual-display').textContent=fmtPeso(p);document.getElementById('precio-fecha-display').textContent=`Actualizado el ${hoy()} por ${UA.nombre||'admin'}`;document.getElementById('nuevo-precio-input').value='';alerta('precio-ok',`✅ Precio actualizado a ${fmtPeso(p)}/litro`,'verde');await histPrecios();}catch(e){alerta('precio-error','Error al actualizar','rojo');}}window.actualizarPrecio=actualizarPrecio;
+async function histPrecios(){try{const s=await getDocs(query(collection(db,'historialPrecios'),orderBy('fechaActualizacion','desc')));const it=[];s.forEach(d=>it.push(d.data()));document.getElementById('historial-precios').innerHTML=it.length===0?'<p style="color:var(--gris2);font-size:14px;">Sin cambios aún</p>':`<div class="card" style="padding:0;overflow:hidden;"><table class="tabla"><thead><tr><th>Precio/L</th><th>Fecha</th><th>Admin</th></tr></thead><tbody>${it.slice(0,20).map(i=>`<tr><td><strong>${fmtPeso(i.precioPorLitro)}</strong></td><td>${i.fechaActualizacion}</td><td>${i.adminNombre||'-'}</td></tr>`).join('')}</tbody></table></div>`;}catch(e){}}
+
+// ── REPORTES ──
+function cambiarTabReporte(idx,btn){tabRep=idx;document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('activo',i===idx));for(let i=0;i<6;i++)document.getElementById(`rep-tab-${i}`).style.display=i===idx?'block':'none';}window.cambiarTabReporte=cambiarTabReporte;
+function setFiltroRapido(t){const h=new Date();const y=h.getFullYear();const m=String(h.getMonth()+1).padStart(2,'0');const d=String(h.getDate()).padStart(2,'0');const D=i=>document.getElementById(i);if(t==='hoy'){D('rep-desde').value=`${y}-${m}-${d}`;D('rep-hasta').value=`${y}-${m}-${d}`;}else if(t==='semana'){const i=new Date(h);i.setDate(h.getDate()-h.getDay());D('rep-desde').value=i.toISOString().split('T')[0];D('rep-hasta').value=`${y}-${m}-${d}`;}else if(t==='quincena1'){D('rep-desde').value=`${y}-${m}-01`;D('rep-hasta').value=`${y}-${m}-15`;}else if(t==='quincena2'){const u=new Date(y,h.getMonth()+1,0).getDate();D('rep-desde').value=`${y}-${m}-16`;D('rep-hasta').value=`${y}-${m}-${u}`;}else if(t==='mes'){const u=new Date(y,h.getMonth()+1,0).getDate();D('rep-desde').value=`${y}-${m}-01`;D('rep-hasta').value=`${y}-${m}-${u}`;}}window.setFiltroRapido=setFiltroRapido;
+
+async function generarReporte(){
+  const de=document.getElementById('rep-desde').value;const ha=document.getElementById('rep-hasta').value;if(!de||!ha)return;
+  try{
+    const s=await getDocs(query(collection(db,'recolecciones'),where('fecha','>=',de),where('fecha','<=',ha),orderBy('fecha'),orderBy('hora')));
+    datosRep=[];s.forEach(d=>datosRep.push({id:d.id,...d.data()}));
+    repGan(datosRep,de,ha);repDia(datosRep);repLiq(datosRep,de,ha);repNov(datosRep);
+    repMatriz(datosRep,de,ha);repDetalle(datosRep,de,ha);
+  }catch(e){console.error(e);}
+}window.generarReporte=generarReporte;
+
+function repGan(datos,de,ha){
+  const ag={};
+  datos.forEach(d=>{if(!ag[d.ganaderoId])ag[d.ganaderoId]={n:d.ganaderoNombre,L:0,recogedores:{}};ag[d.ganaderoId].L+=parseFloat(d.litros)||0;if(!ag[d.ganaderoId].recogedores[d.recogedorId])ag[d.ganaderoId].recogedores[d.recogedorId]={nombre:d.recogedorNombre,L:0};ag[d.ganaderoId].recogedores[d.recogedorId].L+=parseFloat(d.litros)||0;});
+  const lista=Object.values(ag).sort((a,b)=>b.L-a.L);const T=lista.reduce((s,x)=>s+x.L,0);
+  document.getElementById('rep-tab-0').innerHTML=lista.length===0?'<div class="vacio"><div class="ico">📊</div><p>Sin datos</p></div>':`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><div style="font-size:14px;color:var(--gris2);">${lista.length} ganaderos · ${T.toFixed(1)}L</div><button class="btn btn-verde btn-sm" onclick="exportarCSV('ganadero')">⬇ Exportar</button></div><div class="card" style="padding:0;overflow:hidden;"><table class="tabla"><thead><tr><th>Ganadero</th><th>Total L</th><th>Desglose</th></tr></thead><tbody>${lista.map(g=>{const recs=Object.values(g.recogedores);const desgl=recs.length>1?recs.map(r=>`${r.nombre}: ${r.L.toFixed(1)}L`).join(' · '):recs[0]?.nombre||'-';return`<tr><td><strong>${g.n}</strong></td><td>${g.L.toFixed(1)}</td><td style="font-size:12px;">${desgl}</td></tr>`;}).join('')}</tbody></table></div>`;
+}
+function repDia(datos){const ag={};datos.forEach(d=>{if(!ag[d.fecha])ag[d.fecha]={L:0,r:0,rec:new Set()};ag[d.fecha].L+=parseFloat(d.litros)||0;ag[d.fecha].r++;ag[d.fecha].rec.add(d.recogedorNombre);});const lista=Object.entries(ag).sort((a,b)=>b[0].localeCompare(a[0]));document.getElementById('rep-tab-1').innerHTML=lista.length===0?'<div class="vacio"><div class="ico">📅</div><p>Sin datos</p></div>':`<div style="display:flex;justify-content:flex-end;margin-bottom:12px;"><button class="btn btn-verde btn-sm" onclick="exportarCSV('dia')">⬇ Exportar</button></div><div class="card" style="padding:0;overflow:hidden;"><table class="tabla"><thead><tr><th>Fecha</th><th>Litros</th><th>Registros</th><th>Recogedores</th></tr></thead><tbody>${lista.map(([f,v])=>`<tr><td>${f}</td><td>${v.L.toFixed(1)}</td><td>${v.r}</td><td>${[...v.rec].join(', ')}</td></tr>`).join('')}</tbody></table></div>`;}
+function repLiq(datos,de,ha){const ag={};datos.forEach(d=>{if(!ag[d.ganaderoId])ag[d.ganaderoId]={n:d.ganaderoNombre,L:0,p:d.precioPorLitro||precioActual};ag[d.ganaderoId].L+=parseFloat(d.litros)||0;if(d.precioPorLitro>0)ag[d.ganaderoId].p=d.precioPorLitro;});const lista=Object.values(ag).sort((a,b)=>a.n.localeCompare(b.n));const TP=lista.reduce((s,x)=>s+x.L*x.p,0);const TL=lista.reduce((s,x)=>s+x.L,0);document.getElementById('rep-tab-2').innerHTML=lista.length===0?'<div class="vacio"><div class="ico">💰</div><p>Sin datos</p></div>':`<div class="card" style="background:var(--verde3);border:2px solid var(--verde2);margin-bottom:12px;"><div style="font-size:13px;font-weight:700;color:var(--verde);">TOTAL A PAGAR · ${de} al ${ha}</div><div style="font-size:36px;font-weight:800;color:var(--verde);margin-top:4px;">${fmtPeso(TP)}</div><div style="font-size:14px;color:var(--verde);margin-top:4px;">${TL.toFixed(1)} litros · ${lista.length} ganaderos</div></div><div style="display:flex;justify-content:flex-end;margin-bottom:12px;"><button class="btn btn-verde btn-sm" onclick="exportarCSV('liquidacion')">⬇ Exportar</button></div><div class="card" style="padding:0;overflow:hidden;"><table class="tabla"><thead><tr><th>Ganadero</th><th>Litros</th><th>$/L</th><th>Total</th></tr></thead><tbody>${lista.map(g=>`<tr><td><strong>${g.n}</strong></td><td>${g.L.toFixed(1)}</td><td>${fmtPeso(g.p)}</td><td><strong>${fmtPeso(g.L*g.p)}</strong></td></tr>`).join('')}</tbody></table></div>`;}
+function repNov(datos){const n=datos.filter(d=>d.novedad&&d.novedad.trim()!=='');document.getElementById('rep-tab-3').innerHTML=n.length===0?'<div class="vacio"><div class="ico">✅</div><p>Sin novedades</p></div>':`<div class="card" style="padding:0;overflow:hidden;"><table class="tabla"><thead><tr><th>Fecha</th><th>Ganadero</th><th>Novedad</th><th>Recogedor</th></tr></thead><tbody>${n.map(d=>`<tr><td>${d.fecha}</td><td>${d.ganaderoNombre}</td><td>${d.novedad}</td><td>${d.recogedorNombre}</td></tr>`).join('')}</tbody></table></div>`;}
+
+// ── MATRIZ QUINCENAL ──
+function repMatriz(datos,de,ha){
+  if(datos.length===0){document.getElementById('rep-tab-4').innerHTML='<div class="vacio"><div class="ico">📋</div><p>Sin datos en este período</p></div>';return;}
+
+  // Fechas únicas ordenadas
+  const fechas=[...new Set(datos.map(d=>d.fecha))].sort();
+  // Ganaderos únicos ordenados por nombre
+  const ganMap={};datos.forEach(d=>{if(!ganMap[d.ganaderoId])ganMap[d.ganaderoId]=d.ganaderoNombre;});
+  const gans=Object.entries(ganMap).sort((a,b)=>a[1].localeCompare(b[1]));
+
+  // Construir datos: celda[fecha][ganaderoId] = {litros, pesos}
+  const celda={};let totalGeneral=0;let totalGeneralPesos=0;
+  const totalFila={};const totalCol={};const totalColPesos={};
+  fechas.forEach(f=>{celda[f]={};totalFila[f]={L:0,P:0};});
+  gans.forEach(([gid])=>{totalCol[gid]=0;totalColPesos[gid]=0;});
+
+  datos.forEach(d=>{
+    const f=d.fecha;const gid=d.ganaderoId;const L=parseFloat(d.litros)||0;const p=d.precioPorLitro||precioActual;const P=L*p;
+    if(!celda[f][gid])celda[f][gid]={L:0,P:0};
+    celda[f][gid].L+=L;celda[f][gid].P+=P;
+    totalFila[f].L+=L;totalFila[f].P+=P;
+    totalCol[gid]+=L;totalColPesos[gid]+=P;
+    totalGeneral+=L;totalGeneralPesos+=P;
+  });
+
+  // Render tabla
+  const thGans=gans.map(([gid,gn])=>`<th title="${gn}">${gn.length>12?gn.substring(0,12)+'…':gn}</th>`).join('');
+  const filas=fechas.map(f=>{
+    const celdas=gans.map(([gid])=>{
+      const c=celda[f][gid];
+      return c?`<td><div class="celda-litros">${c.L.toFixed(1)}L</div><div class="celda-pesos">${fmtPesoCorto(c.P)}</div></td>`:'<td class="vacio">—</td>';
+    }).join('');
+    return`<tr><td class="col-fecha">${fmtFechaCorta(f)}</td>${celdas}<td class="total-col"><div class="celda-litros">${totalFila[f].L.toFixed(1)}L</div><div class="celda-pesos">${fmtPesoCorto(totalFila[f].P)}</div></td></tr>`;
+  }).join('');
+
+  const filaTotales=gans.map(([gid])=>`<td class="total-col"><div class="celda-litros">${totalCol[gid].toFixed(1)}L</div><div class="celda-pesos">${fmtPesoCorto(totalColPesos[gid])}</div></td>`).join('');
+
+  document.getElementById('rep-tab-4').innerHTML=`
+    <div class="aviso-movil">📱 Para mejor experiencia abre esta vista en computador — hay ${gans.length} ganaderos.</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+      <div>
+        <div style="font-size:14px;color:var(--gris2);">${fechas.length} días · ${gans.length} ganaderos</div>
+        <div style="font-size:16px;font-weight:800;color:var(--verde);">Total: ${totalGeneral.toFixed(1)}L · ${fmtPeso(totalGeneralPesos)}</div>
+      </div>
+      <button class="btn btn-verde btn-sm" onclick="exportarMatriz()">⬇ Exportar a Excel</button>
+    </div>
+    <div class="matriz-wrap">
+      <table class="tabla-matriz">
+        <thead>
+          <tr>
+            <th class="col-fecha">Fecha</th>
+            ${thGans}
+            <th class="total-col">TOTAL DÍA</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filas}
+          <tr class="fila-total">
+            <td class="col-fecha">TOTAL</td>
+            ${filaTotales}
+            <td class="total-col"><div class="celda-litros">${totalGeneral.toFixed(1)}L</div><div class="celda-pesos">${fmtPesoCorto(totalGeneralPesos)}</div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>`;
+}
+
+// ── DETALLE COMPLETO ──
+function repDetalle(datos,de,ha){
+  document.getElementById('rep-tab-5').innerHTML=datos.length===0?'<div class="vacio"><div class="ico">📄</div><p>Sin datos</p></div>':`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div style="font-size:14px;color:var(--gris2);">${datos.length} registros · ${de} al ${ha}</div>
+      <button class="btn btn-verde btn-sm" onclick="exportarCSV('detalle')">⬇ Exportar</button>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden;overflow-x:auto;">
+      <table class="tabla" style="min-width:600px;">
+        <thead><tr><th>Fecha</th><th>Ganadero</th><th>Litros</th><th>$/L</th><th>Total</th><th>Hora</th><th>Recogedor</th><th>Novedad</th></tr></thead>
+        <tbody>${datos.map(d=>{const L=parseFloat(d.litros)||0;const p=d.precioPorLitro||precioActual;return`<tr><td>${d.fecha}</td><td><strong>${d.ganaderoNombre}</strong></td><td>${L.toFixed(1)}</td><td>${fmtPesoCorto(p)}</td><td>${fmtPesoCorto(L*p)}</td><td>${d.hora||'-'}</td><td>${d.recogedorNombre}</td><td style="font-size:12px;color:var(--gris2);">${d.novedad||'-'}</td></tr>`;}).join('')}</tbody>
+      </table>
+    </div>`;
+}
+
+// ── EXPORTAR ──
+function exportarCSV(tipo){
+  const de=document.getElementById('rep-desde').value;const ha=document.getElementById('rep-hasta').value;let csv='';
+  if(tipo==='ganadero'){const ag={};datosRep.forEach(d=>{if(!ag[d.ganaderoId])ag[d.ganaderoId]={n:d.ganaderoNombre,L:0};ag[d.ganaderoId].L+=parseFloat(d.litros)||0;});csv='Ganadero,Litros\n'+Object.values(ag).map(g=>`"${g.n}",${g.L.toFixed(1)}`).join('\n');}
+  else if(tipo==='dia'){csv='Fecha,Ganadero,Litros,Hora,Recogedor,Novedad\n'+datosRep.map(d=>`${d.fecha},"${d.ganaderoNombre}",${parseFloat(d.litros).toFixed(1)},${d.hora},"${d.recogedorNombre}","${d.novedad||''}"`).join('\n');}
+  else if(tipo==='liquidacion'){const ag={};datosRep.forEach(d=>{if(!ag[d.ganaderoId])ag[d.ganaderoId]={n:d.ganaderoNombre,L:0,p:d.precioPorLitro||precioActual};ag[d.ganaderoId].L+=parseFloat(d.litros)||0;if(d.precioPorLitro>0)ag[d.ganaderoId].p=d.precioPorLitro;});csv='Ganadero,Litros,Precio por Litro,Total a Pagar\n'+Object.values(ag).map(g=>`"${g.n}",${g.L.toFixed(1)},${g.p},${(g.L*g.p).toFixed(0)}`).join('\n');}
+  else if(tipo==='detalle'){csv='Fecha,Ganadero,Litros,Precio/L,Total,Hora,Recogedor,Novedad\n'+datosRep.map(d=>{const L=parseFloat(d.litros)||0;const p=d.precioPorLitro||precioActual;return`${d.fecha},"${d.ganaderoNombre}",${L.toFixed(1)},${p},${(L*p).toFixed(0)},${d.hora||''},"${d.recogedorNombre}","${d.novedad||''}"`;}).join('\n');}
+  descargar(csv,`reporte-${tipo}-${de}-${ha}.csv`);
+}window.exportarCSV=exportarCSV;
+
+function exportarMatriz(){
+  const de=document.getElementById('rep-desde').value;const ha=document.getElementById('rep-hasta').value;
+  if(datosRep.length===0)return;
+  // Fechas únicas ordenadas
+  const fechas=[...new Set(datosRep.map(d=>d.fecha))].sort();
+  // Ganaderos únicos ordenados por nombre
+  const ganMap={};datosRep.forEach(d=>{if(!ganMap[d.ganaderoId])ganMap[d.ganaderoId]=d.ganaderoNombre;});
+  const gans=Object.entries(ganMap).sort((a,b)=>a[1].localeCompare(b[1]));
+  // Construir datos: celda[fecha][ganaderoId]
+  const celda={};const totalFila={};const totalColL={};const totalColP={};
+  fechas.forEach(f=>{celda[f]={};totalFila[f]={L:0,P:0};});
+  gans.forEach(([gid])=>{totalColL[gid]=0;totalColP[gid]=0;});
+  datosRep.forEach(d=>{
+    const f=d.fecha;const gid=d.ganaderoId;
+    const L=parseFloat(d.litros)||0;const p=d.precioPorLitro||precioActual;const P=L*p;
+    if(!celda[f][gid])celda[f][gid]={L:0,P:0};
+    celda[f][gid].L+=L;celda[f][gid].P+=P;
+    totalFila[f].L+=L;totalFila[f].P+=P;
+    totalColL[gid]+=L;totalColP[gid]+=P;
+  });
+  let grandTotalL=0;let grandTotalP=0;
+  gans.forEach(([gid])=>{grandTotalL+=totalColL[gid];grandTotalP+=totalColP[gid];});
+  // Encabezados: una columna por ganadero + TOTAL DÍA L + TOTAL DÍA $
+  const ganHeaders=gans.map(([,gn])=>`"${gn}"`).join(',');
+  let csv=`LIQUIDACIÓN QUINCENAL — ${de} al ${ha}\n`;
+  csv+=`Fecha,${ganHeaders},TOTAL DÍA L,TOTAL DÍA $\n`;
+  // Filas de días — litros en cada celda, — si no hubo recolección
+  fechas.forEach(f=>{
+    const vals=gans.map(([gid])=>celda[f][gid]?celda[f][gid].L.toFixed(1):'—').join(',');
+    csv+=`${f},${vals},${totalFila[f].L.toFixed(1)},${totalFila[f].P.toFixed(0)}\n`;
+  });
+  // Fila TOTAL LITROS
+  csv+=`TOTAL L,${gans.map(([gid])=>totalColL[gid].toFixed(1)).join(',')},${grandTotalL.toFixed(1)},\n`;
+  // Fila TOTAL $ a pagar por ganadero + gran total
+  csv+=`TOTAL $,${gans.map(([gid])=>totalColP[gid].toFixed(0)).join(',')},,"${grandTotalP.toFixed(0)}"\n`;
+  descargar(csv,`liquidacion-matriz-${de}-${ha}.csv`);
+}window.exportarMatriz=exportarMatriz;
+
+function descargar(csv,nombre){const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=nombre;a.click();}
+
+// ── USUARIOS ──
+async function usuAdmin(){
+  try{
+    const s=await getDocs(query(collection(db,'usuarios'),orderBy('nombre')));
+    const u=[];s.forEach(d=>u.push({id:d.id,...d.data()}));
+    const badgeRol=r=>r==='admin'?'badge-azul':r==='recibidor'?'badge-naranja':'badge-verde';
+    document.getElementById('lista-usuarios').innerHTML=u.map(x=>`
+      <div class="usr-card ${x.bloqueado?'bloqueado':''}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div><div style="font-size:17px;font-weight:700;">${x.nombre||'Sin nombre'} ${x.bloqueado?'🔒':''}</div><div style="font-size:13px;color:var(--gris2);margin-top:2px;">${x.email}</div></div>
+          <span class="badge ${badgeRol(x.rol)}">${x.rol}</span>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+          <button class="btn btn-azul btn-sm" onclick="resetearContrasena('${x.email}')">📧 Restablecer clave</button>
+          ${x.bloqueado?`<button class="btn btn-verde btn-sm" onclick="toggleBloqueo('${x.id}',false)">🔓 Desbloquear</button>`:x.id!==UA.uid?`<button class="btn btn-rojo btn-sm" onclick="toggleBloqueo('${x.id}',true)">🔒 Bloquear</button>`:''}
+        </div>
+      </div>`).join('');
+  }catch(e){}
+}
+async function resetearContrasena(email){try{await sendPasswordResetEmail(auth,email);alerta('usr-ok',`✅ Correo enviado a ${email}. El usuario debe revisar su bandeja de entrada.`,'verde');}catch(e){alerta('usr-error','Error al enviar el correo.','rojo');}}window.resetearContrasena=resetearContrasena;
+async function toggleBloqueo(uid,bloquear){try{await updateDoc(doc(db,'usuarios',uid),{bloqueado:bloquear});alerta('usr-ok',bloquear?'🔒 Usuario bloqueado':'🔓 Usuario desbloqueado','verde');await usuAdmin();}catch(e){alerta('usr-error','Error al actualizar','rojo');}}window.toggleBloqueo=toggleBloqueo;
+function abrirModalUsuario(){['m-usr-nombre','m-usr-email','m-usr-pass'].forEach(id=>document.getElementById(id).value='');document.getElementById('m-usr-rol').value='recogedor';ocult('m-usr-error');abrirModal('modal-usuario');}window.abrirModalUsuario=abrirModalUsuario;
+async function crearUsuario(){const n=document.getElementById('m-usr-nombre').value.trim();const e=document.getElementById('m-usr-email').value.trim();const p=document.getElementById('m-usr-pass').value;const r=document.getElementById('m-usr-rol').value;if(!n||!e||!p){alerta('m-usr-error','Todos los campos son obligatorios','rojo');return;}if(p.length<6){alerta('m-usr-error','Mínimo 6 caracteres','rojo');return;}try{const c=await createUserWithEmailAndPassword(auth2,e,p);await setDoc(doc(db,'usuarios',c.user.uid),{nombre:n,email:e,rol:r,bloqueado:false,creadoPor:UA.uid,fechaCreacion:hoy()});await signOut(auth2);cerrarModal('modal-usuario');alerta('usr-ok',`✅ Usuario ${n} creado correctamente`,'verde');await usuAdmin();}catch(e){alerta('m-usr-error',e.code==='auth/email-already-in-use'?'Ese correo ya está registrado':'Error al crear usuario','rojo');}}window.crearUsuario=crearUsuario;
+
+let datosImportar=[];
+
+async function importarGanaderos(event){
+  const file=event.target.files[0];
+  if(!file)return;
+  event.target.value=''; // reset input
+  try{
+    // Leer como texto (CSV) o binario (XLSX)
+    const nombre=file.name.toLowerCase();
+    if(nombre.endsWith('.csv')){
+      const texto=await file.text();
+      const lineas=texto.split('\n').filter(l=>l.trim());
+      // Saltar encabezado (fila 4 en la plantilla → primera fila del CSV)
+      const filas=lineas.slice(1);
+      datosImportar=[];
+      filas.forEach(l=>{
+        const cols=l.split(',').map(c=>c.replace(/^"|"$/g,'').trim());
+        const nombre=cols[0]||'';
+        if(nombre)datosImportar.push({nombre,telefono:cols[1]||'',vereda:cols[2]||''});
+      });
+    } else if(nombre.endsWith('.xlsx')){
+      // Leer XLSX con SheetJS
+      const buf=await file.arrayBuffer();
+      const XLSX=window.XLSX;
+      if(!XLSX){alerta('m-imp-error','Error cargando lector de Excel. Intenta con CSV.','rojo');return;}
+      const wb=XLSX.read(buf,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      // Buscar fila de encabezados (tiene "Nombre")
+      let startRow=0;
+      for(let i=0;i<rows.length;i++){if(rows[i][0]&&String(rows[i][0]).includes('Nombre')){startRow=i+1;break;}}
+      datosImportar=[];
+      for(let i=startRow;i<rows.length;i++){
+        const n=String(rows[i][0]||'').trim();
+        if(n&&!n.includes('*'))datosImportar.push({nombre:n,telefono:String(rows[i][1]||'').trim(),vereda:String(rows[i][2]||'').trim()});
+      }
+    }
+    if(datosImportar.length===0){ocult('m-imp-error');document.getElementById('m-imp-preview').innerHTML='<p style="color:var(--gris2);">No se encontraron ganaderos válidos en el archivo.</p>';document.getElementById('m-imp-botones').style.display='none';abrirModal('modal-importar');return;}
+    // Filtrar duplicados contra lista existente
+    const normExist=ganList.map(g=>normalizarNombre(g.nombre));
+    const nuevos=datosImportar.filter(d=>!normExist.includes(normalizarNombre(d.nombre)));
+    const duplic=datosImportar.filter(d=>normExist.includes(normalizarNombre(d.nombre)));
+    ocult('m-imp-error');ocult('m-imp-ok');
+    let html2=`<div style="margin-bottom:16px;">
+      <div style="font-size:16px;font-weight:700;color:var(--verde);margin-bottom:4px;">✅ ${nuevos.length} ganaderos nuevos para importar</div>
+      ${duplic.length>0?`<div style="font-size:14px;color:var(--gris2);">⚠️ ${duplic.length} ya existen y se omitirán: ${duplic.map(d=>d.nombre).join(', ')}</div>`:''}
+    </div>`;
+    if(nuevos.length>0){
+      html2+=`<div style="max-height:200px;overflow-y:auto;border:1px solid var(--gris1);border-radius:10px;">
+        ${nuevos.map(d=>`<div style="padding:8px 12px;border-bottom:1px solid var(--gris1);font-size:14px;"><strong>${d.nombre}</strong>${d.telefono?' · '+d.telefono:''}${d.vereda?' · '+d.vereda:''}</div>`).join('')}
+      </div>`;
+      document.getElementById('m-imp-botones').style.display='flex';
+    } else {
+      html2+='<p style="color:var(--gris2);font-size:14px;">Todos los ganaderos del archivo ya están registrados.</p>';
+      document.getElementById('m-imp-botones').style.display='none';
+    }
+    datosImportar=nuevos; // solo los nuevos
+    document.getElementById('m-imp-preview').innerHTML=html2;
+    abrirModal('modal-importar');
+  }catch(e){console.error(e);alerta('m-imp-error','Error al leer el archivo. Verifica que sea el formato correcto.','rojo');abrirModal('modal-importar');}
+}window.importarGanaderos=importarGanaderos;
+
+async function confirmarImportacion(){
+  if(datosImportar.length===0)return;
+  document.getElementById('m-imp-botones').style.display='none';
+  document.getElementById('m-imp-preview').innerHTML='<div class="loading">Importando '+datosImportar.length+' ganaderos...</div>';
+  let ok=0;let err=0;
+  for(const d of datosImportar){
+    try{
+      await addDoc(collection(db,'ganaderos'),{nombre:d.nombre,telefono:d.telefono,vereda:d.vereda,activo:true,agregadoPor:UA.uid,agregadoPorNombre:UA.nombre||UA.email,fechaAgregado:hoy()});
+      ok++;
+    }catch(e){err++;}
+  }
+  await ganAdmin();await cargarGanaderos();
+  cerrarModal('modal-importar');
+  alerta('usr-ok',`✅ ${ok} ganaderos importados correctamente${err>0?' · '+err+' errores':''}`,'verde');
+}window.confirmarImportacion=confirmarImportacion;
+
+let registroEliminarId=null;
+
+function abrirEliminarRegistro(docId,ganaderoNombre,litros,hora){
+  registroEliminarId=docId;
+  document.getElementById('m-elim-detalle').textContent=`⚠️ Vas a eliminar: ${litros}L de ${ganaderoNombre} registrados a las ${hora}`;
+  document.getElementById('m-elim-motivo').value='';
+  ocult('m-elim-error');
+  abrirModal('modal-eliminar-registro');
+}window.abrirEliminarRegistro=abrirEliminarRegistro;
+
+async function confirmarEliminarRegistro(){
+  const motivo=document.getElementById('m-elim-motivo').value.trim();
+  if(!motivo){alerta('m-elim-error','Debes escribir el motivo de la eliminación','rojo');return;}
+  if(!registroEliminarId)return;
+  try{
+    // Obtener datos del registro antes de eliminar
+    const snap=await getDoc(doc(db,'recolecciones',registroEliminarId));
+    if(!snap.exists()){cerrarModal('modal-eliminar-registro');return;}
+    const datos=snap.data();
+    // Guardar en historial de eliminaciones
+    await addDoc(collection(db,'eliminaciones'),{
+      registroId:registroEliminarId,
+      ganaderoId:datos.ganaderoId,
+      ganaderoNombre:datos.ganaderoNombre,
+      litros:datos.litros,
+      hora:datos.hora,
+      fecha:datos.fecha,
+      recogedorId:UA.uid,
+      recogedorNombre:UA.nombre||UA.email,
+      motivo:motivo,
+      eliminadoEn:hoy(),
+      eliminadoHora:horaAhora(),
+      timestamp:serverTimestamp()
+    });
+    // Eliminar el registro
+    const {deleteDoc:delDoc}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    await delDoc(doc(db,'recolecciones',registroEliminarId));
+    cerrarModal('modal-eliminar-registro');
+    registroEliminarId=null;
+    await resumenRec();
+  }catch(e){alerta('m-elim-error','Error al eliminar. Verifica tu conexión.','rojo');console.error(e);}
+}window.confirmarEliminarRegistro=confirmarEliminarRegistro;
+
+function navAdmin(p,b){ir(p);document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('activo'));b.classList.add('activo');if(p==='screen-admin-dashboard')dashAdmin();if(p==='screen-admin-ganaderos')ganAdmin();if(p==='screen-admin-precio')precioAdmin();if(p==='screen-admin-usuarios')usuAdmin();}window.navAdmin=navAdmin;
+document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')hacerLogin();});
+// iOS fix: usar tanto click como touchend
+const btnEntrar=document.getElementById('btn-entrar');
+btnEntrar.addEventListener('click',function(e){e.preventDefault();hacerLogin();});
+btnEntrar.addEventListener('touchend',function(e){e.preventDefault();hacerLogin();});
+</script>
+</body>
+</html>
