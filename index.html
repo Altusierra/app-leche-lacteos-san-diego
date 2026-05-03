@@ -690,8 +690,9 @@ async function resumenRecibidor(){
 }
 async function cargarRecogedoresParaRecibidor(){
   try{
-    const s=await getDocs(query(collection(db,'usuarios'),where('rol','==','recogedor'),orderBy('nombre')));
+    const s=await getDocs(query(collection(db,'usuarios'),where('rol','==','recogedor')));
     listaRecogedores=[];s.forEach(d=>listaRecogedores.push({id:d.id,...d.data()}));
+    listaRecogedores.sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es'));
     const sCol=await getDocs(query(collection(db,'recolecciones'),where('fecha','==',hoy())));
     const rutaTot={};sCol.forEach(d=>{const da=d.data();if(!rutaTot[da.recogedorId])rutaTot[da.recogedorId]=0;rutaTot[da.recogedorId]+=parseFloat(da.litros)||0;});
     const sRec=await getDocs(query(collection(db,'recepciones'),where('fecha','==',hoy())));
