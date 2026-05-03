@@ -1239,7 +1239,23 @@ async function actualizarPrecio(){const p=parseFloat(document.getElementById('nu
 async function histPrecios(){try{const s=await getDocs(query(collection(db,'historialPrecios'),orderBy('fechaActualizacion','desc')));const it=[];s.forEach(d=>it.push(d.data()));document.getElementById('historial-precios').innerHTML=it.length===0?'<p style="color:var(--gris2);font-size:14px;">Sin cambios aún</p>':`<div class="card" style="padding:0;overflow:hidden;"><table class="tabla"><thead><tr><th>Precio/L</th><th>Fecha</th><th>Admin</th></tr></thead><tbody>${it.slice(0,20).map(i=>`<tr><td><strong>${fmtPeso(i.precioPorLitro)}</strong></td><td>${i.fechaActualizacion}</td><td>${i.adminNombre||'-'}</td></tr>`).join('')}</tbody></table></div>`;}catch(e){}}
 
 // ── REPORTES ──
-function cambiarTabReporte(idx,btn){tabRep=idx;document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('activo',i===idx));for(let i=0;i<6;i++){const el=document.getElementById(`rep-tab-${i}`);if(el)el.style.display=i===idx?'block':'none';}const pw=document.getElementById('precio-liq-wrap');if(pw)pw.style.display=idx===2?'block':'none';}window.cambiarTabReporte=cambiarTabReporte;
+function quincenaPendiente(){
+  const h=new Date();const dia=h.getDate();
+  let de,ha;
+  if(dia<=15){
+    // Estamos en la 1ra quincena: pagar Q2 del mes anterior
+    const mesAnt=new Date(h.getFullYear(),h.getMonth()-1,1);
+    const y=mesAnt.getFullYear();const m=String(mesAnt.getMonth()+1).padStart(2,'0');
+    const ult=new Date(y,mesAnt.getMonth()+1,0).getDate();
+    de=`${y}-${m}-16`;ha=`${y}-${m}-${ult}`;
+  }else{
+    // Estamos en la 2da quincena: pagar Q1 del mes actual
+    const y=h.getFullYear();const m=String(h.getMonth()+1).padStart(2,'0');
+    de=`${y}-${m}-01`;ha=`${y}-${m}-15`;
+  }
+  return{de,ha};
+}
+function cambiarTabReporte(idx,btn){tabRep=idx;document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('activo',i===idx));for(let i=0;i<6;i++){const el=document.getElementById(`rep-tab-${i}`);if(el)el.style.display=i===idx?'block':'none';}const pw=document.getElementById('precio-liq-wrap');if(pw)pw.style.display=idx===2?'block':'none';if(idx===2){const q=quincenaPendiente();document.getElementById('rep-desde').value=q.de;document.getElementById('rep-hasta').value=q.ha;}}window.cambiarTabReporte=cambiarTabReporte;
 function setFiltroRapido(t){const h=new Date();const y=h.getFullYear();const m=String(h.getMonth()+1).padStart(2,'0');const d=String(h.getDate()).padStart(2,'0');const D=i=>document.getElementById(i);if(t==='hoy'){D('rep-desde').value=`${y}-${m}-${d}`;D('rep-hasta').value=`${y}-${m}-${d}`;}else if(t==='semana'){const i=new Date(h);i.setDate(h.getDate()-h.getDay());D('rep-desde').value=i.toISOString().split('T')[0];D('rep-hasta').value=`${y}-${m}-${d}`;}else if(t==='quincena1'){D('rep-desde').value=`${y}-${m}-01`;D('rep-hasta').value=`${y}-${m}-15`;}else if(t==='quincena2'){const u=new Date(y,h.getMonth()+1,0).getDate();D('rep-desde').value=`${y}-${m}-16`;D('rep-hasta').value=`${y}-${m}-${u}`;}else if(t==='mes'){const u=new Date(y,h.getMonth()+1,0).getDate();D('rep-desde').value=`${y}-${m}-01`;D('rep-hasta').value=`${y}-${m}-${u}`;}}window.setFiltroRapido=setFiltroRapido;
 
 async function generarReporte(){
