@@ -337,7 +337,7 @@
       <button class="tab" onclick="cambiarTabReporte(1,this)">Por Día</button>
       <button class="tab" onclick="cambiarTabReporte(2,this)">💰 Liquidación</button>
       <button class="tab" onclick="cambiarTabReporte(3,this)">📄 Detalle</button>
-      <button class="tab" onclick="cambiarTabReporte(5,this)">🚚 Intermediarios</button>
+      <button class="tab" onclick="cambiarTabReporte(4,this)">🚚 Intermediarios</button>
     </div>
     <div class="card">
       <div class="card-titulo">Período</div>
@@ -369,7 +369,7 @@
     <div id="rep-tab-0"><div class="vacio"><div class="ico">📊</div><p>Selecciona un período y genera el reporte</p></div></div>
     <div id="rep-tab-1" style="display:none;"><div class="vacio"><div class="ico">📅</div><p>Selecciona un período</p></div></div>
     <div id="rep-tab-2" style="display:none;"><div class="vacio"><div class="ico">💰</div><p>Selecciona un período y el precio por litro</p></div></div>
-    <div id="rep-tab-3" style="display:none;"><div class="vacio"><div class="ico">📄</div><p>Selecciona un período</p></div></div>
+    <div id="rep-tab-3" style="display:none;"><div style="text-align:right;margin-bottom:10px;"><button id="btn-filtro-nov-global" class="btn btn-sm" style="border:2px solid var(--amarillo);background:transparent;color:var(--amarillo);font-weight:700;" onclick="toggleSoloNov()">⚠️ Solo novedades</button></div><div id="rep-tab-3-content"><div class="vacio"><div class="ico">📄</div><p>Selecciona un período y genera el reporte</p></div></div></div>
     <div id="rep-tab-5" style="display:none;"><div class="vacio"><div class="ico">🚚</div><p>Selecciona un período</p></div></div>
   </div>
 </div>
@@ -574,7 +574,7 @@ const cfg={apiKey:"AIzaSyDBNDl2kokNqXdKwPEEwUX0MC5ziZVgXQ4",authDomain:"app-lech
 const app=initializeApp(cfg);const auth=getAuth(app);const db=getFirestore(app);
 const app2=initializeApp(cfg,'secondary');const auth2=getAuth(app2);
 
-let UA=null,rol=null,ganList=[],precioActual=0,tabRep=0,editGanId=null,datosRep=[],datosInter=[];
+let UA=null,rol=null,ganList=[],precioActual=0,tabRep=0,editGanId=null,datosRep=[],datosInter=[],soloNovGlobal=false;
 let recibSeleccionado=null,ganSel=null,listaRecogedores=[],modoHistorico=false,fechaReg=null;
 
 // ── HELPERS ──
@@ -1371,14 +1371,13 @@ function repLiqMatriz(datos,de,ha,precio){
     </div>`;
 }
 function repDetalle(datos,de,ha){
-  let soloNov=false;
-  function renderDet(){
-    const lista=soloNov?datos.filter(d=>d.novedad&&d.novedad.trim()!==''):datos;
-    const tab=document.getElementById('rep-tab-3');if(!tab)return;
-    tab.innerHTML=lista.length===0?`<div style="text-align:center;margin-bottom:12px;">${filtroBtn()}</div><div class="vacio"><div class="ico">${soloNov?'✅':'📄'}</div><p>${soloNov?'Sin novedades en este período':'Sin datos'}</p></div>`:`
+  const lista=soloNovGlobal?datos.filter(d=>d.novedad&&d.novedad.trim()!==''):datos;
+  const cont=document.getElementById('rep-tab-3-content');if(!cont)return;
+  actualizarBtnNov();
+  cont.innerHTML=lista.length===0?`<div class="vacio"><div class="ico">${soloNovGlobal?'✅':'📄'}</div><p>${soloNovGlobal?'Sin novedades en este período':'Sin datos'}</p></div>`:`
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
       <div style="font-size:14px;color:var(--gris2);">${lista.length} registros · ${de} al ${ha}</div>
-      <div style="display:flex;gap:8px;">${filtroBtn()}<button class="btn btn-verde btn-sm" onclick="exportarCSV('detalle')">⬇ Exportar</button></div>
+      <button class="btn btn-verde btn-sm" onclick="exportarCSV('detalle')">⬇ Exportar</button>
     </div>
     <div class="card" style="padding:0;overflow:hidden;overflow-x:auto;">
       <table class="tabla" style="min-width:600px;">
@@ -1386,13 +1385,9 @@ function repDetalle(datos,de,ha){
         <tbody>${lista.map(d=>`<tr ${d.novedad&&d.novedad.trim()?'style="background:#fffbeb;"':''}><td>${d.fecha}</td><td><strong>${d.ganaderoNombre}</strong></td><td>${(parseFloat(d.litros)||0).toFixed(1)}</td><td>${d.hora||'-'}</td><td>${d.recogedorNombre}</td><td style="font-size:12px;color:${d.novedad&&d.novedad.trim()?'var(--amarillo)':'var(--gris2)'};">${d.novedad||'-'}</td></tr>`).join('')}</tbody>
       </table>
     </div>`;
-    // re-bind filter button
-    const fb=document.getElementById('btn-filtro-nov');
-    if(fb)fb.onclick=()=>{soloNov=!soloNov;renderDet();};
-  }
-  function filtroBtn(){return`<button id="btn-filtro-nov" class="btn btn-sm" style="border:2px solid var(--amarillo);background:${soloNov?'var(--amarillo)':'transparent'};color:${soloNov?'white':'var(--amarillo)'};font-weight:700;">⚠️ ${soloNov?'Ver todo':'Solo novedades'}</button>`;}
-  renderDet();
 }
+function actualizarBtnNov(){const b=document.getElementById('btn-filtro-nov-global');if(!b)return;b.style.background=soloNovGlobal?'var(--amarillo)':'transparent';b.style.color=soloNovGlobal?'white':'var(--amarillo)';b.textContent=soloNovGlobal?'⚠️ Ver todo':'⚠️ Solo novedades';}
+function toggleSoloNov(){soloNovGlobal=!soloNovGlobal;actualizarBtnNov();if(datosRep.length>0){const de=document.getElementById('rep-desde').value;const ha=document.getElementById('rep-hasta').value;repDetalle(datosRep,de,ha);}else{generarReporte();}}window.toggleSoloNov=toggleSoloNov;
 
 function exportarLiqMatriz(de,ha,precio){
   if(!datosRep.length)return;
