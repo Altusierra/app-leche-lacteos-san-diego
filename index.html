@@ -336,8 +336,7 @@
       <button class="tab activo" onclick="cambiarTabReporte(0,this)">Por Ganadero</button>
       <button class="tab" onclick="cambiarTabReporte(1,this)">Por Día</button>
       <button class="tab" onclick="cambiarTabReporte(2,this)">💰 Liquidación</button>
-      <button class="tab" onclick="cambiarTabReporte(3,this)">Novedades</button>
-      <button class="tab" onclick="cambiarTabReporte(4,this)">📄 Detalle</button>
+      <button class="tab" onclick="cambiarTabReporte(3,this)">📄 Detalle</button>
       <button class="tab" onclick="cambiarTabReporte(5,this)">🚚 Intermediarios</button>
     </div>
     <div class="card">
@@ -359,13 +358,18 @@
           style="width:100%;padding:12px;font-size:22px;font-weight:700;border:2px solid var(--verde2);border-radius:12px;text-align:center;color:var(--verde);margin-top:6px;">
         <div id="rep-precio-error" style="display:none;color:#DC2626;font-size:13px;margin-top:4px;">⚠️ Debes ingresar el precio para generar la liquidación</div>
       </div>
+      <div id="precio-inter-wrap" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid #e5e7eb;">
+        <label style="font-size:12px;color:var(--naranja);font-weight:600;">PRECIO POR LITRO INTERMEDIARIOS ($)</label>
+        <input type="number" id="rep-precio-inter" placeholder="Ej: 1100" inputmode="decimal" min="0"
+          style="width:100%;padding:12px;font-size:22px;font-weight:700;border:2px solid var(--naranja);border-radius:12px;text-align:center;color:var(--naranja);margin-top:6px;">
+        <div id="rep-precio-inter-error" style="display:none;color:#DC2626;font-size:13px;margin-top:4px;">⚠️ Debes ingresar el precio para generar el reporte de intermediarios</div>
+      </div>
       <button class="btn btn-verde" style="margin-top:12px;" onclick="generarReporte()">🔍 GENERAR REPORTE</button>
     </div>
     <div id="rep-tab-0"><div class="vacio"><div class="ico">📊</div><p>Selecciona un período y genera el reporte</p></div></div>
     <div id="rep-tab-1" style="display:none;"><div class="vacio"><div class="ico">📅</div><p>Selecciona un período</p></div></div>
     <div id="rep-tab-2" style="display:none;"><div class="vacio"><div class="ico">💰</div><p>Selecciona un período y el precio por litro</p></div></div>
-    <div id="rep-tab-3" style="display:none;"><div class="vacio"><div class="ico">⚠️</div><p>Selecciona un período</p></div></div>
-    <div id="rep-tab-4" style="display:none;"><div class="vacio"><div class="ico">📄</div><p>Selecciona un período</p></div></div>
+    <div id="rep-tab-3" style="display:none;"><div class="vacio"><div class="ico">📄</div><p>Selecciona un período</p></div></div>
     <div id="rep-tab-5" style="display:none;"><div class="vacio"><div class="ico">🚚</div><p>Selecciona un período</p></div></div>
   </div>
 </div>
@@ -570,7 +574,7 @@ const cfg={apiKey:"AIzaSyDBNDl2kokNqXdKwPEEwUX0MC5ziZVgXQ4",authDomain:"app-lech
 const app=initializeApp(cfg);const auth=getAuth(app);const db=getFirestore(app);
 const app2=initializeApp(cfg,'secondary');const auth2=getAuth(app2);
 
-let UA=null,rol=null,ganList=[],precioActual=0,tabRep=0,editGanId=null,datosRep=[];
+let UA=null,rol=null,ganList=[],precioActual=0,tabRep=0,editGanId=null,datosRep=[],datosInter=[];
 let recibSeleccionado=null,ganSel=null,listaRecogedores=[],modoHistorico=false,fechaReg=null;
 
 // ── HELPERS ──
@@ -1279,7 +1283,7 @@ function quincenaPendiente(){
   }
   return{de,ha};
 }
-function cambiarTabReporte(idx,btn){tabRep=idx;document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('activo',i===idx));for(let i=0;i<6;i++){const el=document.getElementById(`rep-tab-${i}`);if(el)el.style.display=i===idx?'block':'none';}const pw=document.getElementById('precio-liq-wrap');if(pw)pw.style.display=idx===2?'block':'none';if(idx===2){const q=quincenaPendiente();document.getElementById('rep-desde').value=q.de;document.getElementById('rep-hasta').value=q.ha;}}window.cambiarTabReporte=cambiarTabReporte;
+function cambiarTabReporte(idx,btn){tabRep=idx;document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('activo',i===idx));for(let i=0;i<5;i++){const el=document.getElementById(`rep-tab-${i}`);if(el)el.style.display=i===idx?'block':'none';}const pw=document.getElementById('precio-liq-wrap');if(pw)pw.style.display=idx===2?'block':'none';const pi=document.getElementById('precio-inter-wrap');if(pi)pi.style.display=idx===4?'block':'none';if(idx===2){const q=quincenaPendiente();document.getElementById('rep-desde').value=q.de;document.getElementById('rep-hasta').value=q.ha;}}window.cambiarTabReporte=cambiarTabReporte;
 function setFiltroRapido(t){const h=new Date();const y=h.getFullYear();const m=String(h.getMonth()+1).padStart(2,'0');const d=String(h.getDate()).padStart(2,'0');const D=i=>document.getElementById(i);if(t==='hoy'){D('rep-desde').value=`${y}-${m}-${d}`;D('rep-hasta').value=`${y}-${m}-${d}`;}else if(t==='semana'){const i=new Date(h);i.setDate(h.getDate()-h.getDay());D('rep-desde').value=i.toISOString().split('T')[0];D('rep-hasta').value=`${y}-${m}-${d}`;}else if(t==='quincena1'){D('rep-desde').value=`${y}-${m}-01`;D('rep-hasta').value=`${y}-${m}-15`;}else if(t==='quincena2'){const u=new Date(y,h.getMonth()+1,0).getDate();D('rep-desde').value=`${y}-${m}-16`;D('rep-hasta').value=`${y}-${m}-${u}`;}else if(t==='mes'){const u=new Date(y,h.getMonth()+1,0).getDate();D('rep-desde').value=`${y}-${m}-01`;D('rep-hasta').value=`${y}-${m}-${u}`;}}window.setFiltroRapido=setFiltroRapido;
 
 async function generarReporte(){
@@ -1294,11 +1298,19 @@ async function generarReporte(){
     const s=await getDocs(query(collection(db,'recolecciones'),where('fecha','>=',de),where('fecha','<=',ha),orderBy('fecha')));
     datosRep=[];s.forEach(d=>datosRep.push({id:d.id,...d.data()}));
     datosRep.sort((a,b)=>a.fecha.localeCompare(b.fecha)||(a.hora||'').localeCompare(b.hora||''));
-    repGan(datosRep,de,ha);repDia(datosRep);repNov(datosRep);repDetalle(datosRep,de,ha);
+    repGan(datosRep,de,ha);repDia(datosRep);repDetalle(datosRep,de,ha);
     if(tabRep===2){const precio=parseFloat(document.getElementById('rep-precio-liq').value);repLiqMatriz(datosRep,de,ha,precio);}
     const sInter=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','>=',de),where('fecha','<=',ha),orderBy('fecha')));
-    const datosInter=[];sInter.forEach(d=>datosInter.push({id:d.id,...d.data()}));
-    repInter(datosInter,de,ha);
+    datosInter=[];sInter.forEach(d=>datosInter.push({id:d.id,...d.data()}));
+    if(tabRep===4){
+      const piv=parseFloat(document.getElementById('rep-precio-inter').value);
+      const pie=document.getElementById('rep-precio-inter-error');
+      if(!piv||piv<=0){pie.style.display='block';return;}
+      pie.style.display='none';
+      repInter(datosInter,de,ha,piv);
+    } else {
+      repInter(datosInter,de,ha,0);
+    }
   }catch(e){console.error(e);}
 }window.generarReporte=generarReporte;
 
@@ -1358,36 +1370,46 @@ function repLiqMatriz(datos,de,ha,precio){
       </table>
     </div>`;
 }
-function repNov(datos){const n=datos.filter(d=>d.novedad&&d.novedad.trim()!=='');document.getElementById('rep-tab-3').innerHTML=n.length===0?'<div class="vacio"><div class="ico">✅</div><p>Sin novedades</p></div>':`<div class="card" style="padding:0;overflow:hidden;"><table class="tabla"><thead><tr><th>Fecha</th><th>Ganadero</th><th>Novedad</th><th>Recogedor</th></tr></thead><tbody>${n.map(d=>`<tr><td>${d.fecha}</td><td>${d.ganaderoNombre}</td><td>${d.novedad}</td><td>${d.recogedorNombre}</td></tr>`).join('')}</tbody></table></div>`;}
+function repDetalle(datos,de,ha){
+  let soloNov=false;
+  function renderDet(){
+    const lista=soloNov?datos.filter(d=>d.novedad&&d.novedad.trim()!==''):datos;
+    const tab=document.getElementById('rep-tab-3');if(!tab)return;
+    tab.innerHTML=lista.length===0?`<div style="text-align:center;margin-bottom:12px;">${filtroBtn()}</div><div class="vacio"><div class="ico">${soloNov?'✅':'📄'}</div><p>${soloNov?'Sin novedades en este período':'Sin datos'}</p></div>`:`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+      <div style="font-size:14px;color:var(--gris2);">${lista.length} registros · ${de} al ${ha}</div>
+      <div style="display:flex;gap:8px;">${filtroBtn()}<button class="btn btn-verde btn-sm" onclick="exportarCSV('detalle')">⬇ Exportar</button></div>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden;overflow-x:auto;">
+      <table class="tabla" style="min-width:600px;">
+        <thead><tr><th>Fecha</th><th>Ganadero</th><th>Litros</th><th>Hora</th><th>Recogedor</th><th>Novedad</th></tr></thead>
+        <tbody>${lista.map(d=>`<tr ${d.novedad&&d.novedad.trim()?'style="background:#fffbeb;"':''}><td>${d.fecha}</td><td><strong>${d.ganaderoNombre}</strong></td><td>${(parseFloat(d.litros)||0).toFixed(1)}</td><td>${d.hora||'-'}</td><td>${d.recogedorNombre}</td><td style="font-size:12px;color:${d.novedad&&d.novedad.trim()?'var(--amarillo)':'var(--gris2)'};">${d.novedad||'-'}</td></tr>`).join('')}</tbody>
+      </table>
+    </div>`;
+    // re-bind filter button
+    const fb=document.getElementById('btn-filtro-nov');
+    if(fb)fb.onclick=()=>{soloNov=!soloNov;renderDet();};
+  }
+  function filtroBtn(){return`<button id="btn-filtro-nov" class="btn btn-sm" style="border:2px solid var(--amarillo);background:${soloNov?'var(--amarillo)':'transparent'};color:${soloNov?'white':'var(--amarillo)'};font-weight:700;">⚠️ ${soloNov?'Ver todo':'Solo novedades'}</button>`;}
+  renderDet();
+}
 
 function exportarLiqMatriz(de,ha,precio){
   if(!datosRep.length)return;
   const fechas=[...new Set(datosRep.map(d=>d.fecha))].sort();
-  const ganMap={};datosRep.forEach(d=>{if(!ganMap[d.ganaderoId])ganMap[d.ganaderoId]=d.ganaderoNombre;});
+  const ganMap={};const ganRec={};datosRep.forEach(d=>{if(!ganMap[d.ganaderoId])ganMap[d.ganaderoId]=d.ganaderoNombre;if(!ganRec[d.ganaderoId])ganRec[d.ganaderoId]=new Set();ganRec[d.ganaderoId].add(d.recogedorNombre);});
   const gans=Object.entries(ganMap).sort((a,b)=>a[1].localeCompare(b[1]));
   const celda={};const totalColL={};
   gans.forEach(([gid])=>{celda[gid]={};totalColL[gid]=0;});
   datosRep.forEach(d=>{const gid=d.ganaderoId;const f=d.fecha;const L=parseFloat(d.litros)||0;if(!celda[gid])celda[gid]={};celda[gid][f]=(celda[gid][f]||0)+L;totalColL[gid]=(totalColL[gid]||0)+L;});
   const TL=gans.reduce((s,[gid])=>s+totalColL[gid],0);
-  const headers=`Ganadero,${fechas.join(',')},Total L,A Pagar\n`;
-  const rows=gans.map(([gid,gn])=>{const dias=fechas.map(f=>celda[gid][f]?(celda[gid][f]).toFixed(1):'0').join(',');return`"${gn}",${dias},${totalColL[gid].toFixed(1)},${(totalColL[gid]*precio).toFixed(0)}`;}).join('\n');
-  const totRow=`TOTAL DIA,${fechas.map(f=>{let s=0;gans.forEach(([gid])=>s+=(celda[gid][f]||0));return s.toFixed(1);}).join(',')},${TL.toFixed(1)},${(TL*precio).toFixed(0)}`;
+  const headers=`Ganadero,${fechas.join(',')},Total L,A Pagar,Recogedor\n`;
+  const rows=gans.map(([gid,gn])=>{const dias=fechas.map(f=>celda[gid][f]?(celda[gid][f]).toFixed(1):'0').join(',');const recs=[...ganRec[gid]].join(' / ');return`"${gn}",${dias},${totalColL[gid].toFixed(1)},${(totalColL[gid]*precio).toFixed(0)},"${recs}"`;}).join('\n');
+  const totRow=`TOTAL DIA,${fechas.map(f=>{let s=0;gans.forEach(([gid])=>s+=(celda[gid][f]||0));return s.toFixed(1);}).join(',')},${TL.toFixed(1)},${(TL*precio).toFixed(0)},`;
   descargar(`LIQUIDACION QUINCENAL - ${de} al ${ha} - $${precio}/L\n${headers}${rows}\n${totRow}`,`liquidacion-${de}-${ha}.csv`);
 }window.exportarLiqMatriz=exportarLiqMatriz;
 // ── DETALLE COMPLETO ──
-function repDetalle(datos,de,ha){
-  document.getElementById('rep-tab-4').innerHTML=datos.length===0?'<div class="vacio"><div class="ico">📄</div><p>Sin datos</p></div>':`
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-      <div style="font-size:14px;color:var(--gris2);">${datos.length} registros · ${de} al ${ha}</div>
-      <button class="btn btn-verde btn-sm" onclick="exportarCSV('detalle')">⬇ Exportar</button>
-    </div>
-    <div class="card" style="padding:0;overflow:hidden;overflow-x:auto;">
-      <table class="tabla" style="min-width:600px;">
-        <thead><tr><th>Fecha</th><th>Ganadero</th><th>Litros</th><th>$/L</th><th>Total</th><th>Hora</th><th>Recogedor</th><th>Novedad</th></tr></thead>
-        <tbody>${datos.map(d=>{const L=parseFloat(d.litros)||0;const p=d.precioPorLitro||precioActual;return`<tr><td>${d.fecha}</td><td><strong>${d.ganaderoNombre}</strong></td><td>${L.toFixed(1)}</td><td>${fmtPesoCorto(p)}</td><td>${fmtPesoCorto(L*p)}</td><td>${d.hora||'-'}</td><td>${d.recogedorNombre}</td><td style="font-size:12px;color:var(--gris2);">${d.novedad||'-'}</td></tr>`;}).join('')}</tbody>
-      </table>
-    </div>`;
-}
+
 
 // ── EXPORTAR ──
 function exportarCSV(tipo){
@@ -1398,46 +1420,70 @@ function exportarCSV(tipo){
   descargar(csv,`reporte-${tipo}-${de}-${ha}.csv`);
 }window.exportarCSV=exportarCSV;
 
-function repInter(datos,de,ha){
-  const tab=document.getElementById('rep-tab-5');if(!tab)return;
+function repInter(datos,de,ha,precio){
+  const tab=document.getElementById('rep-tab-4');if(!tab)return;
   if(datos.length===0){tab.innerHTML='<div class="vacio"><div class="ico">🚚</div><p>Sin registros de intermediarios en este período</p></div>';return;}
-  const ag={};
+  const fechas=[...new Set(datos.map(d=>d.fecha))].sort();
+  const intMap={};datos.forEach(d=>{if(!intMap[d.intermediarioId])intMap[d.intermediarioId]=d.intermediarioNombre;});
+  const inters=Object.entries(intMap).sort((a,b)=>a[1].localeCompare(b[1]));
+  const celda={};const totalFila={};const totalColL={};
+  inters.forEach(([id])=>{celda[id]={};totalColL[id]=0;});
+  fechas.forEach(f=>{totalFila[f]=0;});
   datos.forEach(d=>{
-    if(!ag[d.intermediarioId])ag[d.intermediarioId]={n:d.intermediarioNombre,L:0,dias:new Set(),recibidores:new Set()};
-    ag[d.intermediarioId].L+=parseFloat(d.litros)||0;
-    ag[d.intermediarioId].dias.add(d.fecha);
-    ag[d.intermediarioId].recibidores.add(d.recibidorNombre);
+    const id=d.intermediarioId;const f=d.fecha;const L=parseFloat(d.litros)||0;
+    if(!celda[id])celda[id]={};
+    celda[id][f]=(celda[id][f]||0)+L;
+    totalFila[f]=(totalFila[f]||0)+L;
+    totalColL[id]=(totalColL[id]||0)+L;
   });
-  const lista=Object.values(ag).sort((a,b)=>b.L-a.L);
-  const T=lista.reduce((s,x)=>s+x.L,0);
+  const TL=inters.reduce((s,[id])=>s+totalColL[id],0);
+  const TP=TL*precio;
+  const thFechas=fechas.map(f=>`<th style="text-align:center;">${fmtFechaCorta(f)}</th>`).join('');
+  const filas=inters.map(([id,nombre])=>{
+    const celdas=fechas.map(f=>{const L=celda[id][f];return L?`<td style="text-align:center;">${L.toFixed(1)}</td>`:'<td class="vacio" style="text-align:center;">—</td>';}).join('');
+    const totL=totalColL[id];
+    return`<tr><td class="col-gan">${nombre}</td>${celdas}<td class="total-col" style="text-align:center;">${totL.toFixed(1)}</td><td class="total-pago" style="text-align:right;padding-right:10px;">${fmtPeso(totL*precio)}</td></tr>`;
+  }).join('');
+  const totDias=fechas.map(f=>`<td class="total-col" style="text-align:center;">${totalFila[f].toFixed(1)}</td>`).join('');
   tab.innerHTML=`
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-      <div><div style="font-size:14px;color:var(--gris2);">${lista.length} intermediarios · ${T.toFixed(1)}L total</div></div>
-      <button class="btn btn-naranja btn-sm" onclick="exportarCSVInter('${de}','${ha}')">⬇ Exportar</button>
+    <div class="card" style="background:#fff7ed;border:2px solid var(--naranja);margin-bottom:12px;">
+      <div style="font-size:13px;font-weight:700;color:var(--naranja);">INTERMEDIARIOS · ${de} al ${ha}</div>
+      <div style="font-size:36px;font-weight:800;color:var(--naranja);margin-top:4px;">${fmtPeso(TP)}</div>
+      <div style="font-size:14px;color:var(--naranja);margin-top:4px;">${TL.toFixed(1)} litros · ${inters.length} intermediarios · ${fmtPeso(precio)}/L</div>
     </div>
-    <div class="card" style="padding:0;overflow:hidden;">
-      <table class="tabla">
-        <thead><tr><th>Intermediario</th><th>Total L</th><th>Días</th><th>Recibidor</th></tr></thead>
-        <tbody>${lista.map(i=>`<tr><td><strong>${i.n}</strong></td><td>${i.L.toFixed(1)}</td><td>${i.dias.size}</td><td>${[...i.recibidores].join(', ')}</td></tr>`).join('')}</tbody>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
+      <button class="btn btn-naranja btn-sm" onclick="exportarInterMatriz('${de}','${ha}',${precio})">⬇ Exportar Excel</button>
+    </div>
+    <div class="aviso-movil">📱 Desliza hacia los lados para ver todos los días</div>
+    <div class="matriz-wrap">
+      <table class="tabla-matriz">
+        <thead><tr><th class="col-gan">Intermediario</th>${thFechas}<th class="total-col" style="text-align:center;">Total L</th><th class="total-col" style="text-align:right;padding-right:10px;">A pagar</th></tr></thead>
+        <tbody>
+          ${filas}
+          <tr class="fila-total">
+            <td class="col-gan">TOTAL DÍA</td>${totDias}
+            <td class="total-col" style="text-align:center;">${TL.toFixed(1)}</td>
+            <td class="total-col" style="text-align:right;padding-right:10px;">${fmtPeso(TP)}</td>
+          </tr>
+        </tbody>
       </table>
-    </div>
-    <div style="margin-top:16px;">
-      <div style="font-size:14px;font-weight:700;color:var(--gris3);margin-bottom:8px;">Detalle completo</div>
-      <div class="card" style="padding:0;overflow:hidden;overflow-x:auto;">
-        <table class="tabla" style="min-width:400px;">
-          <thead><tr><th>Fecha</th><th>Intermediario</th><th>Litros</th><th>Recibidor</th><th>Novedad</th></tr></thead>
-          <tbody>${datos.map(d=>`<tr><td>${d.fecha}</td><td>${d.intermediarioNombre}</td><td>${parseFloat(d.litros).toFixed(1)}</td><td>${d.recibidorNombre}</td><td style="font-size:12px;">${d.novedad||'-'}</td></tr>`).join('')}</tbody>
-        </table>
-      </div>
     </div>`;
 }
 
-async function exportarCSVInter(de,ha){
-  const s=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','>=',de),where('fecha','<=',ha),orderBy('fecha')));
-  const datos=[];s.forEach(d=>datos.push(d.data()));
-  const csv='Fecha,Intermediario,Litros,Recibidor,Novedad\n'+datos.map(d=>`${d.fecha},"${d.intermediarioNombre}",${parseFloat(d.litros).toFixed(1)},"${d.recibidorNombre}","${d.novedad||''}"`).join('\n');
-  descargar(csv,`intermediarios-${de}-${ha}.csv`);
-}window.exportarCSVInter=exportarCSVInter;
+function exportarInterMatriz(de,ha,precio){
+  if(!datosInter||!datosInter.length)return;
+  const fechas=[...new Set(datosInter.map(d=>d.fecha))].sort();
+  const intMap={};const intRec={};datosInter.forEach(d=>{if(!intMap[d.intermediarioId])intMap[d.intermediarioId]=d.intermediarioNombre;if(!intRec[d.intermediarioId])intRec[d.intermediarioId]=new Set();intRec[d.intermediarioId].add(d.recibidorNombre);});
+  const inters=Object.entries(intMap).sort((a,b)=>a[1].localeCompare(b[1]));
+  const celda={};const totalColL={};
+  inters.forEach(([id])=>{celda[id]={};totalColL[id]=0;});
+  datosInter.forEach(d=>{const id=d.intermediarioId;const f=d.fecha;const L=parseFloat(d.litros)||0;if(!celda[id])celda[id]={};celda[id][f]=(celda[id][f]||0)+L;totalColL[id]=(totalColL[id]||0)+L;});
+  const TL=inters.reduce((s,[id])=>s+totalColL[id],0);
+  const headers=`Intermediario,${fechas.join(',')},Total L,A Pagar,Recibidor\n`;
+  const rows=inters.map(([id,nombre])=>{const dias=fechas.map(f=>celda[id][f]?(celda[id][f]).toFixed(1):'0').join(',');const recs=[...intRec[id]].join(' / ');return`"${nombre}",${dias},${totalColL[id].toFixed(1)},${(totalColL[id]*precio).toFixed(0)},"${recs}"`;}).join('\n');
+  const totRow=`TOTAL DIA,${fechas.map(f=>{let s=0;inters.forEach(([id])=>s+=(celda[id][f]||0));return s.toFixed(1);}).join(',')},${TL.toFixed(1)},${(TL*precio).toFixed(0)},`;
+  descargar(`INTERMEDIARIOS - ${de} al ${ha} - $${precio}/L\n${headers}${rows}\n${totRow}`,`intermediarios-${de}-${ha}.csv`);
+}window.exportarInterMatriz=exportarInterMatriz;
 
 function descargar(csv,nombre){const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=nombre;a.click();}
 
