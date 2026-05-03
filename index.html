@@ -165,9 +165,8 @@
     <div class="alerta alerta-rojo" id="reg-error"></div>
     <div id="reg-fecha-wrap" style="display:none;" class="form-grupo"><label class="form-label">📅 Fecha de recolección</label><div class="form-grande"><input type="date" id="reg-fecha"></div></div>
     <div class="form-grupo"><label class="form-label">🥛 ¿Cuántos LITROS?</label><div class="form-grande"><input type="number" id="reg-litros" placeholder="0" inputmode="decimal" min="0" step="0.5"></div></div>
-    <div class="form-grupo"><label class="form-label">🕐 Hora de recolección</label><div class="form-grande"><input type="time" id="reg-hora"></div></div>
-    <div class="form-grupo"><label class="form-label">📝 Novedad (opcional)</label><div class="form-grande"><textarea id="reg-novedad" placeholder="Ej: Vaca enferma, acceso difícil..."></textarea></div></div>
     <button class="btn btn-verde" onclick="guardarRecoleccion()">✅ GUARDAR</button>
+    <div class="form-grupo" style="margin-top:16px;"><label class="form-label">📝 Novedad (opcional)</label><div class="form-grande"><textarea id="reg-novedad" placeholder="Ej: Vaca enferma, acceso difícil..."></textarea></div></div>
   </div>
 </div>
 
@@ -718,7 +717,7 @@ async function selGan(id){
   ganSel=ganList.find(g=>g.id===id);if(!ganSel)return;
   document.getElementById('reg-ganadero-nombre').textContent=ganSel.nombre;
   document.getElementById('reg-ganadero-tel').textContent=ganSel.telefono||'';
-  document.getElementById('reg-litros').value='';document.getElementById('reg-hora').value=horaAhora();document.getElementById('reg-novedad').value='';
+  document.getElementById('reg-litros').value='';document.getElementById('reg-novedad').value='';
   ocult('reg-error');
   const docId=`${UA.uid}_${ganSel.id}_${getFechaReg()}`;
   const ex=await getDoc(doc(db,'recolecciones',docId));
@@ -728,8 +727,8 @@ async function selGan(id){
   ir('screen-rec-registrar');
 }window.seleccionarGanadero=selGan;window.selGan=selGan;
 async function guardarRecoleccion(){
-  const L=parseFloat(document.getElementById('reg-litros').value);const h=document.getElementById('reg-hora').value;const n=document.getElementById('reg-novedad').value.trim();
-  if(!L||L<=0){alerta('reg-error','Ingresa los litros','rojo');return;}if(!h){alerta('reg-error','Ingresa la hora','rojo');return;}
+  const L=parseFloat(document.getElementById('reg-litros').value);const h=horaAhora();const n=document.getElementById('reg-novedad').value.trim();
+  if(!L||L<=0){alerta('reg-error','Ingresa los litros','rojo');return;}
   if(!navigator.onLine){alerta('reg-error','⚠️ Sin internet. El registro no se guardó. Conéctate e intenta de nuevo.','rojo');return;}
   try{
     const docId=`${UA.uid}_${ganSel.id}_${getFechaReg()}`;
