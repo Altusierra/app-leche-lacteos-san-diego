@@ -926,7 +926,8 @@ async function confirmarEliminarInter(){
       await addDoc(collection(db,'eliminaciones'),{
         tipo:'intermediario',registroId:interRegEliminarId,...snap.data(),
         motivo,eliminadoEn:hoy(),eliminadoHora:horaAhora(),
-        recogedorId:UA.uid,recogedorNombre:UA.nombre||UA.email,timestamp:serverTimestamp()
+        eliminadoPorId:UA.uid,eliminadoPorNombre:UA.nombre||UA.email,
+        eliminadoPorRol:rol||'desconocido',timestamp:serverTimestamp()
       });
       const {deleteDoc:delDoc}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
       await delDoc(doc(db,'recepcionesInter',interRegEliminarId));
@@ -1408,8 +1409,8 @@ async function cargarEliminaciones(){
       <div style="font-size:14px;color:var(--gris2);margin-bottom:12px;">${lista.length} eliminaciones</div>
       <div class="card" style="padding:0;overflow:hidden;overflow-x:auto;">
         <table class="tabla" style="min-width:600px;">
-          <thead><tr><th>Fecha reg.</th><th>Ganadero</th><th>Litros</th><th>Hora</th><th>Recogedor</th><th>Motivo</th><th>Eliminado</th></tr></thead>
-          <tbody>${lista.map(d=>`<tr style="background:#fff5f5;"><td>${d.fecha||'-'}</td><td><strong>${d.ganaderoNombre||'-'}</strong></td><td>${parseFloat(d.litros||0).toFixed(1)}</td><td>${d.hora||'-'}</td><td>${d.recogedorNombre||'-'}</td><td style="font-size:12px;color:var(--rojo);">${d.motivo||'-'}</td><td style="font-size:11px;color:var(--gris2);">${d.eliminadoEn||''} ${d.eliminadoHora||''}</td></tr>`).join('')}
+          <thead><tr><th>Fecha reg.</th><th>Ganadero</th><th>Litros</th><th>Hora</th><th>Recogedor</th><th>Motivo</th><th>Eliminado por</th><th>Cuándo</th></tr></thead>
+          <tbody>${lista.map(d=>{const quienElim=d.eliminadoPorNombre||(d.recogedorNombre||'-');const rolElim=d.eliminadoPorRol?` (${d.eliminadoPorRol})`:'';return`<tr style="background:#fff5f5;"><td>${d.fecha||'-'}</td><td><strong>${d.ganaderoNombre||d.intermediarioNombre||'-'}</strong></td><td>${parseFloat(d.litros||0).toFixed(1)}</td><td>${d.hora||'-'}</td><td>${d.recogedorNombre||d.recibidorNombre||'-'}</td><td style="font-size:12px;color:var(--rojo);">${d.motivo||'-'}</td><td style="font-size:12px;font-weight:700;">${quienElim}<span style="color:var(--gris2);font-weight:400;">${rolElim}</span></td><td style="font-size:11px;color:var(--gris2);">${d.eliminadoEn||''} ${d.eliminadoHora||''}</td></tr>`;}).join('')}
           </tbody>
         </table>
       </div>`;
@@ -1664,8 +1665,11 @@ async function confirmarEliminarRegistro(){
       litros:datos.litros,
       hora:datos.hora,
       fecha:datos.fecha,
-      recogedorId:UA.uid,
-      recogedorNombre:UA.nombre||UA.email,
+      recogedorId:datos.recogedorId,
+      recogedorNombre:datos.recogedorNombre,
+      eliminadoPorId:UA.uid,
+      eliminadoPorNombre:UA.nombre||UA.email,
+      eliminadoPorRol:rol||'desconocido',
       motivo:motivo,
       eliminadoEn:hoy(),
       eliminadoHora:horaAhora(),
