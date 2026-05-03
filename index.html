@@ -180,7 +180,7 @@
   <div style="padding:20px;">
     <div id="recibi-fecha" style="font-size:15px;color:var(--gris2);margin-bottom:16px;"></div>
     <div id="recibi-alertas-container"></div>
-    <div class="card"><div class="card-titulo">🏭 Total recibido hoy</div><div class="card-valor" id="recibi-total-hoy">0</div><div class="card-sub">litros</div></div>
+    <div class="card"><div class="card-titulo">🏭 Registrados hoy</div><div class="card-valor" id="recibi-total-hoy">0</div><div class="card-sub">personas registradas</div></div>
     <button class="btn btn-naranja" style="font-size:18px;padding:22px;margin-bottom:20px;" onclick="irPantalla('screen-recibi-registrar')">📥 REGISTRAR LLEGADA</button>
     <div style="margin-bottom:12px;font-size:16px;font-weight:700;color:var(--gris3);">Registros de hoy</div>
     <div id="recibi-lista-hoy"><div class="loading">Cargando...</div></div>
@@ -782,7 +782,7 @@ async function resumenRecibidor(){
     const sInter=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','==',hoy())));
     let totalInter=0;const recepsInter={};
     sInter.forEach(d=>{const da=d.data();if(da.recibidorId!==UA.uid)return;totalInter+=parseFloat(da.litros)||0;recepsInter[da.intermediarioId]={id:d.id,litros:parseFloat(da.litros)||0,nombre:da.intermediarioNombre,novedad:da.novedad||''};});
-    document.getElementById('recibi-total-hoy').textContent=(totalMio+totalInter).toFixed(1);
+    document.getElementById('recibi-total-hoy').textContent=Object.keys(receps).length+Object.keys(recepsInter).length;
     const listaInterHoy=Object.values(recepsInter);
     document.getElementById('recibi-lista-inter-hoy').innerHTML=listaInterHoy.length===0
       ?'<p style="color:var(--gris2);font-size:14px;">Sin intermediarios hoy</p>'
