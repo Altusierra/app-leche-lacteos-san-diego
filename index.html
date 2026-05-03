@@ -1100,12 +1100,38 @@ async function usuAdmin(){
         </div>
         <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
           <button class="btn btn-azul btn-sm" onclick="resetearContrasena('${x.email}')">📧 Restablecer clave</button>
+          ${x.id!==UA.uid?`<button class="btn btn-gris btn-sm" data-cambiarid="${x.id}" data-cambiarrol="${x.rol}" data-cambiarnombre="${x.nombre||x.email}" style="cursor:pointer;">🔄 Cambiar rol</button>`:''}
           ${x.bloqueado?`<button class="btn btn-verde btn-sm" onclick="toggleBloqueo('${x.id}',false)">🔓 Desbloquear</button>`:x.id!==UA.uid?`<button class="btn btn-rojo btn-sm" onclick="toggleBloqueo('${x.id}',true)">🔒 Bloquear</button>`:''}
+          ${x.id!==UA.uid?`<button class="btn btn-gris btn-sm" data-uid="${x.id}" data-rol="${x.rol}" data-nombre="${x.nombre||x.email}" class="btn-cambiar-rol">🔄 Cambiar rol</button>`:''}
         </div>
       </div>`).join('');
+    // Event delegation para botones cambiar rol
+    document.getElementById('lista-usuarios').querySelectorAll('[data-cambiarid]').forEach(btn=>{
+      btn.addEventListener('click',function(){
+        cambiarRol(this.dataset.cambiarid,this.dataset.cambiarrol,this.dataset.cambiarnombre);
+      });
+    });
   }catch(e){}
 }
 async function resetearContrasena(email){try{await sendPasswordResetEmail(auth,email);alerta('usr-ok',`✅ Correo enviado a ${email}. El usuario debe revisar su bandeja de entrada.`,'verde');}catch(e){alerta('usr-error','Error al enviar el correo.','rojo');}}window.resetearContrasena=resetearContrasena;
+async function cambiarRol(uid,rolActual,nombre){
+  const roles=['recogedor','recibidor','admin'];
+  const nombres={'recogedor':'Recogedor','recibidor':'Recibidor (planta)','admin':'Administrador'};
+  const opciones=roles.filter(r=>r!==rolActual).map(r=>nombres[r]).join(' / ');
+  const nuevoNombre=prompt(`¿A qué rol quieres cambiar a ${nombre}?\n\nRol actual: ${nombres[rolActual]}\nOpciones: ${opciones}\n\nEscribe exactamente: recogedor, recibidor o admin`);
+  if(!nuevoNombre)return;
+  const nuevo=nuevoNombre.trim().toLowerCase();
+  if(!roles.includes(nuevo)){alert('Rol no válido. Escribe: recogedor, recibidor o admin');return;}
+  if(nuevo===rolActual){alert('Ya tiene ese rol.');return;}
+  try{
+    await updateDoc(doc(db,'usuarios',uid),{rol:nuevo});
+    // Limpiar caché del usuario afectado no es posible desde aquí,
+    // pero el cambio aplica en el próximo login
+    alerta('usr-ok',`✅ Rol de ${nombre} cambiado a ${nombres[nuevo]}`,'verde');
+    await usuAdmin();
+  }catch(e){alerta('usr-error','Error al cambiar el rol','rojo');}
+}window.cambiarRol=cambiarRol;
+
 async function toggleBloqueo(uid,bloquear){try{await updateDoc(doc(db,'usuarios',uid),{bloqueado:bloquear});alerta('usr-ok',bloquear?'🔒 Usuario bloqueado':'🔓 Usuario desbloqueado','verde');await usuAdmin();}catch(e){alerta('usr-error','Error al actualizar','rojo');}}window.toggleBloqueo=toggleBloqueo;
 function abrirModalUsuario(){['m-usr-nombre','m-usr-email','m-usr-pass'].forEach(id=>document.getElementById(id).value='');document.getElementById('m-usr-rol').value='recogedor';ocult('m-usr-error');abrirModal('modal-usuario');}window.abrirModalUsuario=abrirModalUsuario;
 async function crearUsuario(){const n=document.getElementById('m-usr-nombre').value.trim();const e=document.getElementById('m-usr-email').value.trim();const p=document.getElementById('m-usr-pass').value;const r=document.getElementById('m-usr-rol').value;if(!n||!e||!p){alerta('m-usr-error','Todos los campos son obligatorios','rojo');return;}if(p.length<6){alerta('m-usr-error','Mínimo 6 caracteres','rojo');return;}try{const c=await createUserWithEmailAndPassword(auth2,e,p);await setDoc(doc(db,'usuarios',c.user.uid),{nombre:n,email:e,rol:r,bloqueado:false,creadoPor:UA.uid,fechaCreacion:hoy()});await signOut(auth2);cerrarModal('modal-usuario');alerta('usr-ok',`✅ Usuario ${n} creado correctamente`,'verde');await usuAdmin();}catch(e){alerta('m-usr-error',e.code==='auth/email-already-in-use'?'Ese correo ya está registrado':'Error al crear usuario','rojo');}}window.crearUsuario=crearUsuario;
