@@ -184,6 +184,8 @@
     <button class="btn btn-naranja" style="font-size:18px;padding:22px;margin-bottom:20px;" onclick="irPantalla('screen-recibi-registrar')">📥 REGISTRAR LLEGADA</button>
     <div style="margin-bottom:12px;font-size:16px;font-weight:700;color:var(--gris3);">Registros de hoy</div>
     <div id="recibi-lista-hoy"><div class="loading">Cargando...</div></div>
+    <div style="margin-top:20px;margin-bottom:12px;font-size:16px;font-weight:700;color:var(--naranja);">🚚 Intermediarios de hoy</div>
+    <div id="recibi-lista-inter-hoy"><div class="loading">Cargando...</div></div>
   </div>
 </div>
 
@@ -764,7 +766,7 @@ async function resumenRecibidor(){
     const sRec=await getDocs(query(collection(db,'recepciones'),where('fecha','==',hoy())));
     let totalMio=0;const receps={};
     sRec.forEach(d=>{const da=d.data();if(da.recibidorId!==UA.uid)return;totalMio+=parseFloat(da.litros)||0;receps[da.recogedorId]={litros:parseFloat(da.litros)||0,nombre:da.recogedorNombre,novedad:da.novedad||''};});
-    document.getElementById('recibi-total-hoy').textContent=totalMio.toFixed(1);
+    // total se actualiza después de contar también intermediarios
     const items=Object.entries(receps);
     document.getElementById('recibi-lista-hoy').innerHTML=items.length===0
       ?'<div class="vacio"><div class="ico">🏭</div><p>Sin registros hoy</p></div>'
@@ -780,6 +782,7 @@ async function resumenRecibidor(){
     const sInter=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','==',hoy())));
     let totalInter=0;const recepsInter={};
     sInter.forEach(d=>{const da=d.data();if(da.recibidorId!==UA.uid)return;totalInter+=parseFloat(da.litros)||0;recepsInter[da.intermediarioId]={id:d.id,litros:parseFloat(da.litros)||0,nombre:da.intermediarioNombre,novedad:da.novedad||''};});
+    document.getElementById('recibi-total-hoy').textContent=(totalMio+totalInter).toFixed(1);
     const listaInterHoy=Object.values(recepsInter);
     document.getElementById('recibi-lista-inter-hoy').innerHTML=listaInterHoy.length===0
       ?'<p style="color:var(--gris2);font-size:14px;">Sin intermediarios hoy</p>'
