@@ -718,6 +718,7 @@ async function selGan(id){
 async function guardarRecoleccion(){
   const L=parseFloat(document.getElementById('reg-litros').value);const h=document.getElementById('reg-hora').value;const n=document.getElementById('reg-novedad').value.trim();
   if(!L||L<=0){alerta('reg-error','Ingresa los litros','rojo');return;}if(!h){alerta('reg-error','Ingresa la hora','rojo');return;}
+  if(!navigator.onLine){alerta('reg-error','⚠️ Sin internet. El registro no se guardó. Conéctate e intenta de nuevo.','rojo');return;}
   try{
     const docId=`${UA.uid}_${ganSel.id}_${hoy()}`;
     await setDoc(doc(db,'recolecciones',docId),{ganaderoId:ganSel.id,ganaderoNombre:ganSel.nombre,litros:L,hora:h,novedad:n,fecha:hoy(),precioPorLitro:precioActual,recogedorId:UA.uid,recogedorNombre:UA.nombre||UA.email,timestamp:serverTimestamp()});
@@ -857,6 +858,7 @@ async function guardarRecepcionInter(){
   const L=parseFloat(document.getElementById('recibi-inter-litros').value);
   const novedad=document.getElementById('recibi-inter-novedad').value.trim();
   if(!L||L<=0){alerta('recibi-inter-error','Ingresa los litros','rojo');return;}
+  if(!navigator.onLine){alerta('recibi-inter-error','⚠️ Sin internet. El registro no se guardó. Conéctate e intenta de nuevo.','rojo');return;}
   try{
     const docId=`${interSeleccionado.id}_${hoy()}`;
     await setDoc(doc(db,'recepcionesInter',docId),{
@@ -937,6 +939,7 @@ async function selRecibidor(id){
 async function guardarRecepcion(){
   const L=parseFloat(document.getElementById('recibi-litros-input').value);const novedad=document.getElementById('recibi-novedad-input').value.trim();
   if(!L||L<=0){alerta('recibi-form-error','Ingresa los litros recibidos','rojo');return;}
+  if(!navigator.onLine){alerta('recibi-form-error','⚠️ Sin internet. El registro no se guardó. Conéctate e intenta de nuevo.','rojo');return;}
   try{
     const sCol=await getDocs(query(collection(db,'recolecciones'),where('recogedorId','==',recibSeleccionado.id),where('fecha','==',hoy())));
     let rutaTotal=0;sCol.forEach(d=>{rutaTotal+=parseFloat(d.data().litros)||0;});
