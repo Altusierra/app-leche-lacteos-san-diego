@@ -760,9 +760,9 @@ async function initRecibidor(){document.getElementById('recibi-nombre-header').t
 async function resumenRecibidor(){
   try{
     // Solo los registros que hizo el recibidor actual hoy
-    const sRec=await getDocs(query(collection(db,'recepciones'),where('fecha','==',hoy()),where('recibidorId','==',UA.uid)));
+    const sRec=await getDocs(query(collection(db,'recepciones'),where('fecha','==',hoy())));
     let totalMio=0;const receps={};
-    sRec.forEach(d=>{const da=d.data();totalMio+=parseFloat(da.litros)||0;receps[da.recogedorId]={litros:parseFloat(da.litros)||0,nombre:da.recogedorNombre,novedad:da.novedad||''};});
+    sRec.forEach(d=>{const da=d.data();if(da.recibidorId!==UA.uid)return;totalMio+=parseFloat(da.litros)||0;receps[da.recogedorId]={litros:parseFloat(da.litros)||0,nombre:da.recogedorNombre,novedad:da.novedad||''};});
     document.getElementById('recibi-total-hoy').textContent=totalMio.toFixed(1);
     const items=Object.entries(receps);
     document.getElementById('recibi-lista-hoy').innerHTML=items.length===0
@@ -776,9 +776,9 @@ async function resumenRecibidor(){
           <span class="badge badge-verde">${rv.litros.toFixed(1)}L</span>
         </div>`).join('');
     // Intermediarios del día
-    const sInter=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','==',hoy()),where('recibidorId','==',UA.uid)));
+    const sInter=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','==',hoy())));
     let totalInter=0;const recepsInter={};
-    sInter.forEach(d=>{const da=d.data();totalInter+=parseFloat(da.litros)||0;recepsInter[da.intermediarioId]={id:d.id,litros:parseFloat(da.litros)||0,nombre:da.intermediarioNombre,novedad:da.novedad||''};});
+    sInter.forEach(d=>{const da=d.data();if(da.recibidorId!==UA.uid)return;totalInter+=parseFloat(da.litros)||0;recepsInter[da.intermediarioId]={id:d.id,litros:parseFloat(da.litros)||0,nombre:da.intermediarioNombre,novedad:da.novedad||''};});
     const listaInterHoy=Object.values(recepsInter);
     document.getElementById('recibi-lista-inter-hoy').innerHTML=listaInterHoy.length===0
       ?'<p style="color:var(--gris2);font-size:14px;">Sin intermediarios hoy</p>'
