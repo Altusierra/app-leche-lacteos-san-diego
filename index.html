@@ -986,11 +986,18 @@ async function dashAdmin(){
     let totalPlanta=0;const porRecPlanta={};
     sRec.forEach(d=>{const da=d.data();totalPlanta+=parseFloat(da.litros)||0;porRecPlanta[da.recogedorId]={litros:parseFloat(da.litros)||0,nombre:da.recogedorNombre};});
     document.getElementById('admin-total-rec').textContent=totalRuta.toFixed(1);
-    document.getElementById('admin-total-planta').textContent=totalPlanta.toFixed(1);
+    // totalPlanta se actualiza después de sumar intermediarios
+    const _totalPlantaRec=totalPlanta;
     const alertas=[];Object.entries(porRecPlanta).forEach(([rid,rv])=>{const rutaL=porRec[rid]?.litros||0;if(rv.litros>rutaL)alertas.push({nombre:rv.nombre,recibido:rv.litros,ruta:rutaL,dif:rv.litros-rutaL});});
     document.getElementById('admin-alertas-container').innerHTML=alertas.map(a=>`<div class="alerta-grande naranja"><div style="font-weight:800;color:var(--naranja);margin-bottom:4px;">⚠️ ALERTA — ${a.nombre}</div><div style="color:var(--naranja);font-size:14px;">Planta: ${a.recibido.toFixed(1)}L · Ruta: ${a.ruta.toFixed(1)}L · Diferencia: +${a.dif.toFixed(1)}L</div></div>`).join('');
     const todosRec=new Set([...Object.keys(porRec),...Object.keys(porRecPlanta)]);
-    document.getElementById('admin-conciliacion').innerHTML=todosRec.size===0?'<p style="color:var(--gris2);font-size:14px;">Sin datos hoy</p>':`<div style="overflow:hidden;border-radius:12px;"><table class="tabla"><thead><tr><th>Recogedor</th><th>Ruta</th><th>Planta</th><th>Diferencia</th></tr></thead><tbody>${[...todosRec].map(rid=>{const rutaL=porRec[rid]?.litros||0;const plantaL=porRecPlanta[rid]?.litros;const nombre=porRec[rid]?.nombre||porRecPlanta[rid]?.nombre||'?';const pend=plantaL===undefined;const esA=!pend&&plantaL>rutaL;const dv=pend?'—':(plantaL-rutaL).toFixed(1);return`<tr class="${esA?'fila-alerta':''}"><td><strong>${nombre}</strong></td><td>${rutaL.toFixed(1)}</td><td>${pend?'—':plantaL.toFixed(1)}</td><td>${pend?'<span class="badge badge-amarillo">⏳</span>':esA?`<span class="badge badge-naranja">⚠️ +${dv}L</span>`:`<span class="badge badge-verde">${dv}L</span>`}</td></tr>`;}).join('')}</tbody></table></div>`;
+    const filasConcil=[...todosRec].map(rid=>{const rutaL=porRec[rid]?.litros||0;const plantaL=porRecPlanta[rid]?.litros;const nombre=porRec[rid]?.nombre||porRecPlanta[rid]?.nombre||'?';const pend=plantaL===undefined;const esA=!pend&&plantaL>rutaL;const dv=pend?'—':(plantaL-rutaL).toFixed(1);return{rid,nombre,rutaL,plantaL,pend,esA,dv};});
+    const totalRutaC=filasConcil.reduce((s,f)=>s+f.rutaL,0);
+    const totalPlantaC=filasConcil.filter(f=>!f.pend).reduce((s,f)=>s+f.plantaL,0);
+    const totalDiffC=totalPlantaC-totalRutaC;
+    const diffColor=totalDiffC>0?'var(--naranja)':totalDiffC<0?'var(--amarillo)':'#15803d';
+    const diffBadge=totalDiffC>0?`<span class="badge badge-naranja">⚠️ +${totalDiffC.toFixed(1)}L</span>`:totalDiffC<0?`<span class="badge badge-amarillo">${totalDiffC.toFixed(1)}L</span>`:`<span class="badge badge-verde">✅ 0L</span>`;
+    document.getElementById('admin-conciliacion').innerHTML=todosRec.size===0?'<p style="color:var(--gris2);font-size:14px;">Sin datos hoy</p>':`<div style="overflow:hidden;border-radius:12px;"><table class="tabla"><thead><tr><th>Recogedor</th><th>Ruta</th><th>Planta</th><th>Diferencia</th></tr></thead><tbody>${filasConcil.map(f=>`<tr class="${f.esA?'fila-alerta':''}"><td><strong>${f.nombre}</strong></td><td>${f.rutaL.toFixed(1)}</td><td>${f.pend?'—':f.plantaL.toFixed(1)}</td><td>${f.pend?'<span class="badge badge-amarillo">⏳</span>':f.esA?`<span class="badge badge-naranja">⚠️ +${f.dv}L</span>`:`<span class="badge badge-verde">${f.dv}L</span>`}</td></tr>`).join('')}</tbody><tfoot><tr style="background:var(--verde3);font-weight:700;"><td style="color:var(--verde);">TOTAL</td><td style="color:var(--verde);">${totalRutaC.toFixed(1)}</td><td style="color:var(--verde);">${totalPlantaC.toFixed(1)}</td><td>${diffBadge}</td></tr></tfoot></table></div>`;
     const ganArr=Object.values(porGan).sort((a,b)=>b.total-a.total);
     document.getElementById('admin-desglose-ganaderos').innerHTML=ganArr.length===0?'<p style="color:var(--gris2);font-size:14px;">Sin datos hoy</p>':ganArr.map(g=>`<div style="padding:12px 0;border-bottom:1px solid var(--gris1);"><div style="display:flex;justify-content:space-between;align-items:center;"><div style="font-weight:700;font-size:15px;">${g.nombre}</div><span class="badge badge-verde">Total: ${g.total.toFixed(1)}L</span></div>${g.recogedores.length>1?`<div style="margin-top:6px;">${g.recogedores.map(r=>`<div style="font-size:13px;color:var(--gris2);padding-left:12px;">↳ ${r.nombre}: ${r.litros.toFixed(1)}L · ${r.hora}</div>`).join('')}</div>`:`<div style="font-size:13px;color:var(--gris2);margin-top:2px;">${g.recogedores[0]?.nombre||''} · ${g.recogedores[0]?.hora||''}</div>`}</div>`).join('');
     // Total intermediarios hoy
@@ -998,6 +1005,7 @@ async function dashAdmin(){
       const sInter=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','==',hoy())));
       let totalInterH=0;const interHoy=[];
       sInter.forEach(d=>{const da=d.data();totalInterH+=parseFloat(da.litros)||0;interHoy.push(da);});
+      document.getElementById('admin-total-planta').textContent=(_totalPlantaRec+totalInterH).toFixed(1);
       // Agregar card intermediarios si hay datos
       const contAdmin=document.getElementById('admin-desglose-ganaderos');
       if(contAdmin&&totalInterH>0){
