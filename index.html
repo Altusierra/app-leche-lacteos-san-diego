@@ -417,6 +417,22 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="modal-elim-recep">
+  <div class="modal">
+    <div class="modal-titulo">🗑️ Eliminar Registro Recogedor</div>
+    <div id="elim-recep-detalle" style="background:var(--rojo2);border:2px solid var(--rojo);border-radius:12px;padding:14px;margin-bottom:16px;font-size:14px;color:var(--rojo);font-weight:600;"></div>
+    <div class="campo">
+      <label>¿Por qué eliminas este registro? *</label>
+      <textarea id="elim-recep-motivo" placeholder="Escribe el motivo..." style="width:100%;padding:14px;font-size:15px;border:2px solid #d1d5db;border-radius:12px;height:100px;resize:none;"></textarea>
+    </div>
+    <div class="alerta alerta-rojo" id="elim-recep-error"></div>
+    <div class="fila" style="margin-top:8px;">
+      <button class="btn btn-gris" onclick="cerrarModal('modal-elim-recep')">Cancelar</button>
+      <button class="btn btn-rojo" onclick="confirmarEliminarRecepcion()">Eliminar</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-ganadero">
   <div class="modal">
     <div class="modal-titulo" id="modal-ganadero-titulo">Nuevo Ganadero</div>
@@ -523,22 +539,6 @@
       <button class="btn btn-rojo" onclick="confirmarEliminarInter()">Eliminar</button>
     </div>
   </div>
-
-<div class="modal-overlay" id="modal-elim-recep">
-  <div class="modal">
-    <div class="modal-titulo">🗑️ Eliminar Registro Recogedor</div>
-    <div id="elim-recep-detalle" style="background:var(--rojo2);border:2px solid var(--rojo);border-radius:12px;padding:14px;margin-bottom:16px;font-size:14px;color:var(--rojo);font-weight:600;"></div>
-    <div class="campo">
-      <label>¿Por qué eliminas este registro? *</label>
-      <textarea id="elim-recep-motivo" placeholder="Escribe el motivo..." style="width:100%;padding:14px;font-size:15px;border:2px solid #d1d5db;border-radius:12px;height:100px;resize:none;"></textarea>
-    </div>
-    <div class="alerta alerta-rojo" id="elim-recep-error"></div>
-    <div class="fila" style="margin-top:8px;">
-      <button class="btn btn-gris" onclick="cerrarModal('modal-elim-recep')">Cancelar</button>
-      <button class="btn btn-rojo" onclick="confirmarEliminarRecepcion()">Eliminar</button>
-    </div>
-  </div>
-</div>
 </div>
 
 <div class="modal-overlay" id="modal-ganadero-rec">
@@ -936,12 +936,34 @@ function abrirEliminarInterRegistro(docId,nombre,litros){
   ocult('m-elim-inter-error');
   abrirModal('modal-eliminar-inter');
 }window.abrirEliminarInterRegistro=abrirEliminarInterRegistro;
+
+async function confirmarEliminarInter(){
+  const motivo=document.getElementById('m-elim-inter-motivo').value.trim();
+  if(!motivo){alerta('m-elim-inter-error','Debes escribir el motivo','rojo');return;}
+  if(!interRegEliminarId)return;
+  try{
+    const snap=await getDoc(doc(db,'recepcionesInter',interRegEliminarId));
+    if(snap.exists()){
+      await addDoc(collection(db,'eliminaciones'),{
+        tipo:'intermediario',registroId:interRegEliminarId,...snap.data(),
+        motivo,eliminadoEn:hoy(),eliminadoHora:horaAhora(),
+        eliminadoPorId:UA.uid,eliminadoPorNombre:UA.nombre||UA.email,
+        eliminadoPorRol:rol||'desconocido',timestamp:serverTimestamp()
+      });
+      const {deleteDoc:delDoc}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+      await delDoc(doc(db,'recepcionesInter',interRegEliminarId));
+    }
+    cerrarModal('modal-eliminar-inter');interRegEliminarId=null;
+    await resumenRecibidor();
+  }catch(e){alerta('m-elim-inter-error','Error al eliminar','rojo');console.error(e);}
+}window.confirmarEliminarInter=confirmarEliminarInter;
+
 let recepElimId=null;
 function abrirEliminarRecepcion(docId,nombre,litros){
   recepElimId=docId;
-  document.getElementById('elim-recep-detalle').textContent=`Vas a eliminar el registro de ${nombre} — ${litros}L`;
+  document.getElementById('elim-recep-detalle').textContent=`⚠️ Vas a eliminar: ${litros}L de ${nombre}`;
   document.getElementById('elim-recep-motivo').value='';
-  alerta('elim-recep-error','','');
+  document.getElementById('elim-recep-error').style.display='none';
   abrirModal('modal-elim-recep');
 }window.abrirEliminarRecepcion=abrirEliminarRecepcion;
 async function confirmarEliminarRecepcion(){
@@ -966,27 +988,6 @@ async function confirmarEliminarRecepcion(){
     resumenRecibidor();
   }catch(e){alerta('elim-recep-error','Error al eliminar','rojo');console.error(e);}
 }window.confirmarEliminarRecepcion=confirmarEliminarRecepcion;
-
-async function confirmarEliminarInter(){
-  const motivo=document.getElementById('m-elim-inter-motivo').value.trim();
-  if(!motivo){alerta('m-elim-inter-error','Debes escribir el motivo','rojo');return;}
-  if(!interRegEliminarId)return;
-  try{
-    const snap=await getDoc(doc(db,'recepcionesInter',interRegEliminarId));
-    if(snap.exists()){
-      await addDoc(collection(db,'eliminaciones'),{
-        tipo:'intermediario',registroId:interRegEliminarId,...snap.data(),
-        motivo,eliminadoEn:hoy(),eliminadoHora:horaAhora(),
-        eliminadoPorId:UA.uid,eliminadoPorNombre:UA.nombre||UA.email,
-        eliminadoPorRol:rol||'desconocido',timestamp:serverTimestamp()
-      });
-      const {deleteDoc:delDoc}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
-      await delDoc(doc(db,'recepcionesInter',interRegEliminarId));
-    }
-    cerrarModal('modal-eliminar-inter');interRegEliminarId=null;
-    await resumenRecibidor();
-  }catch(e){alerta('m-elim-inter-error','Error al eliminar','rojo');console.error(e);}
-}window.confirmarEliminarInter=confirmarEliminarInter;
 
 async function selRecibidor(id){
   recibSeleccionado=listaRecogedores.find(r=>r.id===id);if(!recibSeleccionado)return;
@@ -1204,7 +1205,7 @@ Precio por litro: $${precioActual}
 }
 
 async function ganAdmin(){try{const s=await getDocs(query(collection(db,'ganaderos'),orderBy('nombre')));ganList=[];s.forEach(d=>ganList.push({id:d.id,...d.data()}));renderGanAdmin(ganList);}catch(e){}}
-function renderGanAdmin(lista){document.getElementById('lista-ganaderos-admin').innerHTML=lista.length===0?'<div class="vacio"><div class="ico">🐄</div><p>No hay ganaderos</p></div>':lista.map(g=>`<div class="lista-item"><div><div class="nombre">${g.nombre} ${!g.activo?'<span class="badge badge-rojo">Inactivo</span>':''}</div><div class="detalle">${g.telefono||'Sin teléfono'}${g.vereda?' · '+g.vereda:''}</div>${g.agregadoPorNombre?`<div class="detalle" style="font-size:11px;">Agregado por: ${g.agregadoPorNombre} · ${g.fechaAgregado||''}</div>`:''}</div><div style="display:flex;gap:8px;"><button class="btn btn-gris btn-sm" onclick="abrirModalGanadero('${g.id}')">✏️ Editar</button><button class="btn btn-sm" style="background:#fee2e2;color:#DC2626;border:1px solid #fca5a5;" onclick="eliminarGanadero('${g.id}','${g.nombre.replace(/'/g,\\'\\')}')">🗑️</button></div></div>`).join('');}
+function renderGanAdmin(lista){document.getElementById('lista-ganaderos-admin').innerHTML=lista.length===0?'<div class="vacio"><div class="ico">🐄</div><p>No hay ganaderos</p></div>':lista.map(g=>`<div class="lista-item"><div><div class="nombre">${g.nombre} ${!g.activo?'<span class="badge badge-rojo">Inactivo</span>':''}</div><div class="detalle">${g.telefono||'Sin teléfono'}${g.vereda?' · '+g.vereda:''}</div>${g.agregadoPorNombre?`<div class="detalle" style="font-size:11px;">Agregado por: ${g.agregadoPorNombre} · ${g.fechaAgregado||''}</div>`:''}</div><button class="btn btn-gris btn-sm" onclick="abrirModalGanadero('${g.id}')">Editar</button></div>`).join('');}
 function filtrarGanaderosAdmin(){const t=document.getElementById('buscar-ganadero-admin').value.toLowerCase();renderGanAdmin(ganList.filter(g=>g.nombre.toLowerCase().includes(t)));}window.filtrarGanaderosAdmin=filtrarGanaderosAdmin;
 async function abrirModalGanadero(id){editGanId=id;const g=id?ganList.find(x=>x.id===id):null;document.getElementById('modal-ganadero-titulo').textContent=g?'Editar Ganadero':'Nuevo Ganadero';document.getElementById('m-gan-nombre').value=g?.nombre||'';document.getElementById('m-gan-tel').value=g?.telefono||'';document.getElementById('m-gan-vereda').value=g?.vereda||'';document.getElementById('m-gan-activo').value=g?String(g.activo!==false):'true';ocult('m-gan-error');
   // Mostrar botón eliminar solo si es edición
@@ -1227,22 +1228,18 @@ async function guardarGanadero(){const n=document.getElementById('m-gan-nombre')
   if(duplicado){alerta('m-gan-error',`⚠️ Ya existe un ganadero con ese nombre: "${duplicado.nombre}"`,'rojo');return;}
   try{if(editGanId){await updateDoc(doc(db,'ganaderos',editGanId),{nombre:n,telefono:t,vereda:v,activo:a});}else{await addDoc(collection(db,'ganaderos'),{nombre:n,telefono:t,vereda:v,activo:true,agregadoPor:UA.uid,agregadoPorNombre:UA.nombre||UA.email,fechaAgregado:hoy()});}cerrarModal('modal-ganadero');await ganAdmin();await cargarGanaderos();}catch(e){alerta('m-gan-error','Error al guardar','rojo');}}window.guardarGanadero=guardarGanadero;
 
-async function eliminarGanadero(id,nombre){
-  const gid=id||editGanId;
-  const gnombre=nombre||(ganList.find(x=>x.id===gid)?.nombre)||'este ganadero';
-  if(!gid)return;
-  if(!confirm(`¿Eliminar permanentemente a "${gnombre}"?\n\nEsta acción no se puede deshacer.`))return;
+async function eliminarGanadero(){
+  if(!editGanId)return;
+  const g=ganList.find(x=>x.id===editGanId);
+  if(!confirm(`¿Eliminar permanentemente a "${g?.nombre}"? Esta acción no se puede deshacer.`))return;
   try{
-    const snap=await getDocs(query(collection(db,'recolecciones'),where('ganaderoId','==',gid),limit(1)));
-    if(!snap.empty){
-      if(id)alert('No se puede eliminar: tiene registros de recolección. Márcalo como Inactivo desde Editar.');
-      else alerta('m-gan-error','No se puede eliminar: tiene registros de recolección. Márcalo como Inactivo.','rojo');
-      return;
-    }
-    await deleteDoc(doc(db,'ganaderos',gid));
-    if(!id){cerrarModal('modal-ganadero');}
-    await ganAdmin();await cargarGanaderos();
-  }catch(e){console.error(e);alert('Error al eliminar. Intenta de nuevo.');}
+    // Verificar de nuevo que no tiene registros
+    const snap=await getDocs(query(collection(db,'recolecciones'),where('ganaderoId','==',editGanId),limit(1)));
+    if(!snap.empty){alerta('m-gan-error','No se puede eliminar: tiene registros de recolección. Márcalo como Inactivo.','rojo');return;}
+    await updateDoc(doc(db,'ganaderos',editGanId),{activo:false,eliminado:true});
+    cerrarModal('modal-ganadero');await ganAdmin();await cargarGanaderos();
+    alerta('usr-ok','✅ Ganadero eliminado correctamente','verde');
+  }catch(e){alerta('m-gan-error','Error al eliminar','rojo');}
 }window.eliminarGanadero=eliminarGanadero;
 
 async function interAdmin(){
