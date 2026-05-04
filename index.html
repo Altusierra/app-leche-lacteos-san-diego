@@ -874,7 +874,7 @@ async function guardarRecepcionInter(){
     const docId=`${interSeleccionado.id}_${hoy()}`;
     await setDoc(doc(db,'recepcionesInter',docId),{
       intermediarioId:interSeleccionado.id,intermediarioNombre:interSeleccionado.nombre,
-      litros:L,novedad,fecha:hoy(),
+      litros:L,novedad,fecha:hoy(),hora:horaAhora(),
       recibidorId:UA.uid,recibidorNombre:UA.nombre||UA.email,
       timestamp:serverTimestamp()
     });
@@ -958,7 +958,7 @@ async function guardarRecepcion(){
     const sCol=await getDocs(query(collection(db,'recolecciones'),where('recogedorId','==',recibSeleccionado.id),where('fecha','==',hoy())));
     let rutaTotal=0;sCol.forEach(d=>{rutaTotal+=parseFloat(d.data().litros)||0;});
     const docId=`${recibSeleccionado.id}_${hoy()}`;
-    await setDoc(doc(db,'recepciones',docId),{recogedorId:recibSeleccionado.id,recogedorNombre:recibSeleccionado.nombre||recibSeleccionado.email,litros:L,novedad,fecha:hoy(),recibidorId:UA.uid,recibidorNombre:UA.nombre||UA.email,timestamp:serverTimestamp()});
+    await setDoc(doc(db,'recepciones',docId),{recogedorId:recibSeleccionado.id,recogedorNombre:recibSeleccionado.nombre||recibSeleccionado.email,litros:L,novedad,fecha:hoy(),hora:horaAhora(),recibidorId:UA.uid,recibidorNombre:UA.nombre||UA.email,timestamp:serverTimestamp()});
     const hayAlerta=L>rutaTotal;
     document.getElementById('recibi-exito-detalle').textContent=`${L}L de ${recibSeleccionado.nombre||recibSeleccionado.email}. Ruta: ${rutaTotal.toFixed(1)}L`;
     const ad=document.getElementById('recibi-exito-alerta');
