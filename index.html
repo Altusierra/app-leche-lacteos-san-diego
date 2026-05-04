@@ -1050,7 +1050,31 @@ async function dashAdmin(){
     const totalDiffC=totalPlantaC-totalRutaC;
     const diffColor=totalDiffC>0?'var(--naranja)':totalDiffC<0?'var(--amarillo)':'#15803d';
     const diffBadge=totalDiffC>0?`<span class="badge badge-naranja">⚠️ +${totalDiffC.toFixed(1)}L</span>`:totalDiffC<0?`<span class="badge badge-amarillo">${totalDiffC.toFixed(1)}L</span>`:`<span class="badge badge-verde">✅ 0L</span>`;
-    document.getElementById('admin-conciliacion').innerHTML=todosRec.size===0?'<p style="color:var(--gris2);font-size:14px;">Sin datos hoy</p>':`<div style="overflow:hidden;border-radius:12px;"><table class="tabla"><thead><tr><th>Recogedor</th><th>Ruta</th><th>Planta</th><th>Diferencia</th></tr></thead><tbody>${filasConcil.map(f=>`<tr class="${f.esA?'fila-alerta':''}"><td><strong>${f.nombre}</strong></td><td>${f.rutaL.toFixed(1)}</td><td>${f.pend?'—':f.plantaL.toFixed(1)}</td><td>${f.pend?'<span class="badge badge-amarillo">⏳</span>':f.esA?`<span class="badge badge-naranja">⚠️ +${f.dv}L</span>`:`<span class="badge badge-verde">${f.dv}L</span>`}</td></tr>`).join('')}</tbody><tfoot><tr style="background:var(--verde3);font-weight:700;"><td style="color:var(--verde);">TOTAL</td><td style="color:var(--verde);">${totalRutaC.toFixed(1)}</td><td style="color:var(--verde);">${totalPlantaC.toFixed(1)}</td><td>${diffBadge}</td></tr></tfoot></table></div>`;
+    // Load all usuarios to get combinaUids info
+    const sUsu=await getDocs(query(collection(db,'usuarios'),where('rol','==','recogedor')));
+    const usuMap={};sUsu.forEach(d=>usuMap[d.id]=d.data());
+    // Find combined route users and their constituent UIDs
+    const rutasCombinadas=Object.entries(usuMap).filter(([id,u])=>u.esRutaCombinada&&u.combinaUids?.length);
+    // UIDs that are part of a combined route (hide individually)
+    const uidsCombinados=new Set(rutasCombinadas.flatMap(([,u])=>u.combinaUids||[]));
+    // Build filas: skip individual UIDs that are in a combined route
+    const filasFinales=filasConcil.filter(f=>!uidsCombinados.has(f.rid));
+    // For combined routes: sum ruta of constituent UIDs, use planta of combined user
+    rutasCombinadas.forEach(([cid,cu])=>{
+      const rutaSum=(cu.combinaUids||[]).reduce((s,uid)=>s+(porRec[uid]?.litros||0),0);
+      const plantaL=porRecPlanta[cid]?.litros;
+      const nombre=cu.nombre||cu.email||'Ruta combinada';
+      const pend=plantaL===undefined;
+      const esA=!pend&&plantaL>rutaSum;
+      const dv=pend?'—':(plantaL-rutaSum).toFixed(1);
+      filasFinales.push({rid:cid,nombre,rutaL:rutaSum,plantaL,pend,esA,dv,esCombinada:true});
+    });
+    const totalRutaF=filasFinales.reduce((s,f)=>s+f.rutaL,0);
+    const totalPlantaF=filasFinales.filter(f=>!f.pend).reduce((s,f)=>s+f.plantaL,0);
+    const totalDiffF=totalPlantaF-totalRutaF;
+    const diffColorF=totalDiffF>0?'var(--naranja)':totalDiffF<0?'var(--amarillo)':'#15803d';
+    const diffBadgeF=totalDiffF>0?`<span class="badge badge-naranja">⚠️ +${totalDiffF.toFixed(1)}L</span>`:totalDiffF<0?`<span class="badge badge-amarillo">${totalDiffF.toFixed(1)}L</span>`:`<span class="badge badge-verde">✅ 0L</span>`;
+    document.getElementById('admin-conciliacion').innerHTML=todosRec.size===0?'<p style="color:var(--gris2);font-size:14px;">Sin datos hoy</p>':`<div style="overflow:hidden;border-radius:12px;"><table class="tabla"><thead><tr><th>Recogedor</th><th>Ruta</th><th>Planta</th><th>Diferencia</th></tr></thead><tbody>${filasFinales.map(f=>`<tr class="${f.esA?'fila-alerta':''}"><td><strong>${f.nombre}</strong>${f.esCombinada?'<span class="badge badge-azul" style="font-size:10px;margin-left:4px;">combinada</span>':''}</td><td>${f.rutaL.toFixed(1)}</td><td>${f.pend?'—':f.plantaL.toFixed(1)}</td><td>${f.pend?'<span class="badge badge-amarillo">⏳</span>':f.esA?`<span class="badge badge-naranja">⚠️ +${f.dv}L</span>`:`<span class="badge badge-verde">${f.dv}L</span>`}</td></tr>`).join('')}</tbody><tfoot><tr style="background:var(--verde3);font-weight:700;"><td style="color:var(--verde);">TOTAL</td><td style="color:var(--verde);">${totalRutaF.toFixed(1)}</td><td style="color:var(--verde);">${totalPlantaF.toFixed(1)}</td><td>${diffBadgeF}</td></tr></tfoot></table></div>`;
     const ganArr=Object.values(porGan).sort((a,b)=>b.total-a.total);
     document.getElementById('admin-desglose-ganaderos').innerHTML=ganArr.length===0?'<p style="color:var(--gris2);font-size:14px;">Sin datos hoy</p>':ganArr.map(g=>`<div style="padding:12px 0;border-bottom:1px solid var(--gris1);"><div style="display:flex;justify-content:space-between;align-items:center;"><div style="font-weight:700;font-size:15px;">${g.nombre}</div><span class="badge badge-verde">Total: ${g.total.toFixed(1)}L</span></div>${g.recogedores.length>1?`<div style="margin-top:6px;">${g.recogedores.map(r=>`<div style="font-size:13px;color:var(--gris2);padding-left:12px;">↳ ${r.nombre}: ${r.litros.toFixed(1)}L · ${r.hora}</div>`).join('')}</div>`:`<div style="font-size:13px;color:var(--gris2);margin-top:2px;">${g.recogedores[0]?.nombre||''} · ${g.recogedores[0]?.hora||''}</div>`}</div>`).join('');
     // Total intermediarios hoy
@@ -1684,8 +1708,17 @@ async function cambiarRol(uid,rolActual,nombre){
 async function toggleBloqueo(uid,bloquear){try{await updateDoc(doc(db,'usuarios',uid),{bloqueado:bloquear});alerta('usr-ok',bloquear?'🔒 Usuario bloqueado':'🔓 Usuario desbloqueado','verde');await usuAdmin();}catch(e){alerta('usr-error','Error al actualizar','rojo');}}window.toggleBloqueo=toggleBloqueo;
 async function toggleRutaCombinada(uid,actual){
   try{
-    await updateDoc(doc(db,'usuarios',uid),{esRutaCombinada:!actual});
-    alerta('usr-ok',!actual?'🔗 Marcado como ruta combinada — no aparecerá en la lista del recibidor':'🔗 Ya aparecerá en la lista del recibidor','verde');
+    if(!actual){
+      // Ask which UIDs this combines
+      const input=prompt('UIDs de los recogedores que combina esta ruta (separados por coma):');
+      if(!input)return;
+      const combinaUids=input.split(',').map(s=>s.trim()).filter(Boolean);
+      await updateDoc(doc(db,'usuarios',uid),{esRutaCombinada:true,combinaUids});
+      alerta('usr-ok','🔗 Marcado como ruta combinada','verde');
+    } else {
+      await updateDoc(doc(db,'usuarios',uid),{esRutaCombinada:false,combinaUids:[]});
+      alerta('usr-ok','🔗 Ya aparecerá en la lista del recibidor','verde');
+    }
     await usuAdmin();
   }catch(e){alerta('usr-error','Error al actualizar','rojo');}
 }window.toggleRutaCombinada=toggleRutaCombinada;
