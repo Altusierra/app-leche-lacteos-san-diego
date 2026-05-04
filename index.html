@@ -1316,9 +1316,50 @@ async function generarReporte(){
 
 function repGan(datos,de,ha){
   const ag={};
-  datos.forEach(d=>{if(!ag[d.ganaderoId])ag[d.ganaderoId]={n:d.ganaderoNombre,L:0,recogedores:{}};ag[d.ganaderoId].L+=parseFloat(d.litros)||0;if(!ag[d.ganaderoId].recogedores[d.recogedorId])ag[d.ganaderoId].recogedores[d.recogedorId]={nombre:d.recogedorNombre,L:0};ag[d.ganaderoId].recogedores[d.recogedorId].L+=parseFloat(d.litros)||0;});
-  const lista=Object.values(ag).sort((a,b)=>b.L-a.L);const T=lista.reduce((s,x)=>s+x.L,0);
-  document.getElementById('rep-tab-4').innerHTML=lista.length===0?'<div class="vacio"><div class="ico">📊</div><p>Sin datos</p></div>':`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><div style="font-size:14px;color:var(--gris2);">${lista.length} ganaderos · ${T.toFixed(1)}L</div><button class="btn btn-verde btn-sm" onclick="exportarCSV('ganadero')">⬇ Exportar</button></div><div class="card" style="padding:0;overflow:hidden;"><table class="tabla"><thead><tr><th>Ganadero</th><th>Total L</th><th>Desglose</th></tr></thead><tbody>${lista.map(g=>{const recs=Object.values(g.recogedores);const desgl=recs.length>1?recs.map(r=>`${r.nombre}: ${r.L.toFixed(1)}L`).join(' · '):recs[0]?.nombre||'-';return`<tr><td><strong>${g.n}</strong></td><td>${g.L.toFixed(1)}</td><td style="font-size:12px;">${desgl}</td></tr>`;}).join('')}</tbody></table></div>`;
+  datos.forEach(d=>{
+    if(!ag[d.ganaderoId])ag[d.ganaderoId]={n:d.ganaderoNombre,L:0,recogedores:{}};
+    ag[d.ganaderoId].L+=parseFloat(d.litros)||0;
+    if(!ag[d.ganaderoId].recogedores[d.recogedorId])ag[d.ganaderoId].recogedores[d.recogedorId]={nombre:d.recogedorNombre,L:0};
+    ag[d.ganaderoId].recogedores[d.recogedorId].L+=parseFloat(d.litros)||0;
+  });
+  // Recogedores únicos
+  const recsUnicos=new Map();
+  datos.forEach(d=>recsUnicos.set(d.recogedorId,d.recogedorNombre));
+  let filtroRecId='todos';
+  function renderGan(){
+    let lista=Object.values(ag);
+    if(filtroRecId!=='todos'){
+      lista=lista.filter(g=>g.recogedores[filtroRecId]).map(g=>{
+        const L=g.recogedores[filtroRecId].L;
+        return{n:g.n,L,recogedores:g.recogedores};
+      });
+    }
+    lista.sort((a,b)=>b.L-a.L);
+    const T=lista.reduce((s,x)=>s+x.L,0);
+    const tab=document.getElementById('rep-tab-4');if(!tab)return;
+    const filtros=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+      <button class="btn btn-sm" onclick="window._ganFiltro('todos')" style="border:2px solid var(--verde);background:${filtroRecId==='todos'?'var(--verde)':'transparent'};color:${filtroRecId==='todos'?'white':'var(--verde)'};font-weight:700;">Todos</button>
+      ${[...recsUnicos.entries()].map(([id,nombre])=>`<button class="btn btn-sm" onclick="window._ganFiltro('${id}')" style="border:2px solid var(--verde2);background:${filtroRecId===id?'var(--verde2)':'transparent'};color:${filtroRecId===id?'white':'var(--verde2)'};font-weight:700;">${nombre}</button>`).join('')}
+    </div>`;
+    tab.innerHTML=lista.length===0?filtros+'<div class="vacio"><div class="ico">📊</div><p>Sin datos para este recogedor</p></div>':`
+      ${filtros}
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div style="font-size:14px;color:var(--gris2);">${lista.length} ganaderos · ${T.toFixed(1)}L</div>
+        <button class="btn btn-verde btn-sm" onclick="exportarCSV('ganadero')">⬇ Exportar</button>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden;">
+        <table class="tabla">
+          <thead><tr><th>Ganadero</th><th>Total L</th><th>Desglose</th></tr></thead>
+          <tbody>
+            ${lista.map(g=>{const recs=Object.values(g.recogedores);const desgl=recs.length>1?recs.map(r=>`${r.nombre}: ${r.L.toFixed(1)}L`).join(' · '):recs[0]?.nombre||'-';return`<tr><td><strong>${g.n}</strong></td><td>${g.L.toFixed(1)}</td><td style="font-size:12px;">${desgl}</td></tr>`;}).join('')}
+          </tbody>
+          <tfoot><tr style="background:var(--verde3);font-weight:700;"><td style="color:var(--verde);">TOTAL</td><td style="color:var(--verde);">${T.toFixed(1)} L</td><td></td></tr></tfoot>
+        </table>
+      </div>`;
+    window._ganFiltro=function(id){filtroRecId=id;renderGan();};
+  }
+  window._ganFiltro=function(id){filtroRecId=id;renderGan();};
+  renderGan();
 }
 function repDia(datos){const ag={};datos.forEach(d=>{if(!ag[d.fecha])ag[d.fecha]={L:0,r:0,rec:new Set()};ag[d.fecha].L+=parseFloat(d.litros)||0;ag[d.fecha].r++;ag[d.fecha].rec.add(d.recogedorNombre);});const lista=Object.entries(ag).sort((a,b)=>b[0].localeCompare(a[0]));document.getElementById('rep-tab-3').innerHTML=lista.length===0?'<div class="vacio"><div class="ico">📅</div><p>Sin datos</p></div>':`<div style="display:flex;justify-content:flex-end;margin-bottom:12px;"><button class="btn btn-verde btn-sm" onclick="exportarCSV('dia')">⬇ Exportar</button></div><div class="card" style="padding:0;overflow:hidden;"><table class="tabla"><thead><tr><th>Fecha</th><th>Litros</th><th>Registros</th><th>Recogedores</th></tr></thead><tbody>${lista.map(([f,v])=>`<tr><td>${f}</td><td>${v.L.toFixed(1)}</td><td>${v.r}</td><td>${[...v.rec].join(', ')}</td></tr>`).join('')}</tbody></table></div>`;}
 function repLiqMatriz(datos,de,ha,precio){
