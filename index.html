@@ -573,7 +573,7 @@ const cfg={apiKey:"AIzaSyDBNDl2kokNqXdKwPEEwUX0MC5ziZVgXQ4",authDomain:"app-lech
 const app=initializeApp(cfg);const auth=getAuth(app);const db=getFirestore(app);
 const app2=initializeApp(cfg,'secondary');const auth2=getAuth(app2);
 
-let UA=null,rol=null,ganList=[],precioActual=0,tabRep=0,editGanId=null,datosRep=[],datosInter=[],soloNovGlobal=false,modoElim=false;
+let UA=null,rol=null,ganList=[],precioActual=0,tabRep=0,editGanId=null,datosRep=[],datosInter=[],datosRecepciones=[],soloNovGlobal=false,modoElim=false;
 let recibSeleccionado=null,ganSel=null,listaRecogedores=[],modoHistorico=false,fechaReg=null;
 
 // ── HELPERS ──
@@ -1298,7 +1298,9 @@ async function generarReporte(){
     const s=await getDocs(query(collection(db,'recolecciones'),where('fecha','>=',de),where('fecha','<=',ha),orderBy('fecha')));
     datosRep=[];s.forEach(d=>datosRep.push({id:d.id,...d.data()}));
     datosRep.sort((a,b)=>a.fecha.localeCompare(b.fecha)||(a.hora||'').localeCompare(b.hora||''));
-    repGan(datosRep,de,ha);repDia(datosRep);repDetalle(datosRep,de,ha);
+    const sRec=await getDocs(query(collection(db,'recepciones'),where('fecha','>=',de),where('fecha','<=',ha)));
+    datosRecepciones=[];sRec.forEach(d=>datosRecepciones.push({id:d.id,...d.data()}));
+    repGan(datosRep,de,ha,datosRecepciones);repDia(datosRep);repDetalle(datosRep,de,ha);
     if(tabRep===0){const precio=parseFloat(document.getElementById('rep-precio-liq').value);repLiqMatriz(datosRep,de,ha,precio);}
     const sInter=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','>=',de),where('fecha','<=',ha),orderBy('fecha')));
     datosInter=[];sInter.forEach(d=>datosInter.push({id:d.id,...d.data()}));
@@ -1314,28 +1316,49 @@ async function generarReporte(){
   }catch(e){console.error(e);}
 }window.generarReporte=generarReporte;
 
-function repGan(datos,de,ha){
+function repGan(datos,de,ha,recepciones){
   const ag={};
   datos.forEach(d=>{
     if(!ag[d.ganaderoId])ag[d.ganaderoId]={n:d.ganaderoNombre,L:0,recogedores:{}};
     ag[d.ganaderoId].L+=parseFloat(d.litros)||0;
-    if(!ag[d.ganaderoId].recogedores[d.recogedorId])ag[d.ganaderoId].recogedores[d.recogedorId]={nombre:d.recogedorNombre,L:0};
+    if(!ag[d.ganaderoId].recogedores[d.recogedorId])ag[d.ganaderoId].recogedores[d.recogedorId]={id:d.recogedorId,nombre:d.recogedorNombre,L:0};
     ag[d.ganaderoId].recogedores[d.recogedorId].L+=parseFloat(d.litros)||0;
   });
-  // Recogedores únicos
+  // Planta por recogedor: {recogedorId: litros}
+  const plantaPorRec={};
+  (recepciones||[]).forEach(d=>{
+    const id=d.recogedorId;const L=parseFloat(d.litros)||0;
+    plantaPorRec[id]=(plantaPorRec[id]||0)+L;
+  });
+  const totalPlantaGlobal=Object.values(plantaPorRec).reduce((s,x)=>s+x,0);
   const recsUnicos=new Map();
   datos.forEach(d=>recsUnicos.set(d.recogedorId,d.recogedorNombre));
   let filtroRecId='todos';
+  function concilBlock(rutaL,plantaL){
+    const diff=plantaL-rutaL;
+    const color=diff>0?'var(--rojo)':diff<0?'var(--amarillo)':'#15803d';
+    const icono=diff>0?'⚠️ Planta recibió MÁS que la ruta':diff<0?'📉 Planta recibió MENOS que la ruta':'✅ Ruta y planta coinciden';
+    return`<div class="card" style="margin-top:14px;background:${diff>0?'#fff5f5':diff<0?'#fffbeb':'#f0fdf4'};border:2px solid ${color};">
+      <div style="font-size:13px;font-weight:700;color:${color};margin-bottom:10px;">${icono}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;">
+        <div><div style="font-size:11px;color:var(--gris2);font-weight:600;">🚛 RUTA</div><div style="font-size:22px;font-weight:800;color:var(--gris3);">${rutaL.toFixed(1)}</div><div style="font-size:11px;color:var(--gris2);">litros</div></div>
+        <div><div style="font-size:11px;color:var(--gris2);font-weight:600;">🏭 PLANTA</div><div style="font-size:22px;font-weight:800;color:var(--gris3);">${plantaL.toFixed(1)}</div><div style="font-size:11px;color:var(--gris2);">litros</div></div>
+        <div><div style="font-size:11px;color:var(--gris2);font-weight:600;">⚖️ DIFERENCIA</div><div style="font-size:22px;font-weight:800;color:${color};">${diff>=0?'+':''}${diff.toFixed(1)}</div><div style="font-size:11px;color:var(--gris2);">litros</div></div>
+      </div>
+    </div>`;
+  }
   function renderGan(){
     let lista=Object.values(ag);
+    let plantaL=totalPlantaGlobal;
     if(filtroRecId!=='todos'){
       lista=lista.filter(g=>g.recogedores[filtroRecId]).map(g=>{
         const L=g.recogedores[filtroRecId].L;
         return{n:g.n,L,recogedores:g.recogedores};
       });
+      plantaL=plantaPorRec[filtroRecId]||0;
     }
     lista.sort((a,b)=>b.L-a.L);
-    const T=lista.reduce((s,x)=>s+x.L,0);
+    const rutaL=lista.reduce((s,x)=>s+x.L,0);
     const tab=document.getElementById('rep-tab-4');if(!tab)return;
     const filtros=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
       <button class="btn btn-sm" onclick="window._ganFiltro('todos')" style="border:2px solid var(--verde);background:${filtroRecId==='todos'?'var(--verde)':'transparent'};color:${filtroRecId==='todos'?'white':'var(--verde)'};font-weight:700;">Todos</button>
@@ -1344,18 +1367,17 @@ function repGan(datos,de,ha){
     tab.innerHTML=lista.length===0?filtros+'<div class="vacio"><div class="ico">📊</div><p>Sin datos para este recogedor</p></div>':`
       ${filtros}
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-        <div style="font-size:14px;color:var(--gris2);">${lista.length} ganaderos · ${T.toFixed(1)}L</div>
+        <div style="font-size:14px;color:var(--gris2);">${lista.length} ganaderos · ${rutaL.toFixed(1)}L</div>
         <button class="btn btn-verde btn-sm" onclick="exportarCSV('ganadero')">⬇ Exportar</button>
       </div>
       <div class="card" style="padding:0;overflow:hidden;">
         <table class="tabla">
           <thead><tr><th>Ganadero</th><th>Total L</th><th>Desglose</th></tr></thead>
-          <tbody>
-            ${lista.map(g=>{const recs=Object.values(g.recogedores);const desgl=recs.length>1?recs.map(r=>`${r.nombre}: ${r.L.toFixed(1)}L`).join(' · '):recs[0]?.nombre||'-';return`<tr><td><strong>${g.n}</strong></td><td>${g.L.toFixed(1)}</td><td style="font-size:12px;">${desgl}</td></tr>`;}).join('')}
-          </tbody>
-          <tfoot><tr style="background:var(--verde3);font-weight:700;"><td style="color:var(--verde);">TOTAL</td><td style="color:var(--verde);">${T.toFixed(1)} L</td><td></td></tr></tfoot>
+          <tbody>${lista.map(g=>{const recs=Object.values(g.recogedores);const desgl=recs.length>1?recs.map(r=>`${r.nombre}: ${r.L.toFixed(1)}L`).join(' · '):recs[0]?.nombre||'-';return`<tr><td><strong>${g.n}</strong></td><td>${g.L.toFixed(1)}</td><td style="font-size:12px;">${desgl}</td></tr>`;}).join('')}</tbody>
+          <tfoot><tr style="background:var(--verde3);font-weight:700;"><td style="color:var(--verde);">TOTAL RUTA</td><td style="color:var(--verde);">${rutaL.toFixed(1)} L</td><td></td></tr></tfoot>
         </table>
-      </div>`;
+      </div>
+      ${concilBlock(rutaL,plantaL)}`;
     window._ganFiltro=function(id){filtroRecId=id;renderGan();};
   }
   window._ganFiltro=function(id){filtroRecId=id;renderGan();};
