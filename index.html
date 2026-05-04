@@ -844,7 +844,14 @@ async function resumenRecibidor(){
 async function cargarRecogedoresParaRecibidor(){
   try{
     const s=await getDocs(query(collection(db,'usuarios'),where('rol','==','recogedor')));
-    listaRecogedores=[];s.forEach(d=>{const da=d.data();if(!da.esRutaCombinada)listaRecogedores.push({id:d.id,...da});});
+    // Recoger todos los usuarios primero
+    const todosRec=[];s.forEach(d=>todosRec.push({id:d.id,...d.data()}));
+    // UIDs que son parte de una ruta combinada (se ocultan individualmente)
+    const uidsCombinados=new Set(todosRec.filter(u=>u.esRutaCombinada&&u.combinaUids).flatMap(u=>u.combinaUids||[]));
+    // Solo mostrar: no combinados Y no son parte de una ruta combinada
+    listaRecogedores=todosRec.filter(u=>!u.esRutaCombinada&&!uidsCombinados.has(u.id));
+    // Agregar la ruta combinada al final de la lista
+    todosRec.filter(u=>u.esRutaCombinada).forEach(u=>listaRecogedores.push(u));
     listaRecogedores.sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es'));
     const sCol=await getDocs(query(collection(db,'recolecciones'),where('fecha','==',hoy())));
     const rutaTot={};sCol.forEach(d=>{const da=d.data();if(!rutaTot[da.recogedorId])rutaTot[da.recogedorId]=0;rutaTot[da.recogedorId]+=parseFloat(da.litros)||0;});
