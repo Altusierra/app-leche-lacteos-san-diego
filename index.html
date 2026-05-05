@@ -683,7 +683,7 @@ async function initRec(){
       inp.max=hoy();
       inp.min=`${h.getFullYear()}-${String(h.getMonth()+1).padStart(2,'0')}-01`;
       inp.value=hoy();
-      inp.onchange=()=>{fechaReg=inp.value||hoy();document.getElementById('rec-fecha').textContent=fmtFecha(fechaReg);cargarRecoleccionesHoy();}
+      inp.onchange=()=>{fechaReg=inp.value||hoy();document.getElementById('rec-fecha').textContent=fmtFecha(fechaReg);cargarGanaderos();resumenRec();}
     }
   }
   ir('screen-rec-home');
