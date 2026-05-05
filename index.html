@@ -703,9 +703,9 @@ async function resumenRec(){
         <div class="lista-item" style="cursor:default;flex-direction:column;align-items:stretch;gap:10px;">
           <div style="display:flex;justify-content:space-between;align-items:center;">
             <div><div class="nombre">${x.ganaderoNombre}</div><div class="detalle">${x.hora} · ${parseFloat(x.litros)}L${x.novedad?' · ⚠️ '+x.novedad:''}</div></div>
-            <span class="badge badge-verde">${parseFloatfmtL(x.litros)}L</span>
+            <span class="badge badge-verde">${fmtL(parseFloat(x.litros))}L</span>
           </div>
-          <button data-docid="${UA.uid}_${x.ganaderoId}_${getFechaReg()}" data-nombre="${x.ganaderoNombre}" data-litros="${parseFloatfmtL(x.litros)}" data-hora="${x.hora}" class="btn-elim-reg" style="background:var(--rojo2);color:var(--rojo);border:1px solid var(--rojo);border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;width:100%;text-align:center;">🗑️ Eliminar este registro</button>
+          <button data-docid="${UA.uid}_${x.ganaderoId}_${getFechaReg()}" data-nombre="${x.ganaderoNombre}" data-litros="${fmtL(parseFloat(x.litros))}" data-hora="${x.hora}" class="btn-elim-reg" style="background:var(--rojo2);color:var(--rojo);border:1px solid var(--rojo);border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;width:100%;text-align:center;">🗑️ Eliminar este registro</button>
         </div>`).join('');
       listaEl.querySelectorAll('.btn-elim-reg').forEach(function(btn){
         btn.addEventListener('click',function(){abrirEliminarRegistro(this.dataset.docid,this.dataset.nombre,this.dataset.litros,this.dataset.hora);});
@@ -1163,7 +1163,7 @@ async function recargarDesglose(fecha){
         window._interHoyActual=interHoy;
         function renderInterDash(expandido){
           const LIMITE_I=3;const lista=expandido?interHoy:interHoy.slice(0,LIMITE_I);
-          const rows=lista.map(i=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--gris1);font-size:14px;"><div><div style="font-weight:600;">${i.intermediarioNombre}</div><div style="font-size:12px;color:var(--gris2);margin-top:2px;">${i.recibidorNombre||''}${i.hora?' · '+i.hora:''}</div></div><span style="color:var(--naranja);font-weight:700;">${parseFloatfmtL(i.litros)}L</span></div>`).join('');
+          const rows=lista.map(i=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--gris1);font-size:14px;"><div><div style="font-weight:600;">${i.intermediarioNombre}</div><div style="font-size:12px;color:var(--gris2);margin-top:2px;">${i.recibidorNombre||''}${i.hora?' · '+i.hora:''}</div></div><span style="color:var(--naranja);font-weight:700;">${fmtL(parseFloat(i.litros))}L</span></div>`).join('');
           const verBtn=interHoy.length>LIMITE_I?expandido?`<button onclick="window._toggleInter(false)" style="margin-top:10px;background:none;border:none;color:var(--naranja);font-weight:700;font-size:14px;cursor:pointer;width:100%;text-align:center;">Ver menos ▲</button>`:`<button onclick="window._toggleInter(true)" style="margin-top:10px;background:none;border:none;color:var(--naranja);font-weight:700;font-size:14px;cursor:pointer;width:100%;text-align:center;">Ver más (${interHoy.length-LIMITE_I} más) ▼</button>`:'';
           interDiv.innerHTML=`<div style="font-size:13px;font-weight:700;color:var(--naranja);margin-bottom:8px;">Total: ${fmtL(totalInterH)}L</div>`+rows+verBtn;
         }
@@ -1254,7 +1254,7 @@ async function dashAdmin(){
           interCard.style.display='block';
           function renderInterMain(expandido){
             const LIMITE_I=3;const lista=expandido?interHoy:interHoy.slice(0,LIMITE_I);
-            const rows=lista.map(i=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--gris1);font-size:14px;"><div><div style="font-weight:600;">${i.intermediarioNombre}</div><div style="font-size:12px;color:var(--gris2);margin-top:2px;">${i.recibidorNombre||''}${i.hora?' · '+i.hora:''}</div></div><span style="color:var(--naranja);font-weight:700;">${parseFloatfmtL(i.litros)}L</span></div>`).join('');
+            const rows=lista.map(i=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--gris1);font-size:14px;"><div><div style="font-weight:600;">${i.intermediarioNombre}</div><div style="font-size:12px;color:var(--gris2);margin-top:2px;">${i.recibidorNombre||''}${i.hora?' · '+i.hora:''}</div></div><span style="color:var(--naranja);font-weight:700;">${fmtL(parseFloat(i.litros))}L</span></div>`).join('');
             const verBtn=interHoy.length>LIMITE_I?expandido?`<button onclick="window._toggleInterMain(false)" style="margin-top:10px;background:none;border:none;color:var(--naranja);font-weight:700;font-size:14px;cursor:pointer;width:100%;text-align:center;">Ver menos ▲</button>`:`<button onclick="window._toggleInterMain(true)" style="margin-top:10px;background:none;border:none;color:var(--naranja);font-weight:700;font-size:14px;cursor:pointer;width:100%;text-align:center;">Ver más (${interHoy.length-LIMITE_I} más) ▼</button>`:'';
             interDiv.innerHTML=`<div style="font-size:13px;font-weight:700;color:var(--naranja);margin-bottom:8px;">Total: ${fmtL(totalInterH)}L</div>`+rows+verBtn;
           }
@@ -1745,7 +1745,7 @@ async function cargarEliminaciones(){
       <div class="card" style="padding:0;overflow:hidden;overflow-x:auto;">
         <table class="tabla" style="min-width:600px;">
           <thead><tr><th>Fecha reg.</th><th>Ganadero</th><th>Litros</th><th>Hora</th><th>Recogedor</th><th>Motivo</th><th>Eliminado por</th><th>Cuándo</th></tr></thead>
-          <tbody>${lista.map(d=>{const quienElim=d.eliminadoPorNombre||(d.recogedorNombre||'-');const rolElim=d.eliminadoPorRol?` (${d.eliminadoPorRol})`:'';return`<tr style="background:#fff5f5;"><td>${d.fecha||'-'}</td><td><strong>${d.ganaderoNombre||d.intermediarioNombre||'-'}</strong></td><td>${parseFloatfmtL(d.litros||0)}</td><td>${d.hora||'-'}</td><td>${d.recogedorNombre||d.recibidorNombre||'-'}</td><td style="font-size:12px;color:var(--rojo);">${d.motivo||'-'}</td><td style="font-size:12px;font-weight:700;">${quienElim}<span style="color:var(--gris2);font-weight:400;">${rolElim}</span></td><td style="font-size:11px;color:var(--gris2);">${d.eliminadoEn||''} ${d.eliminadoHora||''}</td></tr>`;}).join('')}
+          <tbody>${lista.map(d=>{const quienElim=d.eliminadoPorNombre||(d.recogedorNombre||'-');const rolElim=d.eliminadoPorRol?` (${d.eliminadoPorRol})`:'';return`<tr style="background:#fff5f5;"><td>${d.fecha||'-'}</td><td><strong>${d.ganaderoNombre||d.intermediarioNombre||'-'}</strong></td><td>${fmtL(parseFloat(d.litros||0))}</td><td>${d.hora||'-'}</td><td>${d.recogedorNombre||d.recibidorNombre||'-'}</td><td style="font-size:12px;color:var(--rojo);">${d.motivo||'-'}</td><td style="font-size:12px;font-weight:700;">${quienElim}<span style="color:var(--gris2);font-weight:400;">${rolElim}</span></td><td style="font-size:11px;color:var(--gris2);">${d.eliminadoEn||''} ${d.eliminadoHora||''}</td></tr>`;}).join('')}
           </tbody>
         </table>
       </div>`;
