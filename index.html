@@ -1284,13 +1284,13 @@ async function cargarResumenSemanal(fechaRef){
     const inp=document.getElementById('semana-fecha-ref');if(inp&&!fechaRef)inp.value=fechaLocal(new Date());
     // 7 days back from reference date (today by default)
     const dias=[];for(let i=2;i>=0;i--){const d=new Date(hoyD);d.setDate(hoyD.getDate()-i);dias.push(fechaLocal(d));}
-    const snap=await getDocs(query(collection(db,'recolecciones'),where('fecha','>=',dias[0]),where('fecha','<=',dias[6])));
+    const snap=await getDocs(query(collection(db,'recolecciones'),where('fecha','>=',dias[0]),where('fecha','<=',dias[dias.length-1])));
     const porDia={};dias.forEach(d=>{porDia[d]=0;});
     snap.forEach(d=>{const da=d.data();if(porDia[da.fecha]!==undefined)porDia[da.fecha]+=parseFloat(da.litros)||0;});
-    const snapP=await getDocs(query(collection(db,'recepciones'),where('fecha','>=',dias[0]),where('fecha','<=',dias[6])));
+    const snapP=await getDocs(query(collection(db,'recepciones'),where('fecha','>=',dias[0]),where('fecha','<=',dias[dias.length-1])));
     const porDiaP={};dias.forEach(d=>{porDiaP[d]=0;});
     snapP.forEach(d=>{const da=d.data();if(porDiaP[da.fecha]!==undefined)porDiaP[da.fecha]+=parseFloat(da.litros)||0;});
-    const snapI=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','>=',dias[0]),where('fecha','<=',dias[6])));
+    const snapI=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','>=',dias[0]),where('fecha','<=',dias[dias.length-1])));
     const porDiaI={};dias.forEach(d=>{porDiaI[d]=0;});
     snapI.forEach(d=>{const da=d.data();if(porDiaI[da.fecha]!==undefined)porDiaI[da.fecha]+=parseFloat(da.litros)||0;});
     const nomDiaSem=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
