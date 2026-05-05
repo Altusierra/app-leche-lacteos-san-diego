@@ -296,6 +296,7 @@
     </div>
     <div class="card">
       <div class="card-titulo">🐄 Desglose ganaderos — hoy</div>
+      <div id="admin-filtros-rec" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;"></div>
       <div id="admin-desglose-ganaderos"><div class="loading">Cargando...</div></div>
     </div>
   </div>
@@ -589,7 +590,7 @@ const cfg={apiKey:"AIzaSyDBNDl2kokNqXdKwPEEwUX0MC5ziZVgXQ4",authDomain:"app-lech
 const app=initializeApp(cfg);const auth=getAuth(app);const db=getFirestore(app);
 const app2=initializeApp(cfg,'secondary');const auth2=getAuth(app2);
 
-let UA=null,rol=null,ganList=[],regHoyGan={},precioActual=0,tabRep=0,editGanId=null,datosRep=[],datosInter=[],datosRecepciones=[],soloNovGlobal=false,modoElim=false;
+let UA=null,rol=null,ganList=[],regHoyGan={},_porGan={},_porRec={},_porRecPlanta={},_uidsCombinados=new Set(),precioActual=0,tabRep=0,editGanId=null,datosRep=[],datosInter=[],datosRecepciones=[],soloNovGlobal=false,modoElim=false;
 let recibSeleccionado=null,ganSel=null,listaRecogedores=[],modoHistorico=false,fechaReg=null;
 
 // ── HELPERS ──
@@ -1059,6 +1060,41 @@ async function initAdmin(){
   dashAdmin();ganAdmin();usuAdmin();interAdmin();interAdmin2();actualizarUIHistorico();
   document.getElementById('rep-desde').value=hoy();document.getElementById('rep-hasta').value=hoy();
 }
+function renderDesgloseAdmin(filtroId){
+  const el=document.getElementById('admin-desglose-ganaderos');if(!el)return;
+  // Update filter buttons
+  el.previousElementSibling?.querySelectorAll('.filtro-rec-btn').forEach(b=>{
+    b.style.background=b.dataset.recid===filtroId?'var(--verde)':'transparent';
+    b.style.color=b.dataset.recid===filtroId?'white':'var(--verde)';
+  });
+  // Build ganArr filtered
+  let ganArr=Object.entries(_porGan).map(([gid,g])=>{
+    if(filtroId==='todos')return{...g,totalFiltro:g.total};
+    const recsFiltro=g.recogedores.filter(r=>{
+      if(filtroId==='todos')return true;
+      // Check if filtroId is a combined route
+      const cu=Object.entries(_porRec).find(([id])=>id===filtroId);
+      return r.nombre===(_porRec[filtroId]?.nombre);
+    });
+    if(recsFiltro.length===0)return null;
+    return{...g,recogedores:recsFiltro,totalFiltro:recsFiltro.reduce((s,r)=>s+r.litros,0)};
+  }).filter(Boolean);
+  ganArr.sort((a,b)=>{const hA=a.recogedores.map(r=>r.hora||'00:00').sort().pop();const hB=b.recogedores.map(r=>r.hora||'00:00').sort().pop();return hB>hA?1:-1;});
+  // Calculate totals for filter
+  const rutaFiltro=filtroId==='todos'?Object.values(_porRec).reduce((s,r)=>s+r.litros,0):(_porRec[filtroId]?.litros||0);
+  const plantaFiltro=filtroId==='todos'?Object.values(_porRecPlanta).reduce((s,r)=>s+r.litros,0):(_porRecPlanta[filtroId]?.litros||0);
+  const diff=plantaFiltro-rutaFiltro;
+  const diffColor=diff>0?'var(--naranja)':diff<0?'var(--amarillo)':'#15803d';
+  const diffSign=diff>=0?'+':'';
+  const totalBlock=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;background:var(--crema);border-radius:12px;padding:12px;margin-bottom:12px;">
+    <div><div style="font-size:11px;color:var(--gris2);font-weight:600;">🚛 RUTA</div><div style="font-size:20px;font-weight:800;color:var(--gris3);">${rutaFiltro.toFixed(1)}</div></div>
+    <div><div style="font-size:11px;color:var(--gris2);font-weight:600;">🏭 PLANTA</div><div style="font-size:20px;font-weight:800;color:var(--gris3);">${plantaFiltro.toFixed(1)}</div></div>
+    <div><div style="font-size:11px;color:var(--gris2);font-weight:600;">⚖️ DIFF</div><div style="font-size:20px;font-weight:800;color:${diffColor};">${diffSign}${diff.toFixed(1)}</div></div>
+  </div>`;
+  el.innerHTML=ganArr.length===0?totalBlock+'<p style="color:var(--gris2);font-size:14px;">Sin datos para este recogedor</p>':
+    totalBlock+ganArr.map(g=>`<div style="padding:12px 0;border-bottom:1px solid var(--gris1);"><div style="display:flex;justify-content:space-between;align-items:center;"><div style="font-weight:700;font-size:15px;">${g.nombre}</div><span class="badge badge-verde">Total: ${g.totalFiltro.toFixed(1)}L</span></div>${g.recogedores.length>1?`<div style="margin-top:6px;">${g.recogedores.map(r=>`<div style="font-size:13px;color:var(--gris2);padding-left:12px;">↳ ${r.nombre}: ${r.litros.toFixed(1)}L · ${r.hora}</div>`).join('')}</div>`:`<div style="font-size:13px;color:var(--gris2);margin-top:2px;">${g.recogedores[0]?.nombre||''} · ${g.recogedores[0]?.hora||''}</div>`}</div>`).join('');
+}window.renderDesgloseAdmin=renderDesgloseAdmin;
+
 async function dashAdmin(){
   try{
     const sCol=await getDocs(query(collection(db,'recolecciones'),where('fecha','==',hoy())));
@@ -1104,8 +1140,18 @@ async function dashAdmin(){
     const diffColorF=totalDiffF>0?'var(--naranja)':totalDiffF<0?'var(--amarillo)':'#15803d';
     const diffBadgeF=totalDiffF>0?`<span class="badge badge-naranja">⚠️ +${totalDiffF.toFixed(1)}L</span>`:totalDiffF<0?`<span class="badge badge-amarillo">${totalDiffF.toFixed(1)}L</span>`:`<span class="badge badge-verde">✅ 0L</span>`;
     document.getElementById('admin-conciliacion').innerHTML=todosRec.size===0?'<p style="color:var(--gris2);font-size:14px;">Sin datos hoy</p>':`<div style="overflow:hidden;border-radius:12px;"><table class="tabla"><thead><tr><th>Recogedor</th><th>Ruta</th><th>Planta</th><th>Diferencia</th></tr></thead><tbody>${filasFinales.map(f=>`<tr class="${f.esA?'fila-alerta':''}"><td><strong>${f.nombre}</strong>${f.esCombinada?'<span class="badge badge-azul" style="font-size:10px;margin-left:4px;">combinada</span>':''}</td><td>${f.rutaL.toFixed(1)}</td><td>${f.pend?'—':f.plantaL.toFixed(1)}</td><td>${f.pend?'<span class="badge badge-amarillo">⏳</span>':f.esA?`<span class="badge badge-naranja">⚠️ +${f.dv}L</span>`:`<span class="badge badge-verde">${f.dv}L</span>`}</td></tr>`).join('')}</tbody><tfoot><tr style="background:var(--verde3);font-weight:700;"><td style="color:var(--verde);">TOTAL</td><td style="color:var(--verde);">${totalRutaF.toFixed(1)}</td><td style="color:var(--verde);">${totalPlantaF.toFixed(1)}</td><td>${diffBadgeF}</td></tr></tfoot></table></div>`;
-    const ganArr=Object.values(porGan).sort((a,b)=>{const hA=a.recogedores.map(r=>r.hora||'00:00').sort().pop();const hB=b.recogedores.map(r=>r.hora||'00:00').sort().pop();return hB>hA?1:-1;});
-    document.getElementById('admin-desglose-ganaderos').innerHTML=ganArr.length===0?'<p style="color:var(--gris2);font-size:14px;">Sin datos hoy</p>':ganArr.map(g=>`<div style="padding:12px 0;border-bottom:1px solid var(--gris1);"><div style="display:flex;justify-content:space-between;align-items:center;"><div style="font-weight:700;font-size:15px;">${g.nombre}</div><span class="badge badge-verde">Total: ${g.total.toFixed(1)}L</span></div>${g.recogedores.length>1?`<div style="margin-top:6px;">${g.recogedores.map(r=>`<div style="font-size:13px;color:var(--gris2);padding-left:12px;">↳ ${r.nombre}: ${r.litros.toFixed(1)}L · ${r.hora}</div>`).join('')}</div>`:`<div style="font-size:13px;color:var(--gris2);margin-top:2px;">${g.recogedores[0]?.nombre||''} · ${g.recogedores[0]?.hora||''}</div>`}</div>`).join('');
+    // Save to globals for filter
+    _porGan=porGan;_porRec=porRec;_porRecPlanta=porRecPlanta;_uidsCombinados=uidsCombinados;
+    // Build filter buttons
+    const filtrosEl=document.getElementById('admin-filtros-rec');
+    if(filtrosEl){
+      const recsVisibles=Object.entries(porRec).filter(([id])=>!uidsCombinados.has(id));
+      // Add combined routes
+      rutasCombinadas.forEach(([cid,cu])=>recsVisibles.push([cid,{nombre:cu.nombre||cu.email,litros:0}]));
+      filtrosEl.innerHTML=`<button class="btn btn-sm filtro-rec-btn" data-recid="todos" style="border:2px solid var(--verde);background:var(--verde);color:white;font-weight:700;" onclick="renderDesgloseAdmin('todos')">Todos</button>`+
+        recsVisibles.map(([id,rv])=>`<button class="btn btn-sm filtro-rec-btn" data-recid="${id}" style="border:2px solid var(--verde);background:transparent;color:var(--verde);font-weight:700;" onclick="renderDesgloseAdmin('${id}')">${rv.nombre}</button>`).join('');
+    }
+    renderDesgloseAdmin('todos');
     // Total intermediarios hoy
     try{
       const sInter=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','==',hoy())));
