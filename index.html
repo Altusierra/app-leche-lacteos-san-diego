@@ -1179,7 +1179,7 @@ async function dashAdmin(){
         if(totalInterH>0){
           interCard.style.display='block';
           interDiv.innerHTML=`<div style="font-size:13px;font-weight:700;color:var(--naranja);margin-bottom:8px;">Total: ${totalInterH.toFixed(1)}L</div>`+
-            interHoy.map(i=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--gris1);font-size:14px;"><div style="font-weight:600;">${i.intermediarioNombre}</div><span style="color:var(--naranja);font-weight:700;">${parseFloat(i.litros).toFixed(1)}L</span></div>`).join('');
+            interHoy.map(i=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--gris1);font-size:14px;"><div><div style="font-weight:600;">${i.intermediarioNombre}</div><div style="font-size:12px;color:var(--gris2);margin-top:2px;">${i.recibidorNombre||''}${i.hora?' · '+i.hora:''}</div></div><span style="color:var(--naranja);font-weight:700;">${parseFloat(i.litros).toFixed(1)}L</span></div>`).join('');
         }else{
           interCard.style.display='none';
         }
