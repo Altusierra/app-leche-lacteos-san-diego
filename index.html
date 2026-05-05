@@ -1092,14 +1092,27 @@ function renderDesgloseAdmin(filtroId){
   const diff=plantaFiltro-rutaFiltro;
   const diffColor=diff>0?'var(--naranja)':diff<0?'var(--amarillo)':'#15803d';
   const diffSign=diff>=0?'+':'';
-  const totalBlock=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;background:var(--crema);border-radius:12px;padding:12px;margin-bottom:12px;">
-    <div><div style="font-size:11px;color:var(--gris2);font-weight:600;">🚛 RUTA</div><div style="font-size:20px;font-weight:800;color:var(--gris3);">${rutaFiltro.toFixed(1)}</div></div>
-    <div><div style="font-size:11px;color:var(--gris2);font-weight:600;">🏭 PLANTA</div><div style="font-size:20px;font-weight:800;color:var(--gris3);">${plantaFiltro.toFixed(1)}</div></div>
-    <div><div style="font-size:11px;color:var(--gris2);font-weight:600;">⚖️ DIFF</div><div style="font-size:20px;font-weight:800;color:${diffColor};">${diffSign}${diff.toFixed(1)}</div></div>
-  </div>`;
-  el.innerHTML=ganArr.length===0?totalBlock+'<p style="color:var(--gris2);font-size:14px;">Sin datos para este recogedor</p>':
-    totalBlock+ganArr.map(g=>`<div style="padding:12px 0;border-bottom:1px solid var(--gris1);"><div style="display:flex;justify-content:space-between;align-items:center;"><div style="font-weight:700;font-size:15px;">${g.nombre}</div><span class="badge badge-verde">Total: ${g.totalFiltro.toFixed(1)}L</span></div>${g.recogedores.length>1?`<div style="margin-top:6px;">${g.recogedores.map(r=>`<div style="font-size:13px;color:var(--gris2);padding-left:12px;">↳ ${r.nombre}: ${r.litros.toFixed(1)}L · ${r.hora}</div>`).join('')}</div>`:`<div style="font-size:13px;color:var(--gris2);margin-top:2px;">${g.recogedores[0]?.nombre||''} · ${g.recogedores[0]?.hora||''}</div>`}</div>`).join('');
+  const totalBlock=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;text-align:center;background:var(--crema);border-radius:12px;padding:12px;margin-bottom:8px;">
+    <div><div style="font-size:10px;color:var(--gris2);font-weight:600;">🚛 RUTA</div><div style="font-size:18px;font-weight:800;color:var(--gris3);">${rutaFiltro.toFixed(1)}</div></div>
+    <div><div style="font-size:10px;color:var(--gris2);font-weight:600;">🏭 PLANTA</div><div style="font-size:18px;font-weight:800;color:var(--gris3);">${plantaFiltro.toFixed(1)}</div></div>
+    <div><div style="font-size:10px;color:var(--gris2);font-weight:600;">⚖️ DIFF</div><div style="font-size:18px;font-weight:800;color:${diffColor};">${diffSign}${diff.toFixed(1)}</div></div>
+    <div><div style="font-size:10px;color:var(--gris2);font-weight:600;">🐄 GANAD.</div><div style="font-size:18px;font-weight:800;color:var(--gris3);">${ganArr.length}</div></div>
+  </div>
+  <div style="margin-bottom:12px;"><input type="text" id="desglose-buscar" placeholder="🔍 Buscar ganadero..." oninput="filtrarDesgloseAdmin()" style="width:100%;padding:10px 12px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;"></div>
+  <div id="desglose-lista">`;
+  const listaHTML=ganArr.map(g=>`<div style="padding:12px 0;border-bottom:1px solid var(--gris1);"><div style="display:flex;justify-content:space-between;align-items:center;"><div style="font-weight:700;font-size:15px;">${g.nombre}</div><span class="badge badge-verde">Total: ${g.totalFiltro.toFixed(1)}L</span></div>${g.recogedores.length>1?`<div style="margin-top:6px;">${g.recogedores.map(r=>`<div style="font-size:13px;color:var(--gris2);padding-left:12px;">↳ ${r.nombre}: ${r.litros.toFixed(1)}L · ${r.hora}</div>`).join('')}</div>`:`<div style="font-size:13px;color:var(--gris2);margin-top:2px;">${g.recogedores[0]?.nombre||''} · ${g.recogedores[0]?.hora||''}</div>`}</div>`).join('');
+  window._ganArrActual=ganArr;
+  el.innerHTML=ganArr.length===0?totalBlock.replace('<div id="desglose-lista">`','')+'<p style="color:var(--gris2);font-size:14px;">Sin datos para este recogedor</p>':
+    totalBlock+listaHTML+'</div>';
 }window.renderDesgloseAdmin=renderDesgloseAdmin;
+function filtrarDesgloseAdmin(){
+  const t=(document.getElementById('desglose-buscar')?.value||'').toLowerCase();
+  const lista=document.getElementById('desglose-lista');if(!lista)return;
+  const gan=window._ganArrActual||[];
+  const filtrado=t?gan.filter(g=>g.nombre.toLowerCase().includes(t)):gan;
+  lista.innerHTML=filtrado.length===0?'<p style="color:var(--gris2);font-size:14px;">Sin resultados</p>':
+    filtrado.map(g=>`<div style="padding:12px 0;border-bottom:1px solid var(--gris1);"><div style="display:flex;justify-content:space-between;align-items:center;"><div style="font-weight:700;font-size:15px;">${g.nombre}</div><span class="badge badge-verde">Total: ${g.totalFiltro.toFixed(1)}L</span></div>${g.recogedores.length>1?`<div style="margin-top:6px;">${g.recogedores.map(r=>`<div style="font-size:13px;color:var(--gris2);padding-left:12px;">↳ ${r.nombre}: ${r.litros.toFixed(1)}L · ${r.hora}</div>`).join('')}</div>`:`<div style="font-size:13px;color:var(--gris2);margin-top:2px;">${g.recogedores[0]?.nombre||''} · ${g.recogedores[0]?.hora||''}</div>`}</div>`).join('');
+}window.filtrarDesgloseAdmin=filtrarDesgloseAdmin;
 
 async function dashAdmin(){
   try{
