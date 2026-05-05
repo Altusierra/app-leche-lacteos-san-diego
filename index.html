@@ -1341,8 +1341,9 @@ function calcularQuincenaPago(){
   }
   window._quincenaPago={de,ha,label:deLabel};
   const card=document.getElementById('quincena-pago-card');
-  card.style.display='block';
-  document.getElementById('quincena-pago-label').textContent=`Quincena: ${deLabel}`;
+  if(card)card.style.display='block';
+  const lbl=document.getElementById('quincena-pago-label');
+  if(lbl)lbl.textContent=`Quincena: ${deLabel}`;
 }
 
 function renderHistorialQuincenas(){
