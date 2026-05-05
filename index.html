@@ -286,6 +286,10 @@
       <div id="admin-filtros-rec" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;"></div>
       <div id="admin-desglose-ganaderos"><div class="loading">Cargando...</div></div>
     </div>
+    <div id="admin-inter-card" class="card" style="display:none;">
+      <div class="card-titulo" style="color:var(--naranja);">🚚 Intermediarios hoy</div>
+      <div id="admin-inter-hoy"></div>
+    </div>
     <div class="card">
       <div class="card-titulo">📋 Historial de quincenas</div>
       <div id="admin-historial-quincenas"><div class="loading">Cargando...</div></div>
@@ -1108,8 +1112,7 @@ async function dashAdmin(){
     document.getElementById('admin-total-rec').textContent=totalRuta.toFixed(1);
     // totalPlanta se actualiza después de sumar intermediarios
     const _totalPlantaRec=totalPlanta;
-    const alertas=[];Object.entries(porRecPlanta).forEach(([rid,rv])=>{const rutaL=porRec[rid]?.litros||0;if(rv.litros>rutaL)alertas.push({nombre:rv.nombre,recibido:rv.litros,ruta:rutaL,dif:rv.litros-rutaL});});
-    document.getElementById('admin-alertas-container').innerHTML=alertas.map(a=>`<div class="alerta-grande naranja"><div style="font-weight:800;color:var(--naranja);margin-bottom:4px;">⚠️ ALERTA — ${a.nombre}</div><div style="color:var(--naranja);font-size:14px;">Planta: ${a.recibido.toFixed(1)}L · Ruta: ${a.ruta.toFixed(1)}L · Diferencia: +${a.dif.toFixed(1)}L</div></div>`).join('');
+    document.getElementById('admin-alertas-container').innerHTML='';// se llena después de usuMap
     const todosRec=new Set([...Object.keys(porRec),...Object.keys(porRecPlanta)]);
     const filasConcil=[...todosRec].map(rid=>{const rutaL=porRec[rid]?.litros||0;const plantaL=porRecPlanta[rid]?.litros;const nombre=porRec[rid]?.nombre||porRecPlanta[rid]?.nombre||'?';const pend=plantaL===undefined;const esA=!pend&&plantaL>rutaL;const dv=pend?'—':(plantaL-rutaL).toFixed(1);return{rid,nombre,rutaL,plantaL,pend,esA,dv};});
     const totalRutaC=filasConcil.reduce((s,f)=>s+f.rutaL,0);
@@ -1122,6 +1125,16 @@ async function dashAdmin(){
     const usuMap={};sUsu.forEach(d=>usuMap[d.id]=d.data());
     // Find combined route users and their constituent UIDs
     const rutasCombinadas=Object.entries(usuMap).filter(([id,u])=>u.esRutaCombinada&&u.combinaUids?.length);
+    // Build alertas now that usuMap is available
+    const alertas=[];Object.entries(porRecPlanta).forEach(([rid,rv])=>{
+      let rutaL=porRec[rid]?.litros||0;
+      if(!porRec[rid]){
+        const cu=Object.entries(usuMap).find(([id])=>id===rid);
+        if(cu&&cu[1]?.combinaUids){rutaL=cu[1].combinaUids.reduce((s,uid)=>s+(porRec[uid]?.litros||0),0);}
+      }
+      if(rv.litros>rutaL)alertas.push({nombre:rv.nombre,recibido:rv.litros,ruta:rutaL,dif:rv.litros-rutaL});
+    });
+    document.getElementById('admin-alertas-container').innerHTML=alertas.map(a=>`<div class="alerta-grande naranja"><div style="font-weight:800;color:var(--naranja);margin-bottom:4px;">⚠️ ALERTA — ${a.nombre}</div><div style="color:var(--naranja);font-size:14px;">Planta: ${a.recibido.toFixed(1)}L · Ruta: ${a.ruta.toFixed(1)}L · Diferencia: +${a.dif.toFixed(1)}L</div></div>`).join('');
     // UIDs that are part of a combined route (hide individually)
     const uidsCombinados=new Set(rutasCombinadas.flatMap(([,u])=>u.combinaUids||[]));
     // Build filas: skip individual UIDs that are in a combined route
@@ -1159,14 +1172,17 @@ async function dashAdmin(){
       let totalInterH=0;const interHoy=[];
       sInter.forEach(d=>{const da=d.data();totalInterH+=parseFloat(da.litros)||0;interHoy.push(da);});
       document.getElementById('admin-total-planta').textContent=(_totalPlantaRec+totalInterH).toFixed(1);
-      // Agregar card intermediarios si hay datos
-      const contAdmin=document.getElementById('admin-desglose-ganaderos');
-      if(contAdmin&&totalInterH>0){
-        const divInter=document.createElement('div');
-        divInter.style.marginTop='16px';divInter.style.borderTop='2px solid var(--naranja)';divInter.style.paddingTop='12px';
-        divInter.innerHTML=`<div style="font-size:13px;font-weight:700;color:var(--naranja);text-transform:uppercase;margin-bottom:8px;">🚚 Intermediarios hoy — ${totalInterH.toFixed(1)}L</div>`+
-          interHoy.map(i=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--gris1);font-size:14px;"><div style="font-weight:600;">${i.intermediarioNombre}</div><span style="color:var(--naranja);font-weight:700;">${parseFloat(i.litros).toFixed(1)}L</span></div>`).join('');
-        contAdmin.appendChild(divInter);
+      // Mostrar intermediarios en card separada
+      const interCard=document.getElementById('admin-inter-card');
+      const interDiv=document.getElementById('admin-inter-hoy');
+      if(interCard&&interDiv){
+        if(totalInterH>0){
+          interCard.style.display='block';
+          interDiv.innerHTML=`<div style="font-size:13px;font-weight:700;color:var(--naranja);margin-bottom:8px;">Total: ${totalInterH.toFixed(1)}L</div>`+
+            interHoy.map(i=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--gris1);font-size:14px;"><div style="font-weight:600;">${i.intermediarioNombre}</div><span style="color:var(--naranja);font-weight:700;">${parseFloat(i.litros).toFixed(1)}L</span></div>`).join('');
+        }else{
+          interCard.style.display='none';
+        }
       }
     }catch(e){}
     // Resumen semanal
