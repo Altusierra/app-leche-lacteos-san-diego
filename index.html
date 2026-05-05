@@ -1063,25 +1063,36 @@ async function initAdmin(){
 function renderDesgloseAdmin(filtroId){
   const el=document.getElementById('admin-desglose-ganaderos');if(!el)return;
   // Update filter buttons
-  el.previousElementSibling?.querySelectorAll('.filtro-rec-btn').forEach(b=>{
+  document.querySelectorAll('.filtro-rec-btn').forEach(b=>{
     b.style.background=b.dataset.recid===filtroId?'var(--verde)':'transparent';
     b.style.color=b.dataset.recid===filtroId?'white':'var(--verde)';
   });
+  // Detect if filtroId is a combined route and get its child UIDs
+  const esCombinada=filtroId!=='todos'&&!_porRec[filtroId];
+  const hijosUids=esCombinada?[..._uidsCombinados].filter(uid=>_porRec[uid]):[];
+  // Helper: does this recogedor match the filter?
+  function matchRec(rec){
+    if(filtroId==='todos')return true;
+    if(esCombinada){
+      // Match any recogedor whose uid is a child of the combined route
+      return hijosUids.some(uid=>_porRec[uid]?.nombre===rec.nombre);
+    }
+    return rec.nombre===(_porRec[filtroId]?.nombre);
+  }
   // Build ganArr filtered
   let ganArr=Object.entries(_porGan).map(([gid,g])=>{
     if(filtroId==='todos')return{...g,totalFiltro:g.total};
-    const recsFiltro=g.recogedores.filter(r=>{
-      if(filtroId==='todos')return true;
-      // Check if filtroId is a combined route
-      const cu=Object.entries(_porRec).find(([id])=>id===filtroId);
-      return r.nombre===(_porRec[filtroId]?.nombre);
-    });
+    const recsFiltro=g.recogedores.filter(r=>matchRec(r));
     if(recsFiltro.length===0)return null;
     return{...g,recogedores:recsFiltro,totalFiltro:recsFiltro.reduce((s,r)=>s+r.litros,0)};
   }).filter(Boolean);
   ganArr.sort((a,b)=>{const hA=a.recogedores.map(r=>r.hora||'00:00').sort().pop();const hB=b.recogedores.map(r=>r.hora||'00:00').sort().pop();return hB>hA?1:-1;});
-  // Calculate totals for filter
-  const rutaFiltro=filtroId==='todos'?Object.values(_porRec).reduce((s,r)=>s+r.litros,0):(_porRec[filtroId]?.litros||0);
+  // Calculate ruta: for combined, sum child UIDs
+  let rutaFiltro;
+  if(filtroId==='todos')rutaFiltro=Object.values(_porRec).reduce((s,r)=>s+r.litros,0);
+  else if(esCombinada)rutaFiltro=hijosUids.reduce((s,uid)=>s+(_porRec[uid]?.litros||0),0);
+  else rutaFiltro=_porRec[filtroId]?.litros||0;
+  // Planta: for combined use the combined route UID's recepcion
   const plantaFiltro=filtroId==='todos'?Object.values(_porRecPlanta).reduce((s,r)=>s+r.litros,0):(_porRecPlanta[filtroId]?.litros||0);
   const diff=plantaFiltro-rutaFiltro;
   const diffColor=diff>0?'var(--naranja)':diff<0?'var(--amarillo)':'#15803d';
