@@ -607,9 +607,9 @@ function ocult(id){const e=document.getElementById(id);if(e)e.classList.remove('
 function cerrarModal(id){document.getElementById(id).classList.remove('show');}window.cerrarModal=cerrarModal;
 function abrirModal(id){document.getElementById(id).classList.add('show');}
 function hoy(){const n=new Date();return`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;}
-function fmtL(n){const v=parseFloat(n)||0;return v%1===0?String(v|0):v.toFixed(1);}
 function getFechaReg(){return fechaReg||hoy();}
 function horaAhora(){const n=new Date();return`${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;}
+function fmtL(v){const n=parseFloat(v)||0;return n%1===0?String(Math.round(n)):n.toFixed(1);}
 function fmtFecha(f){return new Date(f+'T00:00:00').toLocaleDateString('es-CO',{weekday:'long',day:'numeric',month:'long'});}
 function fmtFechaCorta(f){const d=new Date(f+'T00:00:00');return`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;}
 function fmtPeso(v){return new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(v);}
@@ -702,10 +702,10 @@ async function resumenRec(){
       listaEl.innerHTML=it.sort((a,b)=>b.hora>a.hora?1:-1).map(x=>`
         <div class="lista-item" style="cursor:default;flex-direction:column;align-items:stretch;gap:10px;">
           <div style="display:flex;justify-content:space-between;align-items:center;">
-            <div><div class="nombre">${x.ganaderoNombre}</div><div class="detalle">${x.hora} · ${parseFloat(x.litros).toFixed(1)}L${x.novedad?' · ⚠️ '+x.novedad:''}</div></div>
-            <span class="badge badge-verde">${parseFloat(x.litros).toFixed(1)}L</span>
+            <div><div class="nombre">${x.ganaderoNombre}</div><div class="detalle">${x.hora} · ${parseFloat(x.litros)}L${x.novedad?' · ⚠️ '+x.novedad:''}</div></div>
+            <span class="badge badge-verde">${parseFloatfmtL(x.litros)}L</span>
           </div>
-          <button data-docid="${UA.uid}_${x.ganaderoId}_${getFechaReg()}" data-nombre="${x.ganaderoNombre}" data-litros="${parseFloat(x.litros).toFixed(1)}" data-hora="${x.hora}" class="btn-elim-reg" style="background:var(--rojo2);color:var(--rojo);border:1px solid var(--rojo);border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;width:100%;text-align:center;">🗑️ Eliminar este registro</button>
+          <button data-docid="${UA.uid}_${x.ganaderoId}_${getFechaReg()}" data-nombre="${x.ganaderoNombre}" data-litros="${parseFloatfmtL(x.litros)}" data-hora="${x.hora}" class="btn-elim-reg" style="background:var(--rojo2);color:var(--rojo);border:1px solid var(--rojo);border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;width:100%;text-align:center;">🗑️ Eliminar este registro</button>
         </div>`).join('');
       listaEl.querySelectorAll('.btn-elim-reg').forEach(function(btn){
         btn.addEventListener('click',function(){abrirEliminarRegistro(this.dataset.docid,this.dataset.nombre,this.dataset.litros,this.dataset.hora);});
@@ -820,11 +820,11 @@ async function resumenRecibidor(){
           <div style="display:flex;justify-content:space-between;align-items:center;">
             <div>
               <div class="nombre">${rv.nombre}</div>
-              <div class="detalle">${rv.fmtL(litros)}L recibidos${rv.novedad?' · '+rv.novedad:''}</div>
+              <div class="detalle">${fmtL(rv.litros)}L recibidos${rv.novedad?' · '+rv.novedad:''}</div>
             </div>
-            <span class="badge badge-verde">${rv.fmtL(litros)}L</span>
+            <span class="badge badge-verde">${fmtL(rv.litros)}L</span>
           </div>
-          <button data-recepelimid="${rid}_${hoy()}" data-recepnombre="${rv.nombre}" data-receplitros="${rv.fmtL(litros)}" class="btn-elim-recep" style="background:var(--rojo2);color:var(--rojo);border:1px solid var(--rojo);border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;width:100%;text-align:center;">🗑️ Eliminar este registro</button>
+          <button data-recepelimid="${rid}_${hoy()}" data-recepnombre="${rv.nombre}" data-receplitros="${fmtL(rv.litros)}" class="btn-elim-recep" style="background:var(--rojo2);color:var(--rojo);border:1px solid var(--rojo);border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;width:100%;text-align:center;">🗑️ Eliminar este registro</button>
         </div>`).join('');
     // Intermediarios del día
     const sInter=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','==',hoy())));
@@ -837,10 +837,10 @@ async function resumenRecibidor(){
       :listaInterHoy.map(rv=>`
         <div class="lista-item" style="cursor:default;flex-direction:column;align-items:stretch;gap:10px;border-color:var(--naranja);">
           <div style="display:flex;justify-content:space-between;align-items:center;">
-            <div><div class="nombre">${rv.nombre}</div><div class="detalle">${rv.fmtL(litros)}L${rv.novedad?' · '+rv.novedad:''}</div></div>
-            <span class="badge badge-naranja">${rv.fmtL(litros)}L</span>
+            <div><div class="nombre">${rv.nombre}</div><div class="detalle">${fmtL(rv.litros)}L${rv.novedad?' · '+rv.novedad:''}</div></div>
+            <span class="badge badge-naranja">${fmtL(rv.litros)}L</span>
           </div>
-          <button data-interelimid="${rv.id}" data-internombre="${rv.nombre}" data-interlitros="${rv.fmtL(litros)}" class="btn-elim-inter" style="background:var(--rojo2);color:var(--rojo);border:1px solid var(--rojo);border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;width:100%;text-align:center;">🗑️ Eliminar este registro</button>
+          <button data-interelimid="${rv.id}" data-internombre="${rv.nombre}" data-interlitros="${fmtL(rv.litros)}" class="btn-elim-inter" style="background:var(--rojo2);color:var(--rojo);border:1px solid var(--rojo);border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;width:100%;text-align:center;">🗑️ Eliminar este registro</button>
         </div>`).join('');
     document.getElementById('recibi-lista-hoy').querySelectorAll('.btn-elim-recep').forEach(btn=>{
       btn.addEventListener('click',function(){abrirEliminarRecepcion(this.dataset.recepelimid,this.dataset.recepnombre,this.dataset.receplitros);});
@@ -866,7 +866,7 @@ async function cargarRecogedoresParaRecibidor(){
     const rutaTot={};sCol.forEach(d=>{const da=d.data();if(!rutaTot[da.recogedorId])rutaTot[da.recogedorId]=0;rutaTot[da.recogedorId]+=parseFloat(da.litros)||0;});
     const sRec=await getDocs(query(collection(db,'recepciones'),where('fecha','==',hoy())));
     const yaReg={};sRec.forEach(d=>{const da=d.data();yaReg[da.recogedorId]=parseFloat(da.litros)||0;});
-    document.getElementById('lista-recogedores-recibi').innerHTML=listaRecogedores.length===0?'<div class="vacio"><div class="ico">👤</div><p>No hay recogedores</p></div>':listaRecogedores.map(r=>{const rutaL=rutaTot[r.id]||0;const tieneReg=yaReg[r.id]!==undefined;return`<div class="lista-item" onclick="selRecibidor('${r.id}')"><div><div class="nombre">${r.nombre||r.email}</div><div class="detalle">Ruta: ${rutafmtL(L)}L${tieneReg?' · ✅ Registrado: '+yaReg[r.id].toFixed(1)+'L':' · ⏳ Pendiente'}</div></div><span class="flecha">›</span></div>`;}).join('');
+    document.getElementById('lista-recogedores-recibi').innerHTML=listaRecogedores.length===0?'<div class="vacio"><div class="ico">👤</div><p>No hay recogedores</p></div>':listaRecogedores.map(r=>{const rutaL=rutaTot[r.id]||0;const tieneReg=yaReg[r.id]!==undefined;return`<div class="lista-item" onclick="selRecibidor('${r.id}')"><div><div class="nombre">${r.nombre||r.email}</div><div class="detalle">Ruta: ${fmtL(rutaL)}L${tieneReg?' · ✅ Registrado: '+fmtL(yaReg[r.id])+'L':' · ⏳ Pendiente'}</div></div><span class="flecha">›</span></div>`;}).join('');
   }catch(e){console.error(e);}
 }
 async function cargarInter(){
@@ -1041,7 +1041,7 @@ async function guardarRecepcion(){
     const hayAlerta=L>rutaTotal;
     document.getElementById('recibi-exito-detalle').textContent=`${L}L de ${recibSeleccionado.nombre||recibSeleccionado.email}. Ruta: ${fmtL(rutaTotal)}L`;
     const ad=document.getElementById('recibi-exito-alerta');
-    if(hayAlerta){ad.style.display='block';document.getElementById('recibi-exito-alerta-msg').textContent=`Recibiste ${L}L pero ruta reportó ${fmtL(rutaTotal)}L. Diferencia: +${(L-rutaTotal).toFixed(1)}L`;}else{ad.style.display='none';}
+    if(hayAlerta){ad.style.display='block';document.getElementById('recibi-exito-alerta-msg').textContent=`Recibiste ${L}L pero ruta reportó ${fmtL(rutaTotal)}L. Diferencia: +${fmtL(L-rutaTotal)}L`;}else{ad.style.display='none';}
     ir('screen-recibi-exito');resumenRecibidor();
   }catch(e){alerta('recibi-form-error','Error al guardar. Verifica tu conexión.','rojo');}
 }window.guardarRecepcion=guardarRecepcion;
@@ -1107,7 +1107,7 @@ function renderDesgloseAdmin(filtroId){
   function renderListaDes(expandido){
     window._desgloseExpandido=expandido;
     const lista=expandido?ganArr:ganArr.slice(0,LIMITE_DES);
-    const rows=lista.map(g=>`<div style="padding:12px 0;border-bottom:1px solid var(--gris1);"><div style="display:flex;justify-content:space-between;align-items:center;"><div style="font-weight:700;font-size:15px;">${g.nombre}</div><span class="badge badge-verde">Total: ${fmtL(g.totalFiltro)}L</span></div>${g.recogedores.length>1?`<div style="margin-top:6px;">${g.recogedores.map(r=>`<div style="font-size:13px;color:var(--gris2);padding-left:12px;">↳ ${r.nombre}: ${r.fmtL(litros)}L · ${r.hora}</div>`).join('')}</div>`:`<div style="font-size:13px;color:var(--gris2);margin-top:2px;">${g.recogedores[0]?.nombre||''} · ${g.recogedores[0]?.hora||''}</div>`}</div>`).join('');
+    const rows=lista.map(g=>`<div style="padding:12px 0;border-bottom:1px solid var(--gris1);"><div style="display:flex;justify-content:space-between;align-items:center;"><div style="font-weight:700;font-size:15px;">${g.nombre}</div><span class="badge badge-verde">Total: ${fmtL(g.totalFiltro)}L</span></div>${g.recogedores.length>1?`<div style="margin-top:6px;">${g.recogedores.map(r=>`<div style="font-size:13px;color:var(--gris2);padding-left:12px;">↳ ${r.nombre}: ${fmtL(r.litros)}L · ${r.hora}</div>`).join('')}</div>`:`<div style="font-size:13px;color:var(--gris2);margin-top:2px;">${g.recogedores[0]?.nombre||''} · ${g.recogedores[0]?.hora||''}</div>`}</div>`).join('');
     const verBtn=ganArr.length>LIMITE_DES?expandido?`<button onclick="window._toggleDesglose(false)" style="margin-top:10px;background:none;border:none;color:var(--verde);font-weight:700;font-size:14px;cursor:pointer;width:100%;text-align:center;">Ver menos ▲</button>`:`<button onclick="window._toggleDesglose(true)" style="margin-top:10px;background:none;border:none;color:var(--verde);font-weight:700;font-size:14px;cursor:pointer;width:100%;text-align:center;">Ver más (${ganArr.length-LIMITE_DES} más) ▼</button>`:'';
     const desglLista=document.getElementById('desglose-lista');if(desglLista)desglLista.innerHTML=rows+verBtn;
   }
@@ -1122,7 +1122,7 @@ function filtrarDesgloseAdmin(){
   const gan=window._ganArrActual||[];
   const filtrado=t?gan.filter(g=>g.nombre.toLowerCase().includes(t)):gan;
   lista.innerHTML=filtrado.length===0?'<p style="color:var(--gris2);font-size:14px;">Sin resultados</p>':
-    filtrado.map(g=>`<div style="padding:12px 0;border-bottom:1px solid var(--gris1);"><div style="display:flex;justify-content:space-between;align-items:center;"><div style="font-weight:700;font-size:15px;">${g.nombre}</div><span class="badge badge-verde">Total: ${fmtL(g.totalFiltro)}L</span></div>${g.recogedores.length>1?`<div style="margin-top:6px;">${g.recogedores.map(r=>`<div style="font-size:13px;color:var(--gris2);padding-left:12px;">↳ ${r.nombre}: ${r.fmtL(litros)}L · ${r.hora}</div>`).join('')}</div>`:`<div style="font-size:13px;color:var(--gris2);margin-top:2px;">${g.recogedores[0]?.nombre||''} · ${g.recogedores[0]?.hora||''}</div>`}</div>`).join('');
+    filtrado.map(g=>`<div style="padding:12px 0;border-bottom:1px solid var(--gris1);"><div style="display:flex;justify-content:space-between;align-items:center;"><div style="font-weight:700;font-size:15px;">${g.nombre}</div><span class="badge badge-verde">Total: ${fmtL(g.totalFiltro)}L</span></div>${g.recogedores.length>1?`<div style="margin-top:6px;">${g.recogedores.map(r=>`<div style="font-size:13px;color:var(--gris2);padding-left:12px;">↳ ${r.nombre}: ${fmtL(r.litros)}L · ${r.hora}</div>`).join('')}</div>`:`<div style="font-size:13px;color:var(--gris2);margin-top:2px;">${g.recogedores[0]?.nombre||''} · ${g.recogedores[0]?.hora||''}</div>`}</div>`).join('');
 }window.filtrarDesgloseAdmin=filtrarDesgloseAdmin;
 
 async function recargarDesglose(fecha){
@@ -1163,7 +1163,7 @@ async function recargarDesglose(fecha){
         window._interHoyActual=interHoy;
         function renderInterDash(expandido){
           const LIMITE_I=3;const lista=expandido?interHoy:interHoy.slice(0,LIMITE_I);
-          const rows=lista.map(i=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--gris1);font-size:14px;"><div><div style="font-weight:600;">${i.intermediarioNombre}</div><div style="font-size:12px;color:var(--gris2);margin-top:2px;">${i.recibidorNombre||''}${i.hora?' · '+i.hora:''}</div></div><span style="color:var(--naranja);font-weight:700;">${parseFloat(fmtL(i.litros))}L</span></div>`).join('');
+          const rows=lista.map(i=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--gris1);font-size:14px;"><div><div style="font-weight:600;">${i.intermediarioNombre}</div><div style="font-size:12px;color:var(--gris2);margin-top:2px;">${i.recibidorNombre||''}${i.hora?' · '+i.hora:''}</div></div><span style="color:var(--naranja);font-weight:700;">${parseFloatfmtL(i.litros)}L</span></div>`).join('');
           const verBtn=interHoy.length>LIMITE_I?expandido?`<button onclick="window._toggleInter(false)" style="margin-top:10px;background:none;border:none;color:var(--naranja);font-weight:700;font-size:14px;cursor:pointer;width:100%;text-align:center;">Ver menos ▲</button>`:`<button onclick="window._toggleInter(true)" style="margin-top:10px;background:none;border:none;color:var(--naranja);font-weight:700;font-size:14px;cursor:pointer;width:100%;text-align:center;">Ver más (${interHoy.length-LIMITE_I} más) ▼</button>`:'';
           interDiv.innerHTML=`<div style="font-size:13px;font-weight:700;color:var(--naranja);margin-bottom:8px;">Total: ${fmtL(totalInterH)}L</div>`+rows+verBtn;
         }
@@ -1187,7 +1187,7 @@ async function dashAdmin(){
     const _totalPlantaRec=totalPlanta;
     document.getElementById('admin-alertas-container').innerHTML='';// se llena después de usuMap
     const todosRec=new Set([...Object.keys(porRec),...Object.keys(porRecPlanta)]);
-    const filasConcil=[...todosRec].map(rid=>{const rutaL=porRec[rid]?.litros||0;const plantaL=porRecPlanta[rid]?.litros;const nombre=porRec[rid]?.nombre||porRecPlanta[rid]?.nombre||'?';const pend=plantaL===undefined;const esA=!pend&&plantaL>rutaL;const dv=pend?'—':(plantaL-rutaL).toFixed(1);return{rid,nombre,rutaL,plantaL,pend,esA,dv};});
+    const filasConcil=[...todosRec].map(rid=>{const rutaL=porRec[rid]?.litros||0;const plantaL=porRecPlanta[rid]?.litros;const nombre=porRec[rid]?.nombre||porRecPlanta[rid]?.nombre||'?';const pend=plantaL===undefined;const esA=!pend&&plantaL>rutaL;const dv=pend?'—':(plantaL-rutaL);return{rid,nombre,rutaL,plantaL,pend,esA,dv};});
     const totalRutaC=filasConcil.reduce((s,f)=>s+f.rutaL,0);
     const totalPlantaC=filasConcil.filter(f=>!f.pend).reduce((s,f)=>s+f.plantaL,0);
     const totalDiffC=totalPlantaC-totalRutaC;
@@ -1207,7 +1207,7 @@ async function dashAdmin(){
       }
       if(rv.litros>rutaL)alertas.push({nombre:rv.nombre,recibido:rv.litros,ruta:rutaL,dif:rv.litros-rutaL});
     });
-    document.getElementById('admin-alertas-container').innerHTML=alertas.map(a=>`<div class="alerta-grande naranja"><div style="font-weight:800;color:var(--naranja);margin-bottom:4px;">⚠️ ALERTA — ${a.nombre}</div><div style="color:var(--naranja);font-size:14px;">Planta: ${a.fmtL(recibido)}L · Ruta: ${a.fmtL(ruta)}L · Diferencia: +${a.fmtL(dif)}L</div></div>`).join('');
+    document.getElementById('admin-alertas-container').innerHTML=alertas.map(a=>`<div class="alerta-grande naranja"><div style="font-weight:800;color:var(--naranja);margin-bottom:4px;">⚠️ ALERTA — ${a.nombre}</div><div style="color:var(--naranja);font-size:14px;">Planta: ${fmtL(a.recibido)}L · Ruta: ${fmtL(a.ruta)}L · Diferencia: +${fmtL(a.dif)}L</div></div>`).join('');
     // UIDs that are part of a combined route (hide individually)
     const uidsCombinados=new Set(rutasCombinadas.flatMap(([,u])=>u.combinaUids||[]));
     // Build filas: skip individual UIDs that are in a combined route
@@ -1219,7 +1219,7 @@ async function dashAdmin(){
       const nombre=cu.nombre||cu.email||'Ruta combinada';
       const pend=plantaL===undefined;
       const esA=!pend&&plantaL>rutaSum;
-      const dv=pend?'—':(plantaL-rutaSum).toFixed(1);
+      const dv=pend?'—':fmtL(plantaL-rutaSum);
       filasFinales.push({rid:cid,nombre,rutaL:rutaSum,plantaL,pend,esA,dv,esCombinada:true});
     });
     const totalRutaF=filasFinales.reduce((s,f)=>s+f.rutaL,0);
@@ -1245,7 +1245,7 @@ async function dashAdmin(){
       const sInter=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','==',hoy())));
       let totalInterH=0;const interHoy=[];
       sInter.forEach(d=>{const da=d.data();totalInterH+=parseFloat(da.litros)||0;interHoy.push(da);});
-      document.getElementById('admin-total-planta').textContent=(_totalPlantaRec+totalInterH).toFixed(1);
+      document.getElementById('admin-total-planta').textContent=fmtL(_totalPlantaRec+totalInterH);
       // Mostrar intermediarios en card separada
       const interCard=document.getElementById('admin-inter-card');
       const interDiv=document.getElementById('admin-inter-hoy');
@@ -1254,7 +1254,7 @@ async function dashAdmin(){
           interCard.style.display='block';
           function renderInterMain(expandido){
             const LIMITE_I=3;const lista=expandido?interHoy:interHoy.slice(0,LIMITE_I);
-            const rows=lista.map(i=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--gris1);font-size:14px;"><div><div style="font-weight:600;">${i.intermediarioNombre}</div><div style="font-size:12px;color:var(--gris2);margin-top:2px;">${i.recibidorNombre||''}${i.hora?' · '+i.hora:''}</div></div><span style="color:var(--naranja);font-weight:700;">${parseFloat(fmtL(i.litros))}L</span></div>`).join('');
+            const rows=lista.map(i=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--gris1);font-size:14px;"><div><div style="font-weight:600;">${i.intermediarioNombre}</div><div style="font-size:12px;color:var(--gris2);margin-top:2px;">${i.recibidorNombre||''}${i.hora?' · '+i.hora:''}</div></div><span style="color:var(--naranja);font-weight:700;">${parseFloatfmtL(i.litros)}L</span></div>`).join('');
             const verBtn=interHoy.length>LIMITE_I?expandido?`<button onclick="window._toggleInterMain(false)" style="margin-top:10px;background:none;border:none;color:var(--naranja);font-weight:700;font-size:14px;cursor:pointer;width:100%;text-align:center;">Ver menos ▲</button>`:`<button onclick="window._toggleInterMain(true)" style="margin-top:10px;background:none;border:none;color:var(--naranja);font-weight:700;font-size:14px;cursor:pointer;width:100%;text-align:center;">Ver más (${interHoy.length-LIMITE_I} más) ▼</button>`:'';
             interDiv.innerHTML=`<div style="font-size:13px;font-weight:700;color:var(--naranja);margin-bottom:8px;">Total: ${fmtL(totalInterH)}L</div>`+rows+verBtn;
           }
@@ -1295,7 +1295,7 @@ async function cargarResumenSemanal(fechaRef){
     snapI.forEach(d=>{const da=d.data();if(porDiaI[da.fecha]!==undefined)porDiaI[da.fecha]+=parseFloat(da.litros)||0;});
     const nomDiaSem=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
     const hoyStr=hoy();
-    document.getElementById('admin-semana').innerHTML=`<div style="display:flex;gap:6px;flex-wrap:wrap;">${dias.map((d,i)=>{const diaSem=new Date(d+'T12:00:00').getDay();const L=porDia[d]||0;const P=porDiaP[d]||0;const I=porDiaI[d]||0;const T=P+I;const esHoy=d===hoyStr;const bg=esHoy?'var(--verde)':'var(--verde3)';const colorT=esHoy?'white':'var(--verde)';const colorP=esHoy?'rgba(255,255,255,0.8)':'var(--naranja)';const colorI=esHoy?'rgba(255,255,255,0.7)':'#7c3aed';const colorTot=esHoy?'white':'var(--gris3)';return`<div style="flex:1;min-width:36px;text-align:center;padding:8px 4px;border-radius:10px;background:${bg};"><div style="font-size:10px;font-weight:700;color:${colorT};">${nomDiaSem[diaSem]}</div><div style="font-size:13px;font-weight:800;color:${colorT};">${L>0?L.toFixed(0):'—'}</div><div style="font-size:9px;color:${colorT};opacity:0.8;">ruta</div><div style="font-size:12px;font-weight:700;color:${colorP};">${P>0?P.toFixed(0):'—'}</div><div style="font-size:9px;color:${colorP};opacity:0.8;">planta</div><div style="font-size:12px;font-weight:700;color:${colorI};">${I>0?I.toFixed(0):'—'}</div><div style="font-size:9px;color:${colorI};opacity:0.8;">inter</div><div style="border-top:1px solid rgba(255,255,255,0.3);margin-top:3px;padding-top:3px;font-size:12px;font-weight:800;color:${colorTot};">${T>0?fmtL(T):'—'}</div><div style="font-size:9px;color:${colorTot};opacity:0.8;">total</div>${L>0||P>0?`<div style="font-size:11px;font-weight:800;color:${P-L>0?'#DC2626':P-L<0?'#15803d':colorTot};margin-top:2px;">${P-L>=0?'+':''}${fmtL(P-L)}</div><div style="font-size:9px;color:${colorTot};opacity:0.6;">diff</div>`:''}</div>`;}).join('')}</div>`;
+    document.getElementById('admin-semana').innerHTML=`<div style="display:flex;gap:6px;flex-wrap:wrap;">${dias.map((d,i)=>{const diaSem=new Date(d+'T12:00:00').getDay();const L=porDia[d]||0;const P=porDiaP[d]||0;const I=porDiaI[d]||0;const T=P+I;const esHoy=d===hoyStr;const bg=esHoy?'var(--verde)':'var(--verde3)';const colorT=esHoy?'white':'var(--verde)';const colorP=esHoy?'rgba(255,255,255,0.8)':'var(--naranja)';const colorI=esHoy?'rgba(255,255,255,0.7)':'#7c3aed';const colorTot=esHoy?'white':'var(--gris3)';return`<div style="flex:1;min-width:36px;text-align:center;padding:8px 4px;border-radius:10px;background:${bg};"><div style="font-size:10px;font-weight:700;color:${colorT};">${nomDiaSem[diaSem]}</div><div style="font-size:13px;font-weight:800;color:${colorT};">${L>0?L.toFixed(0):'—'}</div><div style="font-size:9px;color:${colorT};opacity:0.8;">ruta</div><div style="font-size:12px;font-weight:700;color:${colorP};">${P>0?P.toFixed(0):'—'}</div><div style="font-size:9px;color:${colorP};opacity:0.8;">planta</div><div style="font-size:12px;font-weight:700;color:${colorI};">${I>0?I.toFixed(0):'—'}</div><div style="font-size:9px;color:${colorI};opacity:0.8;">inter</div><div style="border-top:1px solid rgba(255,255,255,0.3);margin-top:3px;padding-top:3px;font-size:12px;font-weight:800;color:${colorTot};">${T>0?T.toFixed(0):'—'}</div><div style="font-size:9px;color:${colorTot};opacity:0.8;">total</div></div>`;}).join('')}</div>`;
   }catch(e){}
 }
 
@@ -1404,9 +1404,9 @@ Precio por litro: $${precioActual}
 `;
     csv+=`Fecha,${ganHeaders},TOTAL DÍA L,TOTAL DÍA $
 `;
-    fechas.forEach(f=>{const vals=gans.map(([gid])=>celda[f][gid]?celda[f][gid].fmtL(L):'—').join(',');csv+=`${f},${vals},${totalFila[f].fmtL(L)},${totalFila[f].P.toFixed(0)}
+    fechas.forEach(f=>{const vals=gans.map(([gid])=>celda[f][gid]?fmtL(celda[f][gid].L):'—').join(',');csv+=`${f},${vals},${fmtL(totalFila[f].L)},${totalFila[f].P.toFixed(0)}
 `;});
-    csv+=`TOTAL L,${gans.map(([gid])=>fmtL(totalColL[gid])).join(',')},${grandfmtL(L)},
+    csv+=`TOTAL L,${gans.map(([gid])=>fmtL(totalColL[gid])).join(',')},${fmtL(grandL)},
 `;
     csv+=`TOTAL $,${gans.map(([gid])=>totalColP[gid].toFixed(0)).join(',')},,"${grandP.toFixed(0)}"
 `;
@@ -1614,8 +1614,8 @@ function repGan(datos,de,ha,recepciones){
     return`<div class="card" style="margin-top:14px;background:${diff>0?'#fff5f5':diff<0?'#fffbeb':'#f0fdf4'};border:2px solid ${color};">
       <div style="font-size:13px;font-weight:700;color:${color};margin-bottom:10px;">${icono}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;">
-        <div><div style="font-size:11px;color:var(--gris2);font-weight:600;">🚛 RUTA</div><div style="font-size:22px;font-weight:800;color:var(--gris3);">${rutafmtL(L)}</div><div style="font-size:11px;color:var(--gris2);">litros</div></div>
-        <div><div style="font-size:11px;color:var(--gris2);font-weight:600;">🏭 PLANTA</div><div style="font-size:22px;font-weight:800;color:var(--gris3);">${plantafmtL(L)}</div><div style="font-size:11px;color:var(--gris2);">litros</div></div>
+        <div><div style="font-size:11px;color:var(--gris2);font-weight:600;">🚛 RUTA</div><div style="font-size:22px;font-weight:800;color:var(--gris3);">${fmtL(rutaL)}</div><div style="font-size:11px;color:var(--gris2);">litros</div></div>
+        <div><div style="font-size:11px;color:var(--gris2);font-weight:600;">🏭 PLANTA</div><div style="font-size:22px;font-weight:800;color:var(--gris3);">${fmtL(plantaL)}</div><div style="font-size:11px;color:var(--gris2);">litros</div></div>
         <div><div style="font-size:11px;color:var(--gris2);font-weight:600;">⚖️ DIFERENCIA</div><div style="font-size:22px;font-weight:800;color:${color};">${diff>=0?'+':''}${fmtL(diff)}</div><div style="font-size:11px;color:var(--gris2);">litros</div></div>
       </div>
     </div>`;
@@ -1640,14 +1640,14 @@ function repGan(datos,de,ha,recepciones){
     tab.innerHTML=lista.length===0?filtros+'<div class="vacio"><div class="ico">📊</div><p>Sin datos para este recogedor</p></div>':`
       ${filtros}
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-        <div style="font-size:14px;color:var(--gris2);">${lista.length} ganaderos · ${rutafmtL(L)}L</div>
+        <div style="font-size:14px;color:var(--gris2);">${lista.length} ganaderos · ${fmtL(rutaL)}L</div>
         <button class="btn btn-verde btn-sm" onclick="exportarCSV('ganadero')">⬇ Exportar</button>
       </div>
       <div class="card" style="padding:0;overflow:hidden;">
         <table class="tabla">
           <thead><tr><th>Ganadero</th><th>Total L</th><th>Desglose</th></tr></thead>
-          <tbody>${lista.map(g=>{const recs=Object.values(g.recogedores);const desgl=recs.length>1?recs.map(r=>`${r.nombre}: ${r.fmtL(L)}L`).join(' · '):recs[0]?.nombre||'-';return`<tr><td><strong>${g.n}</strong></td><td>${g.fmtL(L)}</td><td style="font-size:12px;">${desgl}</td></tr>`;}).join('')}</tbody>
-          <tfoot><tr style="background:var(--verde3);font-weight:700;"><td style="color:var(--verde);">TOTAL RUTA</td><td style="color:var(--verde);">${rutafmtL(L)} L</td><td></td></tr></tfoot>
+          <tbody>${lista.map(g=>{const recs=Object.values(g.recogedores);const desgl=recs.length>1?recs.map(r=>`${r.nombre}: ${fmtL(r.L)}L`).join(' · '):recs[0]?.nombre||'-';return`<tr><td><strong>${g.n}</strong></td><td>${fmtL(g.L)}</td><td style="font-size:12px;">${desgl}</td></tr>`;}).join('')}</tbody>
+          <tfoot><tr style="background:var(--verde3);font-weight:700;"><td style="color:var(--verde);">TOTAL RUTA</td><td style="color:var(--verde);">${fmtL(rutaL)} L</td><td></td></tr></tfoot>
         </table>
       </div>
       ${concilBlock(rutaL,plantaL)}`;
@@ -1656,7 +1656,7 @@ function repGan(datos,de,ha,recepciones){
   window._ganFiltro=function(id){filtroRecId=id;renderGan();};
   renderGan();
 }
-function repDia(datos){const ag={};datos.forEach(d=>{if(!ag[d.fecha])ag[d.fecha]={L:0,r:0,rec:new Set()};ag[d.fecha].L+=parseFloat(d.litros)||0;ag[d.fecha].r++;ag[d.fecha].rec.add(d.recogedorNombre);});const lista=Object.entries(ag).sort((a,b)=>b[0].localeCompare(a[0]));document.getElementById('rep-tab-3').innerHTML=lista.length===0?'<div class="vacio"><div class="ico">📅</div><p>Sin datos</p></div>':`<div style="display:flex;justify-content:flex-end;margin-bottom:12px;"><button class="btn btn-verde btn-sm" onclick="exportarCSV('dia')">⬇ Exportar</button></div><div class="card" style="padding:0;overflow:hidden;"><table class="tabla"><thead><tr><th>Fecha</th><th>Litros</th><th>Registros</th><th>Recogedores</th></tr></thead><tbody>${lista.map(([f,v])=>`<tr><td>${f}</td><td>${v.fmtL(L)}</td><td>${v.r}</td><td>${[...v.rec].join(', ')}</td></tr>`).join('')}</tbody></table></div>`;}
+function repDia(datos){const ag={};datos.forEach(d=>{if(!ag[d.fecha])ag[d.fecha]={L:0,r:0,rec:new Set()};ag[d.fecha].L+=parseFloat(d.litros)||0;ag[d.fecha].r++;ag[d.fecha].rec.add(d.recogedorNombre);});const lista=Object.entries(ag).sort((a,b)=>b[0].localeCompare(a[0]));document.getElementById('rep-tab-3').innerHTML=lista.length===0?'<div class="vacio"><div class="ico">📅</div><p>Sin datos</p></div>':`<div style="display:flex;justify-content:flex-end;margin-bottom:12px;"><button class="btn btn-verde btn-sm" onclick="exportarCSV('dia')">⬇ Exportar</button></div><div class="card" style="padding:0;overflow:hidden;"><table class="tabla"><thead><tr><th>Fecha</th><th>Litros</th><th>Registros</th><th>Recogedores</th></tr></thead><tbody>${lista.map(([f,v])=>`<tr><td>${f}</td><td>${fmtL(v.L)}</td><td>${v.r}</td><td>${[...v.rec].join(', ')}</td></tr>`).join('')}</tbody></table></div>`;}
 function repLiqMatriz(datos,de,ha,precio){
   const tab=document.getElementById('rep-tab-0');
   if(datos.length===0){tab.innerHTML='<div class="vacio"><div class="ico">💰</div><p>Sin datos en este período</p></div>';return;}
@@ -1679,14 +1679,14 @@ function repLiqMatriz(datos,de,ha,precio){
   const filas=gans.map(([gid,gn])=>{
     const celdas=fechas.map(f=>{const L=celda[gid][f];return L?`<td style="text-align:center;">${fmtL(L)}</td>`:'<td class="vacio" style="text-align:center;">—</td>';}).join('');
     const totL=totalColL[gid];
-    return`<tr><td class="col-gan">${gn}</td>${celdas}<td class="total-col" style="text-align:center;">${totfmtL(L)}</td><td class="total-pago" style="text-align:right;padding-right:10px;">${fmtPeso(totL*precio)}</td></tr>`;
+    return`<tr><td class="col-gan">${gn}</td>${celdas}<td class="total-col" style="text-align:center;">${fmtL(totL)}</td><td class="total-pago" style="text-align:right;padding-right:10px;">${fmtPeso(totL*precio)}</td></tr>`;
   }).join('');
-  const totDias=fechas.map(f=>`<td class="total-col" style="text-align:center;">${totalFila[f].toFixed(1)}</td>`).join('');
+  const totDias=fechas.map(f=>`<td class="total-col" style="text-align:center;">${fmtL(totalFila[f])}</td>`).join('');
   tab.innerHTML=`
     <div class="card" style="background:var(--verde3);border:2px solid var(--verde2);margin-bottom:12px;">
       <div style="font-size:13px;font-weight:700;color:var(--verde);">TOTAL A PAGAR · ${de} al ${ha}</div>
       <div style="font-size:36px;font-weight:800;color:var(--verde);margin-top:4px;">${fmtPeso(TP)}</div>
-      <div style="font-size:14px;color:var(--verde);margin-top:4px;">${TfmtL(L)} litros · ${gans.length} ganaderos · ${fmtPeso(precio)}/L</div>
+      <div style="font-size:14px;color:var(--verde);margin-top:4px;">${fmtL(TL)} litros · ${gans.length} ganaderos · ${fmtPeso(precio)}/L</div>
     </div>
     <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
       <button class="btn btn-verde btn-sm" onclick="exportarLiqMatriz('${de}','${ha}',${precio})">⬇ Exportar Excel</button>
@@ -1699,7 +1699,7 @@ function repLiqMatriz(datos,de,ha,precio){
           ${filas}
           <tr class="fila-total">
             <td class="col-gan">TOTAL DÍA</td>${totDias}
-            <td class="total-col" style="text-align:center;">${TfmtL(L)}</td>
+            <td class="total-col" style="text-align:center;">${fmtL(TL)}</td>
             <td class="total-col" style="text-align:right;padding-right:10px;">${fmtPeso(TP)}</td>
           </tr>
         </tbody>
@@ -1718,7 +1718,7 @@ function repDetalle(datos,de,ha){
     <div class="card" style="padding:0;overflow:hidden;overflow-x:auto;">
       <table class="tabla" style="min-width:600px;">
         <thead><tr><th>Fecha</th><th>Ganadero</th><th>Litros</th><th>Hora</th><th>Recogedor</th><th>Novedad</th></tr></thead>
-        <tbody>${lista.map(d=>`<tr ${d.novedad&&d.novedad.trim()?'style="background:#fffbeb;"':''}><td>${d.fecha}</td><td><strong>${d.ganaderoNombre}</strong></td><td>${(parseFloat(d.litros)||0).toFixed(1)}</td><td>${d.hora||'-'}</td><td>${d.recogedorNombre}</td><td style="font-size:12px;color:${d.novedad&&d.novedad.trim()?'var(--amarillo)':'var(--gris2)'};">${d.novedad||'-'}</td></tr>`).join('')}</tbody>
+        <tbody>${lista.map(d=>`<tr ${d.novedad&&d.novedad.trim()?'style="background:#fffbeb;"':''}><td>${d.fecha}</td><td><strong>${d.ganaderoNombre}</strong></td><td>${fmtL(parseFloat(d.litros)||0)}</td><td>${d.hora||'-'}</td><td>${d.recogedorNombre}</td><td style="font-size:12px;color:${d.novedad&&d.novedad.trim()?'var(--amarillo)':'var(--gris2)'};">${d.novedad||'-'}</td></tr>`).join('')}</tbody>
       </table>
     </div>`;
 }
@@ -1745,7 +1745,7 @@ async function cargarEliminaciones(){
       <div class="card" style="padding:0;overflow:hidden;overflow-x:auto;">
         <table class="tabla" style="min-width:600px;">
           <thead><tr><th>Fecha reg.</th><th>Ganadero</th><th>Litros</th><th>Hora</th><th>Recogedor</th><th>Motivo</th><th>Eliminado por</th><th>Cuándo</th></tr></thead>
-          <tbody>${lista.map(d=>{const quienElim=d.eliminadoPorNombre||(d.recogedorNombre||'-');const rolElim=d.eliminadoPorRol?` (${d.eliminadoPorRol})`:'';return`<tr style="background:#fff5f5;"><td>${d.fecha||'-'}</td><td><strong>${d.ganaderoNombre||d.intermediarioNombre||'-'}</strong></td><td>${parseFloat(d.litros||0).toFixed(1)}</td><td>${d.hora||'-'}</td><td>${d.recogedorNombre||d.recibidorNombre||'-'}</td><td style="font-size:12px;color:var(--rojo);">${d.motivo||'-'}</td><td style="font-size:12px;font-weight:700;">${quienElim}<span style="color:var(--gris2);font-weight:400;">${rolElim}</span></td><td style="font-size:11px;color:var(--gris2);">${d.eliminadoEn||''} ${d.eliminadoHora||''}</td></tr>`;}).join('')}
+          <tbody>${lista.map(d=>{const quienElim=d.eliminadoPorNombre||(d.recogedorNombre||'-');const rolElim=d.eliminadoPorRol?` (${d.eliminadoPorRol})`:'';return`<tr style="background:#fff5f5;"><td>${d.fecha||'-'}</td><td><strong>${d.ganaderoNombre||d.intermediarioNombre||'-'}</strong></td><td>${parseFloatfmtL(d.litros||0)}</td><td>${d.hora||'-'}</td><td>${d.recogedorNombre||d.recibidorNombre||'-'}</td><td style="font-size:12px;color:var(--rojo);">${d.motivo||'-'}</td><td style="font-size:12px;font-weight:700;">${quienElim}<span style="color:var(--gris2);font-weight:400;">${rolElim}</span></td><td style="font-size:11px;color:var(--gris2);">${d.eliminadoEn||''} ${d.eliminadoHora||''}</td></tr>`;}).join('')}
           </tbody>
         </table>
       </div>`;
@@ -1762,8 +1762,8 @@ function exportarLiqMatriz(de,ha,precio){
   datosRep.forEach(d=>{const gid=d.ganaderoId;const f=d.fecha;const L=parseFloat(d.litros)||0;if(!celda[gid])celda[gid]={};celda[gid][f]=(celda[gid][f]||0)+L;totalColL[gid]=(totalColL[gid]||0)+L;});
   const TL=gans.reduce((s,[gid])=>s+totalColL[gid],0);
   const headers=`Ganadero,${fechas.join(',')},Total L,A Pagar,Recogedor\n`;
-  const rows=gans.map(([gid,gn])=>{const dias=fechas.map(f=>celda[gid][f]?(celda[gid][f]).toFixed(1):'0').join(',');const recs=[...ganRec[gid]].join(' / ');return`"${gn}",${dias},${fmtL(totalColL[gid])},${(totalColL[gid]*precio).toFixed(0)},"${recs}"`;}).join('\n');
-  const totRow=`TOTAL DIA,${fechas.map(f=>{let s=0;gans.forEach(([gid])=>s+=(celda[gid][f]||0));return s.toFixed(1);}).join(',')},${TfmtL(L)},${(fmtL(TL*precio))},`;
+  const rows=gans.map(([gid,gn])=>{const dias=fechas.map(f=>celda[gid][f]?(celda[gid][f]):'0').join(',');const recs=[...ganRec[gid]].join(' / ');return`"${gn}",${dias},${fmtL(totalColL[gid])},${(totalColL[gid]*precio).toFixed(0)},"${recs}"`;}).join('\n');
+  const totRow=`TOTAL DIA,${fechas.map(f=>{let s=0;gans.forEach(([gid])=>s+=(celda[gid][f]||0));return fmtL(s);}).join(',')},${fmtL(TL)},${(TL*precio).toFixed(0)},`;
   descargar(`LIQUIDACION QUINCENAL - ${de} al ${ha} - $${precio}/L\n${headers}${rows}\n${totRow}`,`liquidacion-${de}-${ha}.csv`);
 }window.exportarLiqMatriz=exportarLiqMatriz;
 // ── DETALLE COMPLETO ──
@@ -1772,8 +1772,8 @@ function exportarLiqMatriz(de,ha,precio){
 // ── EXPORTAR ──
 function exportarCSV(tipo){
   const de=document.getElementById('rep-desde').value;const ha=document.getElementById('rep-hasta').value;let csv='';
-  if(tipo==='ganadero'){const ag={};datosRep.forEach(d=>{if(!ag[d.ganaderoId])ag[d.ganaderoId]={n:d.ganaderoNombre,L:0};ag[d.ganaderoId].L+=parseFloat(d.litros)||0;});csv='Ganadero,Litros\n'+Object.values(ag).map(g=>`"${g.n}",${g.fmtL(L)}`).join('\n');}
-  else if(tipo==='dia'){csv='Fecha,Ganadero,Litros,Hora,Recogedor,Novedad\n'+datosRep.map(d=>`${d.fecha},"${d.ganaderoNombre}",${parseFloat(fmtL(d.litros))},${d.hora},"${d.recogedorNombre}","${d.novedad||''}"`).join('\n');}
+  if(tipo==='ganadero'){const ag={};datosRep.forEach(d=>{if(!ag[d.ganaderoId])ag[d.ganaderoId]={n:d.ganaderoNombre,L:0};ag[d.ganaderoId].L+=parseFloat(d.litros)||0;});csv='Ganadero,Litros\n'+Object.values(ag).map(g=>`"${g.n}",${fmtL(g.L)}`).join('\n');}
+  else if(tipo==='dia'){csv='Fecha,Ganadero,Litros,Hora,Recogedor,Novedad\n'+datosRep.map(d=>`${d.fecha},"${d.ganaderoNombre}",${parseFloat(d.litros)},${d.hora},"${d.recogedorNombre}","${d.novedad||''}"`).join('\n');}
   else if(tipo==='detalle'){csv='Fecha,Ganadero,Litros,Precio/L,Total,Hora,Recogedor,Novedad\n'+datosRep.map(d=>{const L=parseFloat(d.litros)||0;const p=d.precioPorLitro||precioActual;return`${d.fecha},"${d.ganaderoNombre}",${fmtL(L)},${p},${(L*p).toFixed(0)},${d.hora||''},"${d.recogedorNombre}","${d.novedad||''}"`;}).join('\n');}
   descargar(csv,`reporte-${tipo}-${de}-${ha}.csv`);
 }window.exportarCSV=exportarCSV;
@@ -1800,14 +1800,14 @@ function repInter(datos,de,ha,precio){
   const filas=inters.map(([id,nombre])=>{
     const celdas=fechas.map(f=>{const L=celda[id][f];return L?`<td style="text-align:center;">${fmtL(L)}</td>`:'<td class="vacio" style="text-align:center;">—</td>';}).join('');
     const totL=totalColL[id];
-    return`<tr><td class="col-gan">${nombre}</td>${celdas}<td class="total-col" style="text-align:center;">${totfmtL(L)}</td><td class="total-pago" style="text-align:right;padding-right:10px;">${fmtPeso(totL*precio)}</td></tr>`;
+    return`<tr><td class="col-gan">${nombre}</td>${celdas}<td class="total-col" style="text-align:center;">${fmtL(totL)}</td><td class="total-pago" style="text-align:right;padding-right:10px;">${fmtPeso(totL*precio)}</td></tr>`;
   }).join('');
-  const totDias=fechas.map(f=>`<td class="total-col" style="text-align:center;">${totalFila[f].toFixed(1)}</td>`).join('');
+  const totDias=fechas.map(f=>`<td class="total-col" style="text-align:center;">${fmtL(totalFila[f])}</td>`).join('');
   tab.innerHTML=`
     <div class="card" style="background:#fff7ed;border:2px solid var(--naranja);margin-bottom:12px;">
       <div style="font-size:13px;font-weight:700;color:var(--naranja);">INTERMEDIARIOS · ${de} al ${ha}</div>
       <div style="font-size:36px;font-weight:800;color:var(--naranja);margin-top:4px;">${fmtPeso(TP)}</div>
-      <div style="font-size:14px;color:var(--naranja);margin-top:4px;">${TfmtL(L)} litros · ${inters.length} intermediarios · ${fmtPeso(precio)}/L</div>
+      <div style="font-size:14px;color:var(--naranja);margin-top:4px;">${fmtL(TL)} litros · ${inters.length} intermediarios · ${fmtPeso(precio)}/L</div>
     </div>
     <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
       <button class="btn btn-naranja btn-sm" onclick="exportarInterMatriz('${de}','${ha}',${precio})">⬇ Exportar Excel</button>
@@ -1820,7 +1820,7 @@ function repInter(datos,de,ha,precio){
           ${filas}
           <tr class="fila-total">
             <td class="col-gan">TOTAL DÍA</td>${totDias}
-            <td class="total-col" style="text-align:center;">${TfmtL(L)}</td>
+            <td class="total-col" style="text-align:center;">${fmtL(TL)}</td>
             <td class="total-col" style="text-align:right;padding-right:10px;">${fmtPeso(TP)}</td>
           </tr>
         </tbody>
@@ -1838,8 +1838,8 @@ function exportarInterMatriz(de,ha,precio){
   datosInter.forEach(d=>{const id=d.intermediarioId;const f=d.fecha;const L=parseFloat(d.litros)||0;if(!celda[id])celda[id]={};celda[id][f]=(celda[id][f]||0)+L;totalColL[id]=(totalColL[id]||0)+L;});
   const TL=inters.reduce((s,[id])=>s+totalColL[id],0);
   const headers=`Intermediario,${fechas.join(',')},Total L,A Pagar,Recibidor\n`;
-  const rows=inters.map(([id,nombre])=>{const dias=fechas.map(f=>celda[id][f]?(celda[id][f]).toFixed(1):'0').join(',');const recs=[...intRec[id]].join(' / ');return`"${nombre}",${dias},${fmtL(totalColL[id])},${(totalColL[id]*precio).toFixed(0)},"${recs}"`;}).join('\n');
-  const totRow=`TOTAL DIA,${fechas.map(f=>{let s=0;inters.forEach(([id])=>s+=(celda[id][f]||0));return s.toFixed(1);}).join(',')},${TfmtL(L)},${(fmtL(TL*precio))},`;
+  const rows=inters.map(([id,nombre])=>{const dias=fechas.map(f=>celda[id][f]?(celda[id][f]):'0').join(',');const recs=[...intRec[id]].join(' / ');return`"${nombre}",${dias},${fmtL(totalColL[id])},${(totalColL[id]*precio).toFixed(0)},"${recs}"`;}).join('\n');
+  const totRow=`TOTAL DIA,${fechas.map(f=>{let s=0;inters.forEach(([id])=>s+=(celda[id][f]||0));return fmtL(s);}).join(',')},${fmtL(TL)},${(TL*precio).toFixed(0)},`;
   descargar(`INTERMEDIARIOS - ${de} al ${ha} - $${precio}/L\n${headers}${rows}\n${totRow}`,`intermediarios-${de}-${ha}.csv`);
 }window.exportarInterMatriz=exportarInterMatriz;
 
