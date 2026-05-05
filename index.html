@@ -268,13 +268,18 @@
   <div class="header"><div><div class="sub">🐄 Lácteos San Diego</div><h1 id="admin-nombre-header">Admin</h1></div><button class="btn-salir" onclick="cerrarSesion()">Salir</button></div>
   <div style="padding:20px;">
     <div id="admin-fecha" style="font-size:15px;color:var(--gris2);margin-bottom:16px;"></div>
+    <div id="admin-alertas-container"></div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><div class="card-titulo" style="margin:0;">📅 Últimos 7 días</div><input type="date" id="semana-fecha-ref" style="padding:6px 10px;border:1.5px solid var(--gris1);border-radius:8px;font-size:13px;font-weight:600;color:var(--verde);" onchange="cargarResumenSemanal(this.value)"></div>
+      <div id="admin-semana"><div class="loading">Cargando...</div></div>
+    </div>
     <div class="fila">
       <div class="card" style="text-align:center;"><div class="card-titulo">Recolectado</div><div class="card-valor" id="admin-total-rec">-</div><div class="card-sub">litros ruta</div></div>
       <div class="card" style="text-align:center;"><div class="card-titulo">En planta</div><div class="card-valor" id="admin-total-planta">-</div><div class="card-sub">litros planta</div></div>
     </div>
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><div class="card-titulo" style="margin:0;">📅 Últimos 7 días</div><input type="date" id="semana-fecha-ref" style="padding:6px 10px;border:1.5px solid var(--gris1);border-radius:8px;font-size:13px;font-weight:600;color:var(--verde);" onchange="cargarResumenSemanal(this.value)"></div>
-      <div id="admin-semana"><div class="loading">Cargando...</div></div>
+      <div class="card-titulo">🔴 Ganaderos sin recolectar (1+ día)</div>
+      <div id="admin-sin-recolectar"><div class="loading">Cargando...</div></div>
     </div>
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><div class="card-titulo" style="margin:0;">🐄 Desglose ganaderos</div><input type="date" id="desglose-fecha" style="padding:6px 10px;border:1.5px solid var(--gris1);border-radius:8px;font-size:13px;font-weight:600;color:var(--verde);" onchange="recargarDesglose(this.value)"></div>
@@ -285,11 +290,6 @@
       <div class="card-titulo" style="color:var(--naranja);">🚚 Intermediarios hoy</div>
       <div id="admin-inter-hoy"></div>
     </div>
-    <div class="card">
-      <div class="card-titulo">🔴 Ganaderos sin recolectar (1+ día)</div>
-      <div id="admin-sin-recolectar"><div class="loading">Cargando...</div></div>
-    </div>
-    <div id="admin-alertas-container"></div>
     <div class="card">
       <div class="card-titulo">📋 Historial de quincenas</div>
       <div id="admin-historial-quincenas"><div class="loading">Cargando...</div></div>
