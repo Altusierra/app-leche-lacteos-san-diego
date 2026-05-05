@@ -1238,7 +1238,9 @@ async function dashAdmin(){
       filtrosEl.innerHTML=`<button class="btn btn-sm filtro-rec-btn" data-recid="todos" style="border:2px solid var(--verde);background:var(--verde);color:white;font-weight:700;" onclick="renderDesgloseAdmin('todos')">Todos</button>`+
         recsVisibles.map(([id,rv])=>`<button class="btn btn-sm filtro-rec-btn" data-recid="${id}" style="border:2px solid var(--verde);background:transparent;color:var(--verde);font-weight:700;" onclick="renderDesgloseAdmin('${id}')">${rv.nombre}</button>`).join('');
     }
-    const fechaInp=document.getElementById('desglose-fecha');if(fechaInp)fechaInp.value=hoy();
+    // Set default dates
+    const fechaInp=document.getElementById('desglose-fecha');if(fechaInp&&!fechaInp.value)fechaInp.value=hoy();
+    const semInp=document.getElementById('semana-fecha-ref');if(semInp&&!semInp.value)semInp.value=hoy();
     renderDesgloseAdmin('todos');
     // Total intermediarios hoy
     try{
