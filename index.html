@@ -589,7 +589,7 @@ const cfg={apiKey:"AIzaSyDBNDl2kokNqXdKwPEEwUX0MC5ziZVgXQ4",authDomain:"app-lech
 const app=initializeApp(cfg);const auth=getAuth(app);const db=getFirestore(app);
 const app2=initializeApp(cfg,'secondary');const auth2=getAuth(app2);
 
-let UA=null,rol=null,ganList=[],precioActual=0,tabRep=0,editGanId=null,datosRep=[],datosInter=[],datosRecepciones=[],soloNovGlobal=false,modoElim=false;
+let UA=null,rol=null,ganList=[],regHoyGan={},precioActual=0,tabRep=0,editGanId=null,datosRep=[],datosInter=[],datosRecepciones=[],soloNovGlobal=false,modoElim=false;
 let recibSeleccionado=null,ganSel=null,listaRecogedores=[],modoHistorico=false,fechaReg=null;
 
 // ── HELPERS ──
@@ -602,7 +602,7 @@ function ir(id){
   if(id==='screen-rec-buscar'){
     const inp=document.getElementById('buscar-input');
     if(inp)inp.value='';
-    renderGan(ganList);
+    renderGan(ganList,regHoyGan);
   }
 }
 window.irPantalla=ir;
@@ -717,18 +717,30 @@ async function resumenRec(){
   }catch(e){}
 }
 async function cargarGanaderos(){
-  try{const s=await getDocs(query(collection(db,'ganaderos'),where('activo','==',true)));ganList=[];s.forEach(d=>ganList.push({id:d.id,...d.data()}));ganList.sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));renderGan(ganList);}catch(e){console.error('Error cargando ganaderos:',e);}
+  try{
+    const s=await getDocs(query(collection(db,'ganaderos'),where('activo','==',true)));
+    ganList=[];s.forEach(d=>ganList.push({id:d.id,...d.data()}));
+    ganList.sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
+    // Check today's registrations for this recogedor
+    const sRec=await getDocs(query(collection(db,'recolecciones'),where('recogedorId','==',UA.uid),where('fecha','==',getFechaReg())));
+    regHoyGan={};sRec.forEach(d=>{const da=d.data();regHoyGan[da.ganaderoId]=parseFloat(da.litros)||0;});
+    renderGan(ganList,regHoyGan);
+  }catch(e){console.error('Error cargando ganaderos:',e);}
 }
-function renderGan(lista){
+function renderGan(lista,regHoy={}){
   const c=document.getElementById('lista-ganaderos');
   if(lista.length===0){c.innerHTML='<div class="vacio"><div class="ico">🔍</div><p>No se encontraron ganaderos</p></div>';return;}
-  c.innerHTML=lista.map(g=>`<div class="lista-item" data-ganid="${g.id}"><div><div class="nombre">${g.nombre}</div><div class="detalle">${g.telefono||'Sin teléfono'}</div></div><span class="flecha">›</span></div>`).join('');
-  // Listener directo en cada item
+  c.innerHTML=lista.map(g=>{
+    const reg=regHoy[g.id];
+    const estado=reg!==undefined?`✅ ${reg.toFixed(1)}L`:'';
+    const color='#15803d';
+    return`<div class="lista-item" data-ganid="${g.id}"><div><div class="nombre">${g.nombre}${reg!==undefined?` <span style="color:${color};font-size:13px;font-weight:700;">${estado}</span>`:''}</div><div class="detalle">${g.telefono||'Sin teléfono'}</div></div><span class="flecha">›</span></div>`;
+  }).join('');
   c.querySelectorAll('[data-ganid]').forEach(function(el){
     el.addEventListener('click',function(){selGan(this.getAttribute('data-ganid'));});
   });
 }
-function filtrarGanaderos(){const t=document.getElementById('buscar-input').value.toLowerCase();renderGan(ganList.filter(g=>g.nombre.toLowerCase().includes(t)));}window.filtrarGanaderos=filtrarGanaderos;
+function filtrarGanaderos(){const t=document.getElementById('buscar-input').value.toLowerCase();renderGan(ganList.filter(g=>g.nombre.toLowerCase().includes(t)),regHoyGan);}window.filtrarGanaderos=filtrarGanaderos;
 async function selGan(id){
   ganSel=ganList.find(g=>g.id===id);if(!ganSel)return;
   document.getElementById('reg-ganadero-nombre').textContent=ganSel.nombre;
@@ -865,15 +877,25 @@ async function cargarInter(){
     const s=await getDocs(query(collection(db,'intermediarios'),where('activo','==',true)));
     listaInter=[];s.forEach(d=>listaInter.push({id:d.id,...d.data()}));
     listaInter.sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es'));
-    renderInterRecibi(listaInter);
+    // Check which intermediarios already registered today
+    const sReg=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','==',hoy())));
+    const regHoy={};sReg.forEach(d=>{const da=d.data();regHoy[da.intermediarioId]=parseFloat(da.litros)||0;});
+    renderInterRecibi(listaInter,regHoy);
   }catch(e){console.error(e);}
 }
 
-function renderInterRecibi(lista){
+function renderInterRecibi(lista,regHoy={}){
   const c=document.getElementById('lista-intermediarios-recibi');
   if(!c)return;
   c.innerHTML=lista.length===0?'<p style="color:var(--gris2);font-size:14px;">No hay intermediarios registrados</p>':
-    lista.map(i=>`<div class="lista-item" style="border-color:var(--naranja);" data-interid="${i.id}"><div><div class="nombre">${i.nombre}</div><div class="detalle">${i.telefono||'Sin teléfono'}${i.vereda?' · '+i.vereda:''}</div></div><span class="flecha" style="color:var(--naranja);">›</span></div>`).join('');
+    lista.map(i=>{
+      const reg=regHoy[i.id];
+      const estado=reg!==undefined
+        ?`✅ Registrado: ${reg.toFixed(1)}L`
+        :'⏳ Pendiente';
+      const color=reg!==undefined?'#15803d':'var(--gris2)';
+      return`<div class="lista-item" style="border-color:var(--naranja);" data-interid="${i.id}"><div><div class="nombre">${i.nombre}</div><div class="detalle">${i.telefono||'Sin teléfono'}${i.vereda?' · '+i.vereda:''} · <span style="color:${color};font-weight:600;">${estado}</span></div></div><span class="flecha" style="color:var(--naranja);">›</span></div>`;
+    }).join('');
   c.querySelectorAll('[data-interid]').forEach(el=>{
     el.addEventListener('click',function(){seleccionarInter(this.dataset.interid);});
   });
