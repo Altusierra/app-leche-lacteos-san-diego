@@ -278,11 +278,11 @@
       <div class="card" style="text-align:center;"><div class="card-titulo">En planta</div><div class="card-valor" id="admin-total-planta">-</div><div class="card-sub">litros planta</div></div>
     </div>
     <div class="card">
-      <div class="card-titulo">🔴 Ganaderos sin recolectar (3+ días)</div>
+      <div class="card-titulo">🔴 Ganaderos sin recolectar (1+ día)</div>
       <div id="admin-sin-recolectar"><div class="loading">Cargando...</div></div>
     </div>
     <div class="card">
-      <div class="card-titulo">🐄 Desglose ganaderos — hoy</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><div class="card-titulo" style="margin:0;">🐄 Desglose ganaderos</div><input type="date" id="desglose-fecha" style="padding:6px 10px;border:1.5px solid var(--gris1);border-radius:8px;font-size:13px;font-weight:600;color:var(--verde);" onchange="recargarDesglose(this.value)"></div>
       <div id="admin-filtros-rec" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;"></div>
       <div id="admin-desglose-ganaderos"><div class="loading">Cargando...</div></div>
     </div>
@@ -1114,6 +1114,48 @@ function filtrarDesgloseAdmin(){
     filtrado.map(g=>`<div style="padding:12px 0;border-bottom:1px solid var(--gris1);"><div style="display:flex;justify-content:space-between;align-items:center;"><div style="font-weight:700;font-size:15px;">${g.nombre}</div><span class="badge badge-verde">Total: ${g.totalFiltro.toFixed(1)}L</span></div>${g.recogedores.length>1?`<div style="margin-top:6px;">${g.recogedores.map(r=>`<div style="font-size:13px;color:var(--gris2);padding-left:12px;">↳ ${r.nombre}: ${r.litros.toFixed(1)}L · ${r.hora}</div>`).join('')}</div>`:`<div style="font-size:13px;color:var(--gris2);margin-top:2px;">${g.recogedores[0]?.nombre||''} · ${g.recogedores[0]?.hora||''}</div>`}</div>`).join('');
 }window.filtrarDesgloseAdmin=filtrarDesgloseAdmin;
 
+async function recargarDesglose(fecha){
+  if(!fecha)return;
+  try{
+    const sCol=await getDocs(query(collection(db,'recolecciones'),where('fecha','==',fecha)));
+    const porRec={};const porGan={};
+    sCol.forEach(d=>{const da=d.data();const L=parseFloat(da.litros)||0;
+      if(!porRec[da.recogedorId])porRec[da.recogedorId]={nombre:da.recogedorNombre,litros:0};
+      porRec[da.recogedorId].litros+=L;
+      if(!porGan[da.ganaderoId])porGan[da.ganaderoId]={nombre:da.ganaderoNombre,total:0,recogedores:[]};
+      porGan[da.ganaderoId].total+=L;
+      porGan[da.ganaderoId].recogedores.push({nombre:da.recogedorNombre,litros:L,hora:da.hora});
+    });
+    const sRec=await getDocs(query(collection(db,'recepciones'),where('fecha','==',fecha)));
+    const porRecPlanta={};
+    sRec.forEach(d=>{const da=d.data();porRecPlanta[da.recogedorId]={litros:parseFloat(da.litros)||0,nombre:da.recogedorNombre};});
+    const sInter=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','==',fecha)));
+    let totalInterH=0;const interHoy=[];
+    sInter.forEach(d=>{const da=d.data();totalInterH+=parseFloat(da.litros)||0;interHoy.push(da);});
+    // Update globals for renderDesgloseAdmin
+    _porGan=porGan;_porRec=porRec;_porRecPlanta=porRecPlanta;
+    // Rebuild filter buttons
+    const filtrosEl=document.getElementById('admin-filtros-rec');
+    if(filtrosEl){
+      const recsVisibles=Object.entries(porRec).filter(([id])=>!_uidsCombinados.has(id));
+      _rutasCombinadas?.forEach(([cid,cu])=>recsVisibles.push([cid,{nombre:cu.nombre||cu.email,litros:0}]));
+      filtrosEl.innerHTML=`<button class="btn btn-sm filtro-rec-btn" data-recid="todos" style="border:2px solid var(--verde);background:var(--verde);color:white;font-weight:700;" onclick="renderDesgloseAdmin('todos')">Todos</button>`+
+        recsVisibles.map(([id,rv])=>`<button class="btn btn-sm filtro-rec-btn" data-recid="${id}" style="border:2px solid var(--verde);background:transparent;color:var(--verde);font-weight:700;" onclick="renderDesgloseAdmin('${id}')">${rv.nombre}</button>`).join('');
+    }
+    renderDesgloseAdmin('todos');
+    // Update intermediarios card
+    const interCard=document.getElementById('admin-inter-card');
+    const interDiv=document.getElementById('admin-inter-hoy');
+    if(interCard&&interDiv){
+      if(totalInterH>0){
+        interCard.style.display='block';
+        interDiv.innerHTML=`<div style="font-size:13px;font-weight:700;color:var(--naranja);margin-bottom:8px;">Total: ${totalInterH.toFixed(1)}L</div>`+
+          interHoy.map(i=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--gris1);font-size:14px;"><div><div style="font-weight:600;">${i.intermediarioNombre}</div><div style="font-size:12px;color:var(--gris2);margin-top:2px;">${i.recibidorNombre||''}${i.hora?' · '+i.hora:''}</div></div><span style="color:var(--naranja);font-weight:700;">${parseFloat(i.litros).toFixed(1)}L</span></div>`).join('');
+      }else{interCard.style.display='none';}
+    }
+  }catch(e){console.error(e);}
+}window.recargarDesglose=recargarDesglose;
+
 async function dashAdmin(){
   try{
     const sCol=await getDocs(query(collection(db,'recolecciones'),where('fecha','==',hoy())));
@@ -1137,7 +1179,7 @@ async function dashAdmin(){
     const sUsu=await getDocs(query(collection(db,'usuarios'),where('rol','==','recogedor')));
     const usuMap={};sUsu.forEach(d=>usuMap[d.id]=d.data());
     // Find combined route users and their constituent UIDs
-    const rutasCombinadas=Object.entries(usuMap).filter(([id,u])=>u.esRutaCombinada&&u.combinaUids?.length);
+    const rutasCombinadas=Object.entries(usuMap).filter(([id,u])=>u.esRutaCombinada&&u.combinaUids?.length);window._rutasCombinadas=rutasCombinadas;
     // Build alertas now that usuMap is available
     const alertas=[];Object.entries(porRecPlanta).forEach(([rid,rv])=>{
       let rutaL=porRec[rid]?.litros||0;
@@ -1178,6 +1220,7 @@ async function dashAdmin(){
       filtrosEl.innerHTML=`<button class="btn btn-sm filtro-rec-btn" data-recid="todos" style="border:2px solid var(--verde);background:var(--verde);color:white;font-weight:700;" onclick="renderDesgloseAdmin('todos')">Todos</button>`+
         recsVisibles.map(([id,rv])=>`<button class="btn btn-sm filtro-rec-btn" data-recid="${id}" style="border:2px solid var(--verde);background:transparent;color:var(--verde);font-weight:700;" onclick="renderDesgloseAdmin('${id}')">${rv.nombre}</button>`).join('');
     }
+    const fechaInp=document.getElementById('desglose-fecha');if(fechaInp)fechaInp.value=hoy();
     renderDesgloseAdmin('todos');
     // Total intermediarios hoy
     try{
@@ -1235,16 +1278,24 @@ async function cargarResumenSemanal(){
 async function cargarSinRecolectar(){
   try{
     function fLocal(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
-    const hace3=new Date();hace3.setDate(hace3.getDate()-3);const hace3str=fLocal(hace3);
+    const hace1=new Date();hace1.setDate(hace1.getDate()-1);const hace1str=fLocal(hace1);
     const snapGan=await getDocs(query(collection(db,'ganaderos'),where('activo','==',true)));
     const ganaderos=[];snapGan.forEach(d=>ganaderos.push({id:d.id,...d.data()}));
     const hace7=new Date();hace7.setDate(hace7.getDate()-7);const hace7str=fLocal(hace7);
     const snap=await getDocs(query(collection(db,'recolecciones'),where('fecha','>=',hace7str)));
     const ultimaFecha={};snap.forEach(d=>{const da=d.data();if(!ultimaFecha[da.ganaderoId]||da.fecha>ultimaFecha[da.ganaderoId])ultimaFecha[da.ganaderoId]=da.fecha;});
-    const sinRecolectar=ganaderos.filter(g=>!ultimaFecha[g.id]||(ultimaFecha[g.id]<hace3str));
+    const sinRecolectar=ganaderos.filter(g=>!ultimaFecha[g.id]||(ultimaFecha[g.id]<hace1str));
     const cont=document.getElementById('admin-sin-recolectar');
     if(sinRecolectar.length===0){cont.innerHTML='<p style="color:var(--gris2);font-size:14px;">✅ Todos los ganaderos recogidos recientemente</p>';return;}
-    cont.innerHTML=sinRecolectar.map(g=>{const ult=ultimaFecha[g.id]||'Nunca';return`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--gris1);"><div><div style="font-weight:600;">${g.nombre}</div><div style="font-size:12px;color:var(--gris2);">Última: ${ult==='Nunca'?'Sin registros':ult}</div></div><span class="badge badge-rojo">🔴 +3 días</span></div>`;}).join('');
+    const LIMITE=3;
+    function renderSinRec(mostrarTodos){
+      const lista=mostrarTodos?sinRecolectar:sinRecolectar.slice(0,LIMITE);
+      const filas=lista.map(g=>{const ult=ultimaFecha[g.id]||'Nunca';return`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--gris1);"><div><div style="font-weight:600;">${g.nombre}</div><div style="font-size:12px;color:var(--gris2);">Última: ${ult==='Nunca'?'Sin registros':ult}</div></div><span class="badge badge-rojo">🔴 +1 día</span></div>`;}).join('');
+      const verMas=!mostrarTodos&&sinRecolectar.length>LIMITE?`<button onclick="renderSinRecAdmin(true)" style="margin-top:10px;background:none;border:none;color:var(--verde);font-weight:700;font-size:14px;cursor:pointer;width:100%;text-align:center;">Ver más (${sinRecolectar.length-LIMITE} más) ▼</button>`:'';
+      cont.innerHTML=filas+verMas;
+    }
+    window.renderSinRecAdmin=renderSinRec;
+    renderSinRec(false);
   }catch(e){}
 }
 
