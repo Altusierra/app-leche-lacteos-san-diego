@@ -274,10 +274,6 @@
       <div class="card" style="text-align:center;"><div class="card-titulo">En planta</div><div class="card-valor" id="admin-total-planta">-</div><div class="card-sub">litros planta</div></div>
     </div>
     <div class="card">
-      <div class="card-titulo">📊 Conciliación — hoy</div>
-      <div id="admin-conciliacion"><div class="loading">Cargando...</div></div>
-    </div>
-    <div class="card">
       <div class="card-titulo">📅 Esta semana — litros por día</div>
       <div id="admin-semana"><div class="loading">Cargando...</div></div>
     </div>
@@ -1150,7 +1146,6 @@ async function dashAdmin(){
     const totalDiffF=totalPlantaF-totalRutaF;
     const diffColorF=totalDiffF>0?'var(--naranja)':totalDiffF<0?'var(--amarillo)':'#15803d';
     const diffBadgeF=totalDiffF>0?`<span class="badge badge-naranja">⚠️ +${totalDiffF.toFixed(1)}L</span>`:totalDiffF<0?`<span class="badge badge-amarillo">${totalDiffF.toFixed(1)}L</span>`:`<span class="badge badge-verde">✅ 0L</span>`;
-    document.getElementById('admin-conciliacion').innerHTML=todosRec.size===0?'<p style="color:var(--gris2);font-size:14px;">Sin datos hoy</p>':`<div style="overflow:hidden;border-radius:12px;"><table class="tabla"><thead><tr><th>Recogedor</th><th>Ruta</th><th>Planta</th><th>Diferencia</th></tr></thead><tbody>${filasFinales.map(f=>`<tr class="${f.esA?'fila-alerta':''}"><td><strong>${f.nombre}</strong>${f.esCombinada?'<span class="badge badge-azul" style="font-size:10px;margin-left:4px;">combinada</span>':''}</td><td>${f.rutaL.toFixed(1)}</td><td>${f.pend?'—':f.plantaL.toFixed(1)}</td><td>${f.pend?'<span class="badge badge-amarillo">⏳</span>':f.esA?`<span class="badge badge-naranja">⚠️ +${f.dv}L</span>`:`<span class="badge badge-verde">${f.dv}L</span>`}</td></tr>`).join('')}</tbody><tfoot><tr style="background:var(--verde3);font-weight:700;"><td style="color:var(--verde);">TOTAL</td><td style="color:var(--verde);">${totalRutaF.toFixed(1)}</td><td style="color:var(--verde);">${totalPlantaF.toFixed(1)}</td><td>${diffBadgeF}</td></tr></tfoot></table></div>`;
     // Save to globals for filter
     _porGan=porGan;_porRec=porRec;_porRecPlanta=porRecPlanta;_uidsCombinados=uidsCombinados;
     // Build filter buttons
