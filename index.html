@@ -1283,7 +1283,7 @@ async function cargarResumenSemanal(fechaRef){
     const hoyD=fechaRef?new Date(fechaRef+'T12:00:00'):new Date();
     const inp=document.getElementById('semana-fecha-ref');if(inp&&!fechaRef)inp.value=fechaLocal(new Date());
     // 7 days back from reference date (today by default)
-    const esHoyRef=fechaLocal(hoyD)===fechaLocal(new Date());const dias=[];const maxI=esHoyRef?2:0;for(let i=maxI;i>=0;i--){const d=new Date(hoyD);d.setDate(hoyD.getDate()-i);dias.push(fechaLocal(d));}
+    const esHoyRef=!fechaRef||fechaRef===fechaLocal(new Date());const dias=[];const maxI=esHoyRef?2:0;for(let i=maxI;i>=0;i--){const d=new Date(hoyD);d.setDate(hoyD.getDate()-i);dias.push(fechaLocal(d));}
     const snap=await getDocs(query(collection(db,'recolecciones'),where('fecha','>=',dias[0]),where('fecha','<=',dias[dias.length-1])));
     const porDia={};dias.forEach(d=>{porDia[d]=0;});
     snap.forEach(d=>{const da=d.data();if(porDia[da.fecha]!==undefined)porDia[da.fecha]+=parseFloat(da.litros)||0;});
