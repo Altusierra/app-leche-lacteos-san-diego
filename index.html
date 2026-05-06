@@ -441,7 +441,10 @@
   <div class="modal">
     <div class="modal-titulo" id="modal-ganadero-titulo">Nuevo Ganadero</div>
     <div class="alerta alerta-rojo" id="m-gan-error"></div>
-    <div class="campo"><label>Nombre completo *</label><input type="text" id="m-gan-nombre" placeholder="Ej: Carlos Pérez"></div>
+    <div class="campo"><label>Nombre completo *</label>
+      <input type="text" id="m-gan-nombre" placeholder="Ej: Carlos Pérez" oninput="sugGanAdmin()" autocomplete="off">
+      <div id="sug-gan-admin" style="display:none;background:white;border:2px solid var(--verde2);border-radius:12px;margin-top:6px;overflow:hidden;"></div>
+    </div>
     <div class="campo"><label>Teléfono (opcional)</label><input type="tel" id="m-gan-tel" placeholder="3XX XXX XXXX"></div>
     <div class="campo"><label>Vereda / Sector (opcional)</label><input type="text" id="m-gan-vereda" placeholder="Ej: Vereda El Rosario"></div>
     <div class="campo"><label>Estado</label>
@@ -494,7 +497,10 @@
   <div class="modal">
     <div class="modal-titulo" id="modal-inter-titulo">Nuevo Intermediario</div>
     <div class="alerta alerta-rojo" id="m-inter-error"></div>
-    <div class="campo"><label>Nombre completo *</label><input type="text" id="m-inter-nombre" placeholder="Ej: Luis Potosí"></div>
+    <div class="campo"><label>Nombre completo *</label>
+      <input type="text" id="m-inter-nombre" placeholder="Ej: Luis Potosí" oninput="sugInterAdmin()" autocomplete="off">
+      <div id="sug-inter-admin" style="display:none;background:white;border:2px solid var(--naranja);border-radius:12px;margin-top:6px;overflow:hidden;"></div>
+    </div>
     <div class="campo"><label>Teléfono (opcional)</label><input type="tel" id="m-inter-tel" placeholder="3XX XXX XXXX"></div>
     <div class="campo"><label>Vereda / Sector (opcional)</label><input type="text" id="m-inter-vereda" placeholder="Ej: Vereda El Carmen"></div>
     <div class="campo"><label>Estado</label>
@@ -518,7 +524,10 @@
     <div class="modal-titulo">🚚 Nuevo Intermediario</div>
     <div style="background:var(--amarillo2);border:1px solid var(--amarillo);border-radius:10px;padding:12px;margin-bottom:16px;font-size:13px;color:var(--amarillo);font-weight:600;">ℹ️ Quedará registrado que tú agregaste este intermediario</div>
     <div class="alerta alerta-rojo" id="m-inter-rec-error"></div>
-    <div class="campo"><label>Nombre completo *</label><input type="text" id="m-inter-rec-nombre" placeholder="Ej: Luis Potosí"></div>
+    <div class="campo"><label>Nombre completo *</label>
+      <input type="text" id="m-inter-rec-nombre" placeholder="Ej: Luis Potosí" oninput="sugInterRec()" autocomplete="off">
+      <div id="sug-inter-rec" style="display:none;background:white;border:2px solid var(--naranja);border-radius:12px;margin-top:6px;overflow:hidden;"></div>
+    </div>
     <div class="campo"><label>Teléfono (opcional)</label><input type="tel" id="m-inter-rec-tel" placeholder="3XX XXX XXXX"></div>
     <div class="campo"><label>Vereda / Sector (opcional)</label><input type="text" id="m-inter-rec-vereda" placeholder="Ej: Vereda El Carmen"></div>
     <div class="fila" style="margin-top:8px;">
@@ -779,21 +788,7 @@ function abrirModalNuevoGanaderoRec(){
   ocult('m-gan-rec-error');abrirModal('modal-ganadero-rec');
 }window.abrirModalNuevoGanaderoRec=abrirModalNuevoGanaderoRec;
 function mostrarSugerenciasGanadero(){
-  const val=document.getElementById('m-gan-rec-nombre').value.trim();
-  const cont=document.getElementById('sugerencias-ganadero');
-  if(val.length<2){cont.style.display='none';return;}
-  const norm=normalizarNombre(val);
-  const similares=ganList.filter(g=>{
-    const gNorm=normalizarNombre(g.nombre);
-    return gNorm.includes(norm)||norm.includes(gNorm)||gNorm.startsWith(norm.substring(0,3));
-  }).slice(0,5);
-  if(similares.length===0){cont.style.display='none';return;}
-  cont.style.display='block';
-  cont.innerHTML=`<div style="padding:8px 12px;font-size:11px;color:var(--gris2);font-weight:700;border-bottom:1px solid var(--gris1);">¿Ya existe este ganadero?</div>`+
-    similares.map(g=>`<div onclick="seleccionarSugerencia('${g.id}')" style="padding:12px;border-bottom:1px solid var(--gris1);cursor:pointer;display:flex;align-items:center;gap:10px;" onmouseover="this.style.background='var(--crema)'" onmouseout="this.style.background='white'">
-      <span style="font-size:20px;">🐄</span>
-      <div><div style="font-weight:700;font-size:15px;">${g.nombre}</div><div style="font-size:12px;color:var(--gris2);">${g.telefono||''}${g.vereda?' · '+g.vereda:''}</div></div>
-    </div>`).join('');
+  mostrarSugerenciasNombre('m-gan-rec-nombre','sugerencias-ganadero',ganList,'🐄');
 }window.mostrarSugerenciasGanadero=mostrarSugerenciasGanadero;
 
 function seleccionarSugerencia(id){
@@ -807,7 +802,7 @@ async function guardarGanaderoRecogedor(){const n=document.getElementById('m-gan
   // Validar duplicado
   const nNorm=normalizarNombre(n);
   const duplicado=ganList.find(g=>normalizarNombre(g.nombre)===nNorm);
-  if(duplicado){alerta('m-gan-rec-error',`⚠️ Ya existe un ganadero con ese nombre: "${duplicado.nombre}"` ,'rojo');return;}
+  if(duplicado){alerta('m-gan-rec-error',`⚠️ No se puede agregar. Ya se encuentra registrado como: "${duplicado.nombre}"`,'rojo');return;}
   try{await addDoc(collection(db,'ganaderos'),{nombre:n,telefono:t,vereda:v,activo:true,agregadoPor:UA.uid,agregadoPorNombre:UA.nombre||UA.email,fechaAgregado:hoy()});cerrarModal('modal-ganadero-rec');await cargarGanaderos();}catch(e){alerta('m-gan-rec-error','Error al guardar','rojo');}}window.guardarGanaderoRecogedor=guardarGanaderoRecogedor;
 
 async function cargarResumenRecSemanal(){
@@ -961,6 +956,7 @@ function abrirModalNuevoIntermediarioRec(){
   document.getElementById('m-inter-rec-tel').value='';
   document.getElementById('m-inter-rec-vereda').value='';
   ocult('m-inter-rec-error');
+  const sgIR=document.getElementById('sug-inter-rec');if(sgIR)sgIR.style.display='none';
   abrirModal('modal-inter-rec');
 }window.abrirModalNuevoIntermediarioRec=abrirModalNuevoIntermediarioRec;
 
@@ -970,7 +966,7 @@ async function guardarInterRecibidor(){
   const v=document.getElementById('m-inter-rec-vereda').value.trim();
   if(!n){alerta('m-inter-rec-error','El nombre es obligatorio','rojo');return;}
   const dup=listaInter.find(i=>normalizarNombre(i.nombre)===normalizarNombre(n));
-  if(dup){alerta('m-inter-rec-error',`⚠️ Ya existe: "${dup.nombre}"` ,'rojo');return;}
+  if(dup){alerta('m-inter-rec-error',`⚠️ No se puede agregar. Ya se encuentra registrado como: "${dup.nombre}"`,'rojo');return;}
   try{
     await addDoc(collection(db,'intermediarios'),{nombre:n,telefono:t,vereda:v,activo:true,agregadoPor:UA.uid,agregadoPorNombre:UA.nombre||UA.email,fechaAgregado:hoy()});
     cerrarModal('modal-inter-rec');await cargarInter();
@@ -1503,7 +1499,7 @@ function renderGanAdmin(lista){document.getElementById('lista-ganaderos-admin').
 function aplicarFiltroOrdenGan(){const t=document.getElementById('buscar-ganadero-admin')?.value.trim()||'';let lista=ganList.filter(g=>matchInicio(g.nombre,t));if(_ordenGan==='mayor')lista.sort((a,b)=>((_litrosPorGanadero[b.id]||0)-(_litrosPorGanadero[a.id]||0)));else if(_ordenGan==='menor')lista.sort((a,b)=>((_litrosPorGanadero[a.id]||0)-(_litrosPorGanadero[b.id]||0)));else lista.sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));renderGanAdmin(lista);document.querySelectorAll('.btn-ord-gan').forEach(b=>{b.style.background=b.dataset.orden===_ordenGan?'var(--verde)':'transparent';b.style.color=b.dataset.orden===_ordenGan?'white':'var(--verde)';});}
 function ordenarGanaderos(tipo){_ordenGan=tipo;aplicarFiltroOrdenGan();}window.ordenarGanaderos=ordenarGanaderos;
 function filtrarGanaderosAdmin(){aplicarFiltroOrdenGan();}window.filtrarGanaderosAdmin=filtrarGanaderosAdmin;
-async function abrirModalGanadero(id){editGanId=id;const g=id?ganList.find(x=>x.id===id):null;document.getElementById('modal-ganadero-titulo').textContent=g?'Editar Ganadero':'Nuevo Ganadero';document.getElementById('m-gan-nombre').value=g?.nombre||'';document.getElementById('m-gan-tel').value=g?.telefono||'';document.getElementById('m-gan-vereda').value=g?.vereda||'';document.getElementById('m-gan-activo').value=g?String(g.activo!==false):'true';ocult('m-gan-error');
+async function abrirModalGanadero(id){editGanId=id;const g=id?ganList.find(x=>x.id===id):null;document.getElementById('modal-ganadero-titulo').textContent=g?'Editar Ganadero':'Nuevo Ganadero';document.getElementById('m-gan-nombre').value=g?.nombre||'';document.getElementById('m-gan-tel').value=g?.telefono||'';document.getElementById('m-gan-vereda').value=g?.vereda||'';document.getElementById('m-gan-activo').value=g?String(g.activo!==false):'true';ocult('m-gan-error');const sgGA=document.getElementById('sug-gan-admin');if(sgGA)sgGA.style.display='none';
   // Mostrar botón eliminar solo si es edición
   const elimCont=document.getElementById('m-gan-eliminar-container');
   if(id){
@@ -1517,12 +1513,25 @@ function confirmarBorrado(){cerrarModal('modal-ganadero');abrirModal('modal-conf
 async function ejecutarBorrado(){if(!editGanId)return;try{const {deleteDoc,doc:docFn}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');await deleteDoc(docFn(db,'ganaderos',editGanId));cerrarModal('modal-confirmar-borrado');editGanId=null;await ganAdmin();await cargarGanaderos();}catch(e){alert('Error al eliminar. Intenta de nuevo.');}}window.ejecutarBorrado=ejecutarBorrado;
 function normalizarNombre(n){return n.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();}
 function matchInicio(nombre,busqueda){if(!busqueda)return true;const palabras=normalizarNombre(nombre).split(/\s+/);const b=normalizarNombre(busqueda);return palabras.some(p=>p.startsWith(b));}
+function mostrarSugerenciasNombre(inputId,contId,lista,emoji){
+  const val=document.getElementById(inputId)?.value.trim()||'';
+  const cont=document.getElementById(contId);if(!cont)return;
+  if(val.length<2){cont.style.display='none';return;}
+  const similares=lista.filter(item=>matchInicio(item.nombre,val)).slice(0,5);
+  if(similares.length===0){cont.style.display='none';return;}
+  cont.style.display='block';
+  cont.innerHTML=`<div style="padding:8px 12px;font-size:11px;color:var(--gris2);font-weight:700;border-bottom:1px solid var(--gris1);">⚠️ ¿Ya existe?</div>`+
+    similares.map(item=>`<div style="padding:12px;border-bottom:1px solid var(--gris1);display:flex;align-items:center;gap:10px;"><span style="font-size:20px;">${emoji}</span><div><div style="font-weight:700;font-size:15px;">${item.nombre}</div><div style="font-size:12px;color:var(--gris2);">${item.telefono||''}${item.vereda?' · '+item.vereda:''}</div></div></div>`).join('');
+}
+function sugGanAdmin(){mostrarSugerenciasNombre('m-gan-nombre','sug-gan-admin',ganList,'🐄');}window.sugGanAdmin=sugGanAdmin;
+function sugInterAdmin(){mostrarSugerenciasNombre('m-inter-nombre','sug-inter-admin',listaInter,'🚚');}window.sugInterAdmin=sugInterAdmin;
+function sugInterRec(){mostrarSugerenciasNombre('m-inter-rec-nombre','sug-inter-rec',listaInter,'🚚');}window.sugInterRec=sugInterRec;
 
 async function guardarGanadero(){const n=document.getElementById('m-gan-nombre').value.trim();const t=document.getElementById('m-gan-tel').value.trim();const v=document.getElementById('m-gan-vereda').value.trim();const a=document.getElementById('m-gan-activo').value==='true';if(!n){alerta('m-gan-error','El nombre es obligatorio','rojo');return;}
   // Validar duplicado
   const nNorm=normalizarNombre(n);
   const duplicado=ganList.find(g=>g.id!==editGanId&&normalizarNombre(g.nombre)===nNorm);
-  if(duplicado){alerta('m-gan-error',`⚠️ Ya existe un ganadero con ese nombre: "${duplicado.nombre}"`,'rojo');return;}
+  if(duplicado){alerta('m-gan-error',`⚠️ No se puede agregar. Ya se encuentra registrado como: "${duplicado.nombre}"`,'rojo');return;}
   try{if(editGanId){await updateDoc(doc(db,'ganaderos',editGanId),{nombre:n,telefono:t,vereda:v,activo:a});}else{await addDoc(collection(db,'ganaderos'),{nombre:n,telefono:t,vereda:v,activo:true,agregadoPor:UA.uid,agregadoPorNombre:UA.nombre||UA.email,fechaAgregado:hoy()});}cerrarModal('modal-ganadero');await ganAdmin();await cargarGanaderos();}catch(e){alerta('m-gan-error','Error al guardar','rojo');}}window.guardarGanadero=guardarGanadero;
 
 async function eliminarGanadero(){
@@ -1564,6 +1573,7 @@ async function interAdmin2(){
     const s=await getDocs(query(collection(db,'intermediarios')));
     const lista=[];s.forEach(d=>lista.push({id:d.id,...d.data()}));
     lista.sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es'));
+    listaInter=lista.filter(i=>i.activo!==false);
     const el=document.getElementById('lista-intermediarios2');if(!el)return;
     el.innerHTML=lista.length===0?'<p style="color:var(--gris2);font-size:14px;">Sin intermediarios aún</p>'
       :`<div class="card" style="padding:0;overflow:hidden;"><table class="tabla"><thead><tr><th>Nombre</th><th>Estado</th><th></th></tr></thead><tbody>${lista.map(i=>`<tr><td><strong>${i.nombre}</strong>${i.telefono?`<br><span style="font-size:12px;color:var(--gris2);">${i.telefono}</span>`:''}</td><td><span class="badge ${i.activo?'badge-verde':'badge-rojo'}">${i.activo?'Activo':'Inactivo'}</span></td><td><button class="btn btn-gris btn-sm" onclick="abrirModalInter('${i.id}')">✏️</button></td></tr>`).join('')}</tbody></table></div>`;
@@ -1589,6 +1599,7 @@ async function abrirModalInter(id){
   document.getElementById('m-inter-vereda').value=i?.vereda||'';
   document.getElementById('m-inter-activo').value=i?String(i.activo!==false):'true';
   ocult('m-inter-error');
+  const sgIA=document.getElementById('sug-inter-admin');if(sgIA)sgIA.style.display='none';
   const elimCont=document.getElementById('m-inter-eliminar-container');
   if(id){const sRec=await getDocs(query(collection(db,'recepcionesInter'),where('intermediarioId','==',id),limit(1)));elimCont.style.display=sRec.empty?'block':'none';}
   else{elimCont.style.display='none';}
@@ -1601,6 +1612,7 @@ async function guardarInter(){
   const v=document.getElementById('m-inter-vereda').value.trim();
   const a=document.getElementById('m-inter-activo').value==='true';
   if(!n){alerta('m-inter-error','El nombre es obligatorio','rojo');return;}
+  if(!editInterId){const dup=listaInter.find(i=>normalizarNombre(i.nombre)===normalizarNombre(n));if(dup){alerta('m-inter-error',`⚠️ No se puede agregar. Ya se encuentra registrado como: "${dup.nombre}"`,'rojo');return;}}
   try{
     if(editInterId){await updateDoc(doc(db,'intermediarios',editInterId),{nombre:n,telefono:t,vereda:v,activo:a});}
     else{await addDoc(collection(db,'intermediarios'),{nombre:n,telefono:t,vereda:v,activo:true,agregadoPor:UA.uid,agregadoPorNombre:UA.nombre||UA.email,fechaAgregado:hoy()});}
