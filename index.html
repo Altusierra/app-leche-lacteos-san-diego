@@ -129,7 +129,7 @@
   <div class="header"><div><div class="sub">🐄 Lácteos San Diego</div><h1 id="rec-nombre-header">Recogedor</h1></div><button class="btn-salir" onclick="cerrarSesion()">Salir</button></div>
   <div style="padding:20px;">
     <div id="rec-fecha" style="font-size:15px;color:var(--gris2);margin-bottom:16px;"></div>
-    <div class="card"><div class="card-titulo">📅 Hoy y 4 días anteriores</div><div id="rec-semana"><div class="loading">Cargando...</div></div></div>
+    <div class="card"><div class="card-titulo">🐄 Ganaderos registrados hoy</div><div class="card-valor" id="rec-litros-hoy" style="display:none;">0</div><div class="card-valor" id="rec-registros-hoy" style="font-size:42px;font-weight:800;color:var(--verde);">0</div><div class="card-sub">ganaderos hoy</div></div>
     <div class="fila" style="margin-bottom:16px;">
       <button class="btn btn-verde2" style="font-size:17px;padding:20px;" onclick="irPantalla('screen-rec-buscar')">➕ REGISTRAR</button>
       <button class="btn btn-amarillo" style="font-size:17px;padding:20px;" onclick="abrirModalNuevoGanaderoRec()">🐄 NUEVO GANADERO</button>
@@ -184,7 +184,7 @@
   <div style="padding:20px;">
     <div id="recibi-fecha" style="font-size:15px;color:var(--gris2);margin-bottom:16px;"></div>
     <div id="recibi-alertas-container"></div>
-    <div class="card"><div class="card-titulo">📅 Hoy y 4 días anteriores</div><div id="recibi-semana"><div class="loading">Cargando...</div></div></div>
+    <div class="card"><div class="card-titulo">🏭 Registrados hoy</div><div class="card-valor" id="recibi-total-hoy">0</div><div class="card-sub">personas registradas</div></div>
     <button class="btn btn-naranja" style="font-size:18px;padding:22px;margin-bottom:12px;" onclick="irPantalla('screen-recibi-registrar')">📥 REGISTRAR LLEGADA</button>
     <button class="btn btn-naranja" style="font-size:18px;padding:22px;margin-bottom:20px;background:var(--naranja2);color:var(--naranja);border:2px solid var(--naranja);" onclick="abrirModalNuevoIntermediarioRec()">➕ AGREGAR INTERMEDIARIO</button>
     <div style="margin-bottom:12px;font-size:16px;font-weight:700;color:var(--gris3);">Registros de hoy</div>
@@ -687,15 +687,15 @@ async function initRec(){
     }
   }
   ir('screen-rec-home');
-  await cargarGanaderos();await resumenRec();await cargarResumenRecSemanal();
+  await cargarGanaderos();await resumenRec();
 }
 async function resumenRec(){
   try{
     const s=await getDocs(query(collection(db,'recolecciones'),where('recogedorId','==',UA.uid),where('fecha','==',getFechaReg())));
     let L=0;const it=[];
     s.forEach(d=>{const da=d.data();L+=parseFloat(da.litros)||0;it.push(da);});
-    const elLitros=document.getElementById('rec-litros-hoy');if(elLitros)elLitros.textContent=fmtL(L);
-    const elReg=document.getElementById('rec-registros-hoy');if(elReg)elReg.textContent=it.length;
+    document.getElementById('rec-litros-hoy').textContent=fmtL(L);
+    document.getElementById('rec-registros-hoy').textContent=it.length;
     const listaEl=document.getElementById('rec-lista-hoy');
     if(it.length===0){listaEl.innerHTML='<div class="vacio"><div class="ico">🐄</div><p>Sin registros hoy</p></div>';}
     else{
@@ -712,19 +712,6 @@ async function resumenRec(){
       });
     }
   }catch(e){}
-
-  async function cargarResumenRecSemanal(){
-  try{
-    function fL(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
-    const dias=[];for(let i=4;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);dias.push(fL(d));}
-    const snap=await getDocs(query(collection(db,'recolecciones'),where('recogedorId','==',UA.uid),where('fecha','>=',dias[0]),where('fecha','<=',dias[4])));
-    const porDia={};dias.forEach(d=>{porDia[d]=new Set();});
-    snap.forEach(d=>{const da=d.data();if(porDia[da.fecha])porDia[da.fecha].add(da.ganaderoId);});
-    const nomDia=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
-    const hoyStr=hoy();
-    document.getElementById('rec-semana').innerHTML=`<div style="display:flex;gap:6px;">${dias.map(d=>{const n=porDia[d].size;const diaSem=new Date(d+'T12:00:00').getDay();const esHoy=d===hoyStr;const bg=esHoy?'var(--verde)':'var(--verde3)';const color=esHoy?'white':'var(--verde)';return`<div style="flex:1;text-align:center;padding:10px 4px;border-radius:10px;background:${bg};"><div style="font-size:11px;font-weight:700;color:${color};">${nomDia[diaSem]}</div><div style="font-size:22px;font-weight:800;color:${color};margin:4px 0;">${n>0?n:'—'}</div><div style="font-size:9px;color:${color};opacity:0.8;">ganaderos</div></div>`;}).join('')}</div>`;
-  }catch(e){console.error(e);}
-
 }
 async function cargarGanaderos(){
   try{
@@ -817,7 +804,7 @@ async function guardarGanaderoRecogedor(){const n=document.getElementById('m-gan
 // ══════════════════════════════════════════
 //  RECIBIDOR
 // ══════════════════════════════════════════
-async function initRecibidor(){document.getElementById('recibi-nombre-header').textContent=UA.nombre||'Recibidor';document.getElementById('recibi-fecha').textContent=fmtFecha(hoy());ir('screen-recibi-home');await resumenRecibidor();await cargarInter();await cargarResumenRecibiSemanal();
+async function initRecibidor(){document.getElementById('recibi-nombre-header').textContent=UA.nombre||'Recibidor';document.getElementById('recibi-fecha').textContent=fmtFecha(hoy());ir('screen-recibi-home');await resumenRecibidor();await cargarInter();}
 async function resumenRecibidor(){
   try{
     // Solo los registros que hizo el recibidor actual hoy
@@ -843,7 +830,7 @@ async function resumenRecibidor(){
     const sInter=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','==',hoy())));
     let totalInter=0;const recepsInter={};
     sInter.forEach(d=>{const da=d.data();if(da.recibidorId!==UA.uid)return;totalInter+=parseFloat(da.litros)||0;recepsInter[da.intermediarioId]={id:d.id,litros:parseFloat(da.litros)||0,nombre:da.intermediarioNombre,novedad:da.novedad||''};});
-    const elTot=document.getElementById('recibi-total-hoy');if(elTot)elTot.textContent=Object.keys(receps).length+Object.keys(recepsInter).length;
+    document.getElementById('recibi-total-hoy').textContent=Object.keys(receps).length+Object.keys(recepsInter).length;
     const listaInterHoy=Object.values(recepsInter);
     document.getElementById('recibi-lista-inter-hoy').innerHTML=listaInterHoy.length===0
       ?'<p style="color:var(--gris2);font-size:14px;">Sin intermediarios hoy</p>'
@@ -1027,20 +1014,6 @@ async function confirmarEliminarRecepcion(){
     resumenRecibidor();
   }catch(e){alerta('elim-recep-error','Error al eliminar','rojo');console.error(e);}
 }window.confirmarEliminarRecepcion=confirmarEliminarRecepcion;
-async function cargarResumenRecibiSemanal(){
-  try{
-    function fL(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
-    const dias=[];for(let i=4;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);dias.push(fL(d));}
-    const snapR=await getDocs(query(collection(db,'recepciones'),where('recibidorId','==',UA.uid),where('fecha','>=',dias[0]),where('fecha','<=',dias[4])));
-    const snapI=await getDocs(query(collection(db,'recepcionesInter'),where('recibidorId','==',UA.uid),where('fecha','>=',dias[0]),where('fecha','<=',dias[4])));
-    const porDia={};dias.forEach(d=>{porDia[d]=0;});
-    snapR.forEach(d=>{const da=d.data();if(porDia[da.fecha]!==undefined)porDia[da.fecha]++;});
-    snapI.forEach(d=>{const da=d.data();if(porDia[da.fecha]!==undefined)porDia[da.fecha]++;});
-    const nomDia=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
-    const hoyStr=hoy();
-    document.getElementById('recibi-semana').innerHTML=`<div style="display:flex;gap:6px;">${dias.map(d=>{const n=porDia[d];const diaSem=new Date(d+'T12:00:00').getDay();const esHoy=d===hoyStr;const bg=esHoy?'var(--naranja)':'var(--naranja2)';const color=esHoy?'white':'var(--naranja)';return`<div style="flex:1;text-align:center;padding:10px 4px;border-radius:10px;background:${bg};"><div style="font-size:11px;font-weight:700;color:${color};">${nomDia[diaSem]}</div><div style="font-size:22px;font-weight:800;color:${color};margin:4px 0;">${n>0?n:'—'}</div><div style="font-size:9px;color:${color};opacity:0.8;">personas</div></div>`;}).join('')}</div>`;
-  }catch(e){console.error(e);}
-}
 
 async function selRecibidor(id){
   recibSeleccionado=listaRecogedores.find(r=>r.id===id);if(!recibSeleccionado)return;
