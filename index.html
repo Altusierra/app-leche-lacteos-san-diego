@@ -1125,7 +1125,9 @@ function renderDesgloseAdmin(filtroId){
   const diff=plantaFiltro-rutaFiltro;
   const diffColor=diff>0?'var(--naranja)':diff<0?'var(--amarillo)':'#15803d';
   const diffSign=diff>=0?'+':'';
-  const totalBlock=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;text-align:center;background:var(--crema);border-radius:12px;padding:12px;margin-bottom:8px;">
+  const fechaSel=document.getElementById('desglose-fecha')?.value||hoy();
+  const fechaLabel=fechaSel===hoy()?'Hoy — '+fmtFecha(fechaSel):fmtFecha(fechaSel);
+  const totalBlock=`<div style="font-size:14px;font-weight:700;color:var(--verde);margin-bottom:8px;">📅 ${fechaLabel}</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;text-align:center;background:var(--crema);border-radius:12px;padding:12px;margin-bottom:8px;">
     <div><div style="font-size:10px;color:var(--gris2);font-weight:600;">🚛 RUTA</div><div style="font-size:18px;font-weight:800;color:var(--gris3);">${fmtL(rutaFiltro)}</div></div>
     <div><div style="font-size:10px;color:var(--gris2);font-weight:600;">🏭 PLANTA</div><div style="font-size:18px;font-weight:800;color:var(--gris3);">${fmtL(plantaFiltro)}</div></div>
     <div><div style="font-size:10px;color:var(--gris2);font-weight:600;">⚖️ DIFF</div><div style="font-size:18px;font-weight:800;color:${diffColor};">${diffSign}${fmtL(diff)}</div></div>
@@ -1180,7 +1182,7 @@ async function recargarDesglose(fecha){
     // Rebuild filter buttons
     const filtrosEl=document.getElementById('admin-filtros-rec');
     if(filtrosEl){
-      const recsVisibles=Object.entries(porRec).filter(([id])=>!_uidsCombinados.has(id));
+      const recsVisibles=Object.entries(porRec);
       _rutasCombinadas?.forEach(([cid,cu])=>recsVisibles.push([cid,{nombre:cu.nombre||cu.email,litros:0}]));
       filtrosEl.innerHTML=`<button class="btn btn-sm filtro-rec-btn" data-recid="todos" style="border:2px solid var(--verde);background:var(--verde);color:white;font-weight:700;" onclick="renderDesgloseAdmin('todos')">Todos</button>`+
         recsVisibles.map(([id,rv])=>`<button class="btn btn-sm filtro-rec-btn" data-recid="${id}" style="border:2px solid var(--verde);background:transparent;color:var(--verde);font-weight:700;" onclick="renderDesgloseAdmin('${id}')">${rv.nombre}</button>`).join('');
@@ -1264,7 +1266,7 @@ async function dashAdmin(){
     // Build filter buttons
     const filtrosEl=document.getElementById('admin-filtros-rec');
     if(filtrosEl){
-      const recsVisibles=Object.entries(porRec).filter(([id])=>!uidsCombinados.has(id));
+      const recsVisibles=Object.entries(porRec);
       // Add combined routes
       rutasCombinadas.forEach(([cid,cu])=>recsVisibles.push([cid,{nombre:cu.nombre||cu.email,litros:0}]));
       filtrosEl.innerHTML=`<button class="btn btn-sm filtro-rec-btn" data-recid="todos" style="border:2px solid var(--verde);background:var(--verde);color:white;font-weight:700;" onclick="renderDesgloseAdmin('todos')">Todos</button>`+
