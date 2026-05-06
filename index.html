@@ -275,17 +275,18 @@
       <div class="card" style="text-align:center;"><div class="card-titulo">En planta</div><div class="card-valor" id="admin-total-planta">-</div><div class="card-sub">litros planta</div></div>
     </div>
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><div class="card-titulo" style="margin:0;">📅 Hoy y 2 días anteriores</div><input type="date" id="semana-fecha-ref" style="padding:6px 10px;border:1.5px solid var(--gris1);border-radius:8px;font-size:13px;font-weight:600;color:var(--verde);" onchange="cargarResumenSemanal(this.value)"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><div class="card-titulo" style="margin:0;">📅 Hoy y 2 días anteriores</div><input type="date" id="semana-fecha-ref" style="padding:6px 10px;border:1.5px solid var(--gris1);border-radius:8px;font-size:13px;font-weight:600;color:var(--verde);" onchange="sincronizarFecha(this.value)"></div>
       <div id="admin-semana"><div class="loading">Cargando...</div></div>
     </div>
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><div class="card-titulo" style="margin:0;">🐄 Desglose ganaderos</div><input type="date" id="desglose-fecha" style="padding:6px 10px;border:1.5px solid var(--gris1);border-radius:8px;font-size:13px;font-weight:600;color:var(--verde);" onchange="recargarDesglose(this.value)"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><div class="card-titulo" style="margin:0;">🐄 Desglose ganaderos</div><input type="date" id="desglose-fecha" style="padding:6px 10px;border:1.5px solid var(--gris1);border-radius:8px;font-size:13px;font-weight:600;color:var(--verde);" onchange="sincronizarFecha(this.value)"></div>
       <div id="admin-filtros-rec" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;"></div>
       <div id="admin-desglose-ganaderos"><div class="loading">Cargando...</div></div>
     </div>
-    <div id="admin-inter-card" class="card" style="display:none;">
-      <div class="card-titulo" style="color:var(--naranja);">🚚 Intermediarios hoy</div>
+    <div id="admin-inter-card" class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><div class="card-titulo" style="margin:0;color:var(--naranja);">🚚 Intermediarios</div><input type="date" id="inter-fecha" style="padding:6px 10px;border:1.5px solid var(--gris1);border-radius:8px;font-size:13px;font-weight:600;color:var(--naranja);" onchange="sincronizarFecha(this.value)"></div>
       <div id="admin-inter-hoy"></div>
+      <div id="admin-inter-fecha-label" style="font-size:14px;font-weight:700;color:var(--naranja);margin-top:8px;"></div>
     </div>
     <div class="card">
       <div class="card-titulo">🔴 Ganaderos sin recolectar (1+ día)</div>
@@ -1191,9 +1192,10 @@ async function recargarDesglose(fecha){
     // Update intermediarios card
     const interCard=document.getElementById('admin-inter-card');
     const interDiv=document.getElementById('admin-inter-hoy');
+    const interFechaLabel=document.getElementById('admin-inter-fecha-label');
+    if(interFechaLabel)interFechaLabel.textContent='📅 '+(fecha===hoy()?'Hoy — '+fmtFecha(fecha):fmtFecha(fecha));
     if(interCard&&interDiv){
       if(totalInterH>0){
-        interCard.style.display='block';
         window._interHoyActual=interHoy;
         function renderInterDash(expandido){
           const LIMITE_I=3;const lista=expandido?interHoy:interHoy.slice(0,LIMITE_I);
@@ -1203,7 +1205,7 @@ async function recargarDesglose(fecha){
         }
         window._toggleInter=function(exp){renderInterDash(exp);};
         renderInterDash(false);
-      }else{interCard.style.display='none';}
+      }else{interDiv.innerHTML='<p style="color:var(--gris2);font-size:14px;">Sin intermediarios en esta fecha</p>';}
     }
   }catch(e){console.error(e);}
 }window.recargarDesglose=recargarDesglose;
@@ -1283,9 +1285,11 @@ async function dashAdmin(){
       // Mostrar intermediarios en card separada
       const interCard=document.getElementById('admin-inter-card');
       const interDiv=document.getElementById('admin-inter-hoy');
+      const interFechaInp=document.getElementById('inter-fecha');if(interFechaInp)interFechaInp.value=hoy();
+      const interFechaLbl=document.getElementById('admin-inter-fecha-label');
+      if(interFechaLbl)interFechaLbl.textContent='📅 Hoy — '+fmtFecha(hoy());
       if(interCard&&interDiv){
         if(totalInterH>0){
-          interCard.style.display='block';
           function renderInterMain(expandido){
             const LIMITE_I=3;const lista=expandido?interHoy:interHoy.slice(0,LIMITE_I);
             const rows=lista.map(i=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--gris1);font-size:14px;"><div><div style="font-weight:600;">${i.intermediarioNombre}</div><div style="font-size:12px;color:var(--gris2);margin-top:2px;">${i.recibidorNombre||''}${i.hora?' · '+i.hora:''}</div></div><span style="color:var(--naranja);font-weight:700;">${fmtL(parseFloat(i.litros))}L</span></div>`).join('');
@@ -1295,7 +1299,7 @@ async function dashAdmin(){
           window._toggleInterMain=function(exp){renderInterMain(exp);};
           renderInterMain(false);
         }else{
-          interCard.style.display='none';
+          interDiv.innerHTML='<p style="color:var(--gris2);font-size:14px;">Sin intermediarios hoy</p>';
         }
       }
     }catch(e){}
@@ -1331,6 +1335,31 @@ async function cargarResumenSemanal(fechaRef){
   }catch(e){}
 }
 window.cargarResumenSemanal=cargarResumenSemanal;
+
+async function sincronizarFecha(fecha){
+  if(!fecha)return;
+  const inp1=document.getElementById('semana-fecha-ref');if(inp1)inp1.value=fecha;
+  const inp2=document.getElementById('desglose-fecha');if(inp2)inp2.value=fecha;
+  const inp3=document.getElementById('inter-fecha');if(inp3)inp3.value=fecha;
+  recargarTotales(fecha);
+  cargarResumenSemanal(fecha);
+  recargarDesglose(fecha);
+}
+window.sincronizarFecha=sincronizarFecha;
+
+async function recargarTotales(fecha){
+  try{
+    const sCol=await getDocs(query(collection(db,'recolecciones'),where('fecha','==',fecha)));
+    let totalRuta=0;sCol.forEach(d=>{totalRuta+=parseFloat(d.data().litros)||0;});
+    document.getElementById('admin-total-rec').textContent=fmtL(totalRuta);
+    const sRec=await getDocs(query(collection(db,'recepciones'),where('fecha','==',fecha)));
+    let totalPlanta=0;sRec.forEach(d=>{totalPlanta+=parseFloat(d.data().litros)||0;});
+    const sInter=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','==',fecha)));
+    let totalInter=0;sInter.forEach(d=>{totalInter+=parseFloat(d.data().litros)||0;});
+    document.getElementById('admin-total-planta').textContent=fmtL(totalPlanta+totalInter);
+  }catch(e){console.error('recargarTotales:',e);}
+}
+window.recargarTotales=recargarTotales;
 async function cargarSinRecolectar(){
   try{
     function fLocal(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
@@ -1397,7 +1426,7 @@ async function renderHistorialQuincenas(){
   }
   let liqMap={};
   try{const snap=await getDocs(collection(db,'liquidaciones'));snap.forEach(d=>{liqMap[d.id]=d.data();});}catch(e){console.error(e);}
-  cont.innerHTML=ultimas.map((q,idx)=>{
+  const itemsHtml=ultimas.map((q,idx)=>{
     const liq=liqMap[`${q.de}_${q.ha}`];
     const detId=`qdet-${idx}`;
     if(liq){
@@ -1405,11 +1434,19 @@ async function renderHistorialQuincenas(){
       const novs=liq.novedades||[];
       const diasHtml=Object.entries(litDia).sort((a,b)=>a[0].localeCompare(b[0])).map(([f,l])=>`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--gris1);font-size:13px;"><span>${f}</span><strong>${fmtL(l)}L</strong></div>`).join('');
       const novsHtml=novs.length>0?`<div style="margin-top:10px;font-size:12px;font-weight:700;color:var(--amarillo);margin-bottom:6px;">⚠️ ${novs.length} novedades</div>`+novs.map(n=>`<div style="padding:6px 0;border-bottom:1px solid var(--gris1);font-size:12px;"><strong>${n.fecha}</strong> · ${n.ganadero} · ${n.recogedor}<br><span style="color:var(--amarillo);">${n.novedad}</span></div>`).join(''):'<div style="font-size:13px;color:var(--gris2);margin-top:8px;">✅ Sin novedades en este período</div>';
-      return`<div style="padding:12px 0;border-bottom:1px solid var(--gris1);"><div style="display:flex;justify-content:space-between;align-items:center;"><div><div style="font-weight:700;font-size:14px;">${q.label}</div><div style="font-size:12px;color:#15803d;font-weight:600;margin-top:2px;">✅ ${fmtPeso(liq.precioPorLitro)}/L · ${fmtL(liq.totalLitros)}L · ${fmtPesoCorto(liq.totalPesos)}</div><div style="font-size:11px;color:var(--gris2);margin-top:2px;">${liq.generadoPorNombre} · ${liq.fechaGeneracion} ${liq.horaGeneracion||''}</div></div><div style="display:flex;gap:6px;"><button class="btn btn-gris btn-sm" onclick="document.getElementById('${detId}').style.display=document.getElementById('${detId}').style.display==='none'?'block':'none'">📋</button><button class="btn btn-gris btn-sm" onclick="exportarQuincenaHistorial('${q.de}','${q.ha}','${q.label}')">⬇</button></div></div><div id="${detId}" style="display:none;margin-top:10px;background:var(--crema);border-radius:10px;padding:12px;"><div style="font-size:12px;font-weight:700;color:var(--verde);margin-bottom:6px;">📅 Litros por día</div>${diasHtml}${novsHtml}</div></div>`;
+      return`<div class="qitem" style="padding:12px 0;border-bottom:1px solid var(--gris1);"><div style="display:flex;justify-content:space-between;align-items:center;"><div><div style="font-weight:700;font-size:14px;">${q.label}</div><div style="font-size:12px;color:#15803d;font-weight:600;margin-top:2px;">✅ ${fmtPeso(liq.precioPorLitro)}/L · ${fmtL(liq.totalLitros)}L · ${fmtPesoCorto(liq.totalPesos)}</div><div style="font-size:11px;color:var(--gris2);margin-top:2px;">${liq.generadoPorNombre} · ${liq.fechaGeneracion} ${liq.horaGeneracion||''}</div></div><div style="display:flex;gap:6px;"><button class="btn btn-gris btn-sm" onclick="document.getElementById('${detId}').style.display=document.getElementById('${detId}').style.display==='none'?'block':'none'">📋</button><button class="btn btn-gris btn-sm" onclick="exportarQuincenaHistorial('${q.de}','${q.ha}','${q.label}')">⬇</button></div></div><div id="${detId}" style="display:none;margin-top:10px;background:var(--crema);border-radius:10px;padding:12px;"><div style="font-size:12px;font-weight:700;color:var(--verde);margin-bottom:6px;">📅 Litros por día</div>${diasHtml}${novsHtml}</div></div>`;
     }else{
-      return`<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--gris1);"><div><div style="font-weight:600;font-size:14px;">${q.label}</div><div style="font-size:12px;color:var(--gris2);margin-top:2px;">⏳ Pendiente</div></div><button class="btn btn-gris btn-sm" onclick="exportarQuincenaHistorial('${q.de}','${q.ha}','${q.label}')">⬇ Exportar</button></div>`;
+      return`<div class="qitem" style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--gris1);"><div><div style="font-weight:600;font-size:14px;">${q.label}</div><div style="font-size:12px;color:var(--gris2);margin-top:2px;">⏳ Pendiente</div></div><button class="btn btn-gris btn-sm" onclick="exportarQuincenaHistorial('${q.de}','${q.ha}','${q.label}')">⬇ Exportar</button></div>`;
     }
-  }).join('');
+  });
+  const LIMITE_Q=3;
+  function renderQuincenas(expandido){
+    const lista=expandido?itemsHtml:itemsHtml.slice(0,LIMITE_Q);
+    const verBtn=itemsHtml.length>LIMITE_Q?expandido?`<button onclick="window._toggleQuincenas(false)" style="margin-top:10px;background:none;border:none;color:var(--verde);font-weight:700;font-size:14px;cursor:pointer;width:100%;text-align:center;">Ver menos ▲</button>`:`<button onclick="window._toggleQuincenas(true)" style="margin-top:10px;background:none;border:none;color:var(--verde);font-weight:700;font-size:14px;cursor:pointer;width:100%;text-align:center;">Ver más (${itemsHtml.length-LIMITE_Q} más) ▼</button>`:'';
+    cont.innerHTML=lista.join('')+verBtn;
+  }
+  window._toggleQuincenas=function(exp){renderQuincenas(exp);};
+  renderQuincenas(false);
 }
 
 function nombreMes(m){return['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'][m];}
