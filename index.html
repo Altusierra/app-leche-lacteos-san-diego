@@ -694,8 +694,8 @@ async function resumenRec(){
     const s=await getDocs(query(collection(db,'recolecciones'),where('recogedorId','==',UA.uid),where('fecha','==',getFechaReg())));
     let L=0;const it=[];
     s.forEach(d=>{const da=d.data();L+=parseFloat(da.litros)||0;it.push(da);});
-    document.getElementById('rec-litros-hoy').textContent=fmtL(L);
-    document.getElementById('rec-registros-hoy').textContent=it.length;
+    const elLitros=document.getElementById('rec-litros-hoy');if(elLitros)elLitros.textContent=fmtL(L);
+    const elReg=document.getElementById('rec-registros-hoy');if(elReg)elReg.textContent=it.length;
     const listaEl=document.getElementById('rec-lista-hoy');
     if(it.length===0){listaEl.innerHTML='<div class="vacio"><div class="ico">🐄</div><p>Sin registros hoy</p></div>';}
     else{
@@ -843,7 +843,7 @@ async function resumenRecibidor(){
     const sInter=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','==',hoy())));
     let totalInter=0;const recepsInter={};
     sInter.forEach(d=>{const da=d.data();if(da.recibidorId!==UA.uid)return;totalInter+=parseFloat(da.litros)||0;recepsInter[da.intermediarioId]={id:d.id,litros:parseFloat(da.litros)||0,nombre:da.intermediarioNombre,novedad:da.novedad||''};});
-    document.getElementById('recibi-total-hoy').textContent=Object.keys(receps).length+Object.keys(recepsInter).length;
+    const elTot=document.getElementById('recibi-total-hoy');if(elTot)elTot.textContent=Object.keys(receps).length+Object.keys(recepsInter).length;
     const listaInterHoy=Object.values(recepsInter);
     document.getElementById('recibi-lista-inter-hoy').innerHTML=listaInterHoy.length===0
       ?'<p style="color:var(--gris2);font-size:14px;">Sin intermediarios hoy</p>'
