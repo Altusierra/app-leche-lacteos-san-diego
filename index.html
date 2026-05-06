@@ -809,9 +809,9 @@ async function cargarResumenRecSemanal(){
     function fLocal(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
     const hoyD=new Date();const hoyStr=fLocal(hoyD);
     const dias=[];for(let i=4;i>=0;i--){const d=new Date(hoyD);d.setDate(hoyD.getDate()-i);dias.push(fLocal(d));}
-    const snap=await getDocs(query(collection(db,'recolecciones'),where('recogedorId','==',UA.uid),where('fecha','>=',dias[0]),where('fecha','<=',dias[4])));
+    const snap=await getDocs(query(collection(db,'recolecciones'),where('fecha','>=',dias[0]),where('fecha','<=',dias[4])));
     const porDia={};dias.forEach(d=>{porDia[d]=new Set();});
-    snap.forEach(d=>{const da=d.data();if(porDia[da.fecha])porDia[da.fecha].add(da.ganaderoId);});
+    snap.forEach(d=>{const da=d.data();if(da.recogedorId===UA.uid&&porDia[da.fecha])porDia[da.fecha].add(da.ganaderoId);});
     const nomDia=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
     el.innerHTML=`<div class="card"><div class="card-titulo">📅 Hoy y 4 días anteriores</div><div style="display:flex;gap:6px;margin-top:8px;">${dias.map(d=>{const dObj=new Date(d+'T12:00:00');const esHoy=d===hoyStr;const cant=porDia[d].size;const bg=esHoy?'var(--verde)':'var(--verde3)';const color=esHoy?'white':'var(--verde)';return`<div style="flex:1;text-align:center;padding:10px 4px;border-radius:10px;background:${bg};"><div style="font-size:11px;font-weight:700;color:${color};">${nomDia[dObj.getDay()]}</div><div style="font-size:20px;font-weight:800;color:${color};">${cant}</div><div style="font-size:10px;color:${color};opacity:0.8;">ganad.</div></div>`;}).join('')}</div></div>`;
   }catch(e){console.error('resumenRecSemanal:',e);}
@@ -1068,11 +1068,11 @@ async function cargarResumenRecibiSemanal(){
     function fLocal(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
     const hoyD=new Date();const hoyStr=fLocal(hoyD);
     const dias=[];for(let i=4;i>=0;i--){const d=new Date(hoyD);d.setDate(hoyD.getDate()-i);dias.push(fLocal(d));}
-    const snapR=await getDocs(query(collection(db,'recepciones'),where('recibidorId','==',UA.uid),where('fecha','>=',dias[0]),where('fecha','<=',dias[4])));
-    const snapI=await getDocs(query(collection(db,'recepcionesInter'),where('recibidorId','==',UA.uid),where('fecha','>=',dias[0]),where('fecha','<=',dias[4])));
+    const snapR=await getDocs(query(collection(db,'recepciones'),where('fecha','>=',dias[0]),where('fecha','<=',dias[4])));
+    const snapI=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','>=',dias[0]),where('fecha','<=',dias[4])));
     const porDia={};dias.forEach(d=>{porDia[d]=0;});
-    snapR.forEach(d=>{const da=d.data();if(porDia[da.fecha]!==undefined)porDia[da.fecha]++;});
-    snapI.forEach(d=>{const da=d.data();if(porDia[da.fecha]!==undefined)porDia[da.fecha]++;});
+    snapR.forEach(d=>{const da=d.data();if(da.recibidorId===UA.uid&&porDia[da.fecha]!==undefined)porDia[da.fecha]++;});
+    snapI.forEach(d=>{const da=d.data();if(da.recibidorId===UA.uid&&porDia[da.fecha]!==undefined)porDia[da.fecha]++;});
     const nomDia=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
     el.innerHTML=`<div class="card"><div class="card-titulo">📅 Hoy y 4 días anteriores</div><div style="display:flex;gap:6px;margin-top:8px;">${dias.map(d=>{const dObj=new Date(d+'T12:00:00');const esHoy=d===hoyStr;const cant=porDia[d];const bg=esHoy?'var(--naranja)':'var(--naranja2)';const color=esHoy?'white':'var(--naranja)';return`<div style="flex:1;text-align:center;padding:10px 4px;border-radius:10px;background:${bg};"><div style="font-size:11px;font-weight:700;color:${color};">${nomDia[dObj.getDay()]}</div><div style="font-size:20px;font-weight:800;color:${color};">${cant}</div><div style="font-size:10px;color:${color};opacity:0.8;">personas</div></div>`;}).join('')}</div></div>`;
   }catch(e){console.error('resumenRecibiSemanal:',e);}
