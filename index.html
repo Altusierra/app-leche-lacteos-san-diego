@@ -311,6 +311,11 @@
   <input type="file" id="input-importar" accept=".xlsx,.csv" style="display:none;" onchange="importarGanaderos(event)">
   <div style="padding:20px;">
     <div class="buscador"><span class="ico">🔍</span><input type="text" id="buscar-ganadero-admin" placeholder="Buscar..." oninput="filtrarGanaderosAdmin()"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+      <button class="btn btn-sm btn-ord-gan" data-orden="az" onclick="ordenarGanaderos('az')" style="border:2px solid var(--verde);background:var(--verde);color:white;font-weight:700;">A-Z</button>
+      <button class="btn btn-sm btn-ord-gan" data-orden="mayor" onclick="ordenarGanaderos('mayor')" style="border:2px solid var(--verde);background:transparent;color:var(--verde);font-weight:700;">Mayor → Menor</button>
+      <button class="btn btn-sm btn-ord-gan" data-orden="menor" onclick="ordenarGanaderos('menor')" style="border:2px solid var(--verde);background:transparent;color:var(--verde);font-weight:700;">Menor → Mayor</button>
+    </div>
     <div id="lista-ganaderos-admin"><div class="loading">Cargando...</div></div>
   </div>
 </div>
@@ -590,6 +595,7 @@ const app2=initializeApp(cfg,'secondary');const auth2=getAuth(app2);
 const SUPER_ADMINS=new Set(['WLPvBEGv9xeurUkJxfgZ1aWWf982','aldWRG0sMebNMjboOWb3MpPKFvn2','iTOJ7AOgNgYRG4vMSGsvAZuEeR23']);
 let UA=null,rol=null,ganList=[],regHoyGan={},_porGan={},_porRec={},_porRecPlanta={},_uidsCombinados=new Set(),precioActual=0,tabRep=0,editGanId=null,datosRep=[],datosInter=[],datosRecepciones=[],soloNovGlobal=false,modoElim=false;
 let recibSeleccionado=null,ganSel=null,listaRecogedores=[],modoHistorico=false,fechaReg=null;
+let _litrosPorGanadero={},_ordenGan='az';
 
 // ── HELPERS ──
 function ir(id){
@@ -740,7 +746,7 @@ function renderGan(lista,regHoy={}){
     el.addEventListener('click',function(){selGan(this.getAttribute('data-ganid'));});
   });
 }
-function filtrarGanaderos(){const t=document.getElementById('buscar-input').value.toLowerCase();renderGan(ganList.filter(g=>g.nombre.toLowerCase().includes(t)),regHoyGan);}window.filtrarGanaderos=filtrarGanaderos;
+function filtrarGanaderos(){const t=document.getElementById('buscar-input').value.trim();renderGan(ganList.filter(g=>matchInicio(g.nombre,t)),regHoyGan);}window.filtrarGanaderos=filtrarGanaderos;
 async function selGan(id){
   ganSel=ganList.find(g=>g.id===id);if(!ganSel)return;
   document.getElementById('reg-ganadero-nombre').textContent=ganSel.nombre;
@@ -1492,9 +1498,11 @@ Precio por litro: $${precioActual}
   }catch(e){console.error(e);}
 }
 
-async function ganAdmin(){try{const s=await getDocs(query(collection(db,'ganaderos'),orderBy('nombre')));ganList=[];s.forEach(d=>ganList.push({id:d.id,...d.data()}));renderGanAdmin(ganList);}catch(e){}}
-function renderGanAdmin(lista){document.getElementById('lista-ganaderos-admin').innerHTML=lista.length===0?'<div class="vacio"><div class="ico">🐄</div><p>No hay ganaderos</p></div>':lista.map(g=>`<div class="lista-item"><div><div class="nombre">${g.nombre} ${!g.activo?'<span class="badge badge-rojo">Inactivo</span>':''}</div><div class="detalle">${g.telefono||'Sin teléfono'}${g.vereda?' · '+g.vereda:''}</div>${g.agregadoPorNombre?`<div class="detalle" style="font-size:11px;">Agregado por: ${g.agregadoPorNombre} · ${g.fechaAgregado||''}</div>`:''}</div><button class="btn btn-gris btn-sm" onclick="abrirModalGanadero('${g.id}')">Editar</button></div>`).join('');}
-function filtrarGanaderosAdmin(){const t=document.getElementById('buscar-ganadero-admin').value.toLowerCase();renderGanAdmin(ganList.filter(g=>g.nombre.toLowerCase().includes(t)));}window.filtrarGanaderosAdmin=filtrarGanaderosAdmin;
+async function ganAdmin(){try{const s=await getDocs(query(collection(db,'ganaderos'),orderBy('nombre')));ganList=[];s.forEach(d=>ganList.push({id:d.id,...d.data()}));const sRec=await getDocs(collection(db,'recolecciones'));_litrosPorGanadero={};sRec.forEach(d=>{const da=d.data();_litrosPorGanadero[da.ganaderoId]=(_litrosPorGanadero[da.ganaderoId]||0)+(parseFloat(da.litros)||0);});aplicarFiltroOrdenGan();}catch(e){console.error(e);}}
+function renderGanAdmin(lista){document.getElementById('lista-ganaderos-admin').innerHTML=lista.length===0?'<div class="vacio"><div class="ico">🐄</div><p>No hay ganaderos</p></div>':lista.map(g=>{const totalL=_litrosPorGanadero[g.id]||0;return`<div class="lista-item"><div><div class="nombre">${g.nombre} ${!g.activo?'<span class="badge badge-rojo">Inactivo</span>':''}</div><div class="detalle">${g.telefono||'Sin teléfono'}${g.vereda?' · '+g.vereda:''}</div>${totalL>0?`<div class="detalle" style="font-size:12px;color:var(--verde);font-weight:700;">📊 ${fmtL(totalL)}L total</div>`:''} ${g.agregadoPorNombre?`<div class="detalle" style="font-size:11px;">Agregado por: ${g.agregadoPorNombre} · ${g.fechaAgregado||''}</div>`:''}</div><button class="btn btn-gris btn-sm" onclick="abrirModalGanadero('${g.id}')">Editar</button></div>`;}).join('');}
+function aplicarFiltroOrdenGan(){const t=document.getElementById('buscar-ganadero-admin')?.value.trim()||'';let lista=ganList.filter(g=>matchInicio(g.nombre,t));if(_ordenGan==='mayor')lista.sort((a,b)=>((_litrosPorGanadero[b.id]||0)-(_litrosPorGanadero[a.id]||0)));else if(_ordenGan==='menor')lista.sort((a,b)=>((_litrosPorGanadero[a.id]||0)-(_litrosPorGanadero[b.id]||0)));else lista.sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));renderGanAdmin(lista);document.querySelectorAll('.btn-ord-gan').forEach(b=>{b.style.background=b.dataset.orden===_ordenGan?'var(--verde)':'transparent';b.style.color=b.dataset.orden===_ordenGan?'white':'var(--verde)';});}
+function ordenarGanaderos(tipo){_ordenGan=tipo;aplicarFiltroOrdenGan();}window.ordenarGanaderos=ordenarGanaderos;
+function filtrarGanaderosAdmin(){aplicarFiltroOrdenGan();}window.filtrarGanaderosAdmin=filtrarGanaderosAdmin;
 async function abrirModalGanadero(id){editGanId=id;const g=id?ganList.find(x=>x.id===id):null;document.getElementById('modal-ganadero-titulo').textContent=g?'Editar Ganadero':'Nuevo Ganadero';document.getElementById('m-gan-nombre').value=g?.nombre||'';document.getElementById('m-gan-tel').value=g?.telefono||'';document.getElementById('m-gan-vereda').value=g?.vereda||'';document.getElementById('m-gan-activo').value=g?String(g.activo!==false):'true';ocult('m-gan-error');
   // Mostrar botón eliminar solo si es edición
   const elimCont=document.getElementById('m-gan-eliminar-container');
@@ -1507,7 +1515,8 @@ async function abrirModalGanadero(id){editGanId=id;const g=id?ganList.find(x=>x.
 
 function confirmarBorrado(){cerrarModal('modal-ganadero');abrirModal('modal-confirmar-borrado');}window.confirmarBorrado=confirmarBorrado;
 async function ejecutarBorrado(){if(!editGanId)return;try{const {deleteDoc,doc:docFn}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');await deleteDoc(docFn(db,'ganaderos',editGanId));cerrarModal('modal-confirmar-borrado');editGanId=null;await ganAdmin();await cargarGanaderos();}catch(e){alert('Error al eliminar. Intenta de nuevo.');}}window.ejecutarBorrado=ejecutarBorrado;
-function normalizarNombre(n){return n.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();}
+function normalizarNombre(n){return n.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();}
+function matchInicio(nombre,busqueda){if(!busqueda)return true;const palabras=normalizarNombre(nombre).split(/\s+/);const b=normalizarNombre(busqueda);return palabras.some(p=>p.startsWith(b));}
 
 async function guardarGanadero(){const n=document.getElementById('m-gan-nombre').value.trim();const t=document.getElementById('m-gan-tel').value.trim();const v=document.getElementById('m-gan-vereda').value.trim();const a=document.getElementById('m-gan-activo').value==='true';if(!n){alerta('m-gan-error','El nombre es obligatorio','rojo');return;}
   // Validar duplicado
@@ -1566,7 +1575,7 @@ function filtrarInterAdmin(){
   // Re-cargar y filtrar
   getDocs(query(collection(db,'intermediarios'))).then(s=>{
     const lista=[];s.forEach(d=>lista.push({id:d.id,...d.data()}));
-    renderInterAdmin(lista.filter(i=>i.nombre.toLowerCase().includes(t)));
+    renderInterAdmin(lista.filter(i=>matchInicio(i.nombre,t)));
   });
 }window.filtrarInterAdmin=filtrarInterAdmin;
 
