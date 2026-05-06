@@ -130,6 +130,7 @@
   <div style="padding:20px;">
     <div id="rec-fecha" style="font-size:15px;color:var(--gris2);margin-bottom:16px;"></div>
     <div class="card"><div class="card-titulo">🐄 Ganaderos registrados hoy</div><div class="card-valor" id="rec-litros-hoy" style="display:none;">0</div><div class="card-valor" id="rec-registros-hoy" style="font-size:42px;font-weight:800;color:var(--verde);">0</div><div class="card-sub">ganaderos hoy</div></div>
+    <div id="rec-resumen-semanal"></div>
     <div class="fila" style="margin-bottom:16px;">
       <button class="btn btn-verde2" style="font-size:17px;padding:20px;" onclick="irPantalla('screen-rec-buscar')">➕ REGISTRAR</button>
       <button class="btn btn-amarillo" style="font-size:17px;padding:20px;" onclick="abrirModalNuevoGanaderoRec()">🐄 NUEVO GANADERO</button>
@@ -185,6 +186,7 @@
     <div id="recibi-fecha" style="font-size:15px;color:var(--gris2);margin-bottom:16px;"></div>
     <div id="recibi-alertas-container"></div>
     <div class="card"><div class="card-titulo">🏭 Registrados hoy</div><div class="card-valor" id="recibi-total-hoy">0</div><div class="card-sub">personas registradas</div></div>
+    <div id="recibi-resumen-semanal"></div>
     <button class="btn btn-naranja" style="font-size:18px;padding:22px;margin-bottom:12px;" onclick="irPantalla('screen-recibi-registrar')">📥 REGISTRAR LLEGADA</button>
     <button class="btn btn-naranja" style="font-size:18px;padding:22px;margin-bottom:20px;background:var(--naranja2);color:var(--naranja);border:2px solid var(--naranja);" onclick="abrirModalNuevoIntermediarioRec()">➕ AGREGAR INTERMEDIARIO</button>
     <div style="margin-bottom:12px;font-size:16px;font-weight:700;color:var(--gris3);">Registros de hoy</div>
@@ -452,7 +454,6 @@
   </div>
 </div>
 
-<div class="modal-overlay"
 <div class="modal-overlay" id="modal-confirmar-borrado">
   <div class="modal">
     <div class="modal-titulo" style="color:var(--rojo);">⚠️ ¿Eliminar ganadero?</div>
@@ -585,6 +586,7 @@ const cfg={apiKey:"AIzaSyDBNDl2kokNqXdKwPEEwUX0MC5ziZVgXQ4",authDomain:"app-lech
 const app=initializeApp(cfg);const auth=getAuth(app);const db=getFirestore(app);
 const app2=initializeApp(cfg,'secondary');const auth2=getAuth(app2);
 
+const SUPER_ADMINS=new Set(['WLPvBEGv9xeurUkJxfgZ1aWWf982','aldWRG0sMebNMjboOWb3MpPKFvn2','iTOJ7AOgNgYRG4vMSGsvAZuEeR23']);
 let UA=null,rol=null,ganList=[],regHoyGan={},_porGan={},_porRec={},_porRecPlanta={},_uidsCombinados=new Set(),precioActual=0,tabRep=0,editGanId=null,datosRep=[],datosInter=[],datosRecepciones=[],soloNovGlobal=false,modoElim=false;
 let recibSeleccionado=null,ganSel=null,listaRecogedores=[],modoHistorico=false,fechaReg=null;
 
@@ -687,7 +689,7 @@ async function initRec(){
     }
   }
   ir('screen-rec-home');
-  await cargarGanaderos();await resumenRec();
+  await cargarGanaderos();await resumenRec();cargarResumenRecSemanal();
 }
 async function resumenRec(){
   try{
@@ -801,10 +803,24 @@ async function guardarGanaderoRecogedor(){const n=document.getElementById('m-gan
   if(duplicado){alerta('m-gan-rec-error',`⚠️ Ya existe un ganadero con ese nombre: "${duplicado.nombre}"` ,'rojo');return;}
   try{await addDoc(collection(db,'ganaderos'),{nombre:n,telefono:t,vereda:v,activo:true,agregadoPor:UA.uid,agregadoPorNombre:UA.nombre||UA.email,fechaAgregado:hoy()});cerrarModal('modal-ganadero-rec');await cargarGanaderos();}catch(e){alerta('m-gan-rec-error','Error al guardar','rojo');}}window.guardarGanaderoRecogedor=guardarGanaderoRecogedor;
 
+async function cargarResumenRecSemanal(){
+  try{
+    const el=document.getElementById('rec-resumen-semanal');if(!el)return;
+    function fLocal(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+    const hoyD=new Date();const hoyStr=fLocal(hoyD);
+    const dias=[];for(let i=4;i>=0;i--){const d=new Date(hoyD);d.setDate(hoyD.getDate()-i);dias.push(fLocal(d));}
+    const snap=await getDocs(query(collection(db,'recolecciones'),where('recogedorId','==',UA.uid),where('fecha','>=',dias[0]),where('fecha','<=',dias[4])));
+    const porDia={};dias.forEach(d=>{porDia[d]=new Set();});
+    snap.forEach(d=>{const da=d.data();if(porDia[da.fecha])porDia[da.fecha].add(da.ganaderoId);});
+    const nomDia=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+    el.innerHTML=`<div class="card"><div class="card-titulo">📅 Hoy y 4 días anteriores</div><div style="display:flex;gap:6px;margin-top:8px;">${dias.map(d=>{const dObj=new Date(d+'T12:00:00');const esHoy=d===hoyStr;const cant=porDia[d].size;const bg=esHoy?'var(--verde)':'var(--verde3)';const color=esHoy?'white':'var(--verde)';return`<div style="flex:1;text-align:center;padding:10px 4px;border-radius:10px;background:${bg};"><div style="font-size:11px;font-weight:700;color:${color};">${nomDia[dObj.getDay()]}</div><div style="font-size:20px;font-weight:800;color:${color};">${cant}</div><div style="font-size:10px;color:${color};opacity:0.8;">ganad.</div></div>`;}).join('')}</div></div>`;
+  }catch(e){console.error('resumenRecSemanal:',e);}
+}
+
 // ══════════════════════════════════════════
 //  RECIBIDOR
 // ══════════════════════════════════════════
-async function initRecibidor(){document.getElementById('recibi-nombre-header').textContent=UA.nombre||'Recibidor';document.getElementById('recibi-fecha').textContent=fmtFecha(hoy());ir('screen-recibi-home');await resumenRecibidor();await cargarInter();}
+async function initRecibidor(){document.getElementById('recibi-nombre-header').textContent=UA.nombre||'Recibidor';document.getElementById('recibi-fecha').textContent=fmtFecha(hoy());ir('screen-recibi-home');await resumenRecibidor();await cargarInter();cargarResumenRecibiSemanal();}
 async function resumenRecibidor(){
   try{
     // Solo los registros que hizo el recibidor actual hoy
@@ -1046,6 +1062,22 @@ async function guardarRecepcion(){
   }catch(e){alerta('recibi-form-error','Error al guardar. Verifica tu conexión.','rojo');}
 }window.guardarRecepcion=guardarRecepcion;
 
+async function cargarResumenRecibiSemanal(){
+  try{
+    const el=document.getElementById('recibi-resumen-semanal');if(!el)return;
+    function fLocal(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+    const hoyD=new Date();const hoyStr=fLocal(hoyD);
+    const dias=[];for(let i=4;i>=0;i--){const d=new Date(hoyD);d.setDate(hoyD.getDate()-i);dias.push(fLocal(d));}
+    const snapR=await getDocs(query(collection(db,'recepciones'),where('recibidorId','==',UA.uid),where('fecha','>=',dias[0]),where('fecha','<=',dias[4])));
+    const snapI=await getDocs(query(collection(db,'recepcionesInter'),where('recibidorId','==',UA.uid),where('fecha','>=',dias[0]),where('fecha','<=',dias[4])));
+    const porDia={};dias.forEach(d=>{porDia[d]=0;});
+    snapR.forEach(d=>{const da=d.data();if(porDia[da.fecha]!==undefined)porDia[da.fecha]++;});
+    snapI.forEach(d=>{const da=d.data();if(porDia[da.fecha]!==undefined)porDia[da.fecha]++;});
+    const nomDia=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+    el.innerHTML=`<div class="card"><div class="card-titulo">📅 Hoy y 4 días anteriores</div><div style="display:flex;gap:6px;margin-top:8px;">${dias.map(d=>{const dObj=new Date(d+'T12:00:00');const esHoy=d===hoyStr;const cant=porDia[d];const bg=esHoy?'var(--naranja)':'var(--naranja2)';const color=esHoy?'white':'var(--naranja)';return`<div style="flex:1;text-align:center;padding:10px 4px;border-radius:10px;background:${bg};"><div style="font-size:11px;font-weight:700;color:${color};">${nomDia[dObj.getDay()]}</div><div style="font-size:20px;font-weight:800;color:${color};">${cant}</div><div style="font-size:10px;color:${color};opacity:0.8;">personas</div></div>`;}).join('')}</div></div>`;
+  }catch(e){console.error('resumenRecibiSemanal:',e);}
+}
+
 // ══════════════════════════════════════════
 //  ADMIN
 // ══════════════════════════════════════════
@@ -1269,10 +1301,8 @@ async function dashAdmin(){
     await cargarResumenSemanal();
     // Ganaderos sin recolectar
     await cargarSinRecolectar();
-    // Quincena para pago
-    calcularQuincenaPago();
     // Historial quincenas
-    renderHistorialQuincenas();
+    await renderHistorialQuincenas();
   }catch(e){console.error(e);}
 }
 
@@ -1346,31 +1376,38 @@ function calcularQuincenaPago(){
   if(lbl)lbl.textContent=`Quincena: ${deLabel}`;
 }
 
-function renderHistorialQuincenas(){
+async function renderHistorialQuincenas(){
+  const cont=document.getElementById('admin-historial-quincenas');if(!cont)return;
   const h=new Date();const dia=h.getDate();const mes=h.getMonth();const anio=h.getFullYear();
-  // Empezar desde la quincena más reciente YA COMPLETADA
-  // Si hoy es 1-15: la última completada es Q2 del mes anterior
-  // Si hoy es 16-31: la última completada es Q1 del mes actual
-  let mCur,aCur,parteCur; // parteCur: 1=primera(1-15), 2=segunda(16-fin)
-  if(dia<16){
-    mCur=mes===0?11:mes-1;aCur=mes===0?anio-1:anio;parteCur=2;
-  } else {
-    mCur=mes;aCur=anio;parteCur=1;
-  }
+  let mCur,aCur,parteCur;
+  if(dia<16){mCur=mes===0?11:mes-1;aCur=mes===0?anio-1:anio;parteCur=2;}
+  else{mCur=mes;aCur=anio;parteCur=1;}
   const ultimas=[];
   for(let i=0;i<6;i++){
     const ultDia=new Date(aCur,mCur+1,0).getDate();
     if(parteCur===1){
       ultimas.push({label:`1 al 15 de ${nombreMes(mCur)} ${aCur}`,de:`${aCur}-${String(mCur+1).padStart(2,'0')}-01`,ha:`${aCur}-${String(mCur+1).padStart(2,'0')}-15`});
-      // Anterior: Q2 del mes anterior
       parteCur=2;mCur=mCur===0?11:mCur-1;if(mCur===11)aCur--;
-    } else {
+    }else{
       ultimas.push({label:`16 al ${ultDia} de ${nombreMes(mCur)} ${aCur}`,de:`${aCur}-${String(mCur+1).padStart(2,'0')}-16`,ha:`${aCur}-${String(mCur+1).padStart(2,'0')}-${ultDia}`});
-      // Anterior: Q1 del mismo mes
       parteCur=1;
     }
   }
-  document.getElementById('admin-historial-quincenas').innerHTML=ultimas.map(q=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--gris1);"><div><div style="font-weight:600;font-size:14px;">${q.label}</div><div style="font-size:12px;color:var(--gris2);">${q.de} → ${q.ha}</div></div><button class="btn btn-gris btn-sm" onclick="exportarQuincenaHistorial('${q.de}','${q.ha}','${q.label}')">⬇ Exportar</button></div>`).join('');
+  let liqMap={};
+  try{const snap=await getDocs(collection(db,'liquidaciones'));snap.forEach(d=>{liqMap[d.id]=d.data();});}catch(e){console.error(e);}
+  cont.innerHTML=ultimas.map((q,idx)=>{
+    const liq=liqMap[`${q.de}_${q.ha}`];
+    const detId=`qdet-${idx}`;
+    if(liq){
+      const litDia=liq.litrosPorDia||{};
+      const novs=liq.novedades||[];
+      const diasHtml=Object.entries(litDia).sort((a,b)=>a[0].localeCompare(b[0])).map(([f,l])=>`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--gris1);font-size:13px;"><span>${f}</span><strong>${fmtL(l)}L</strong></div>`).join('');
+      const novsHtml=novs.length>0?`<div style="margin-top:10px;font-size:12px;font-weight:700;color:var(--amarillo);margin-bottom:6px;">⚠️ ${novs.length} novedades</div>`+novs.map(n=>`<div style="padding:6px 0;border-bottom:1px solid var(--gris1);font-size:12px;"><strong>${n.fecha}</strong> · ${n.ganadero} · ${n.recogedor}<br><span style="color:var(--amarillo);">${n.novedad}</span></div>`).join(''):'<div style="font-size:13px;color:var(--gris2);margin-top:8px;">✅ Sin novedades en este período</div>';
+      return`<div style="padding:12px 0;border-bottom:1px solid var(--gris1);"><div style="display:flex;justify-content:space-between;align-items:center;"><div><div style="font-weight:700;font-size:14px;">${q.label}</div><div style="font-size:12px;color:#15803d;font-weight:600;margin-top:2px;">✅ ${fmtPeso(liq.precioPorLitro)}/L · ${fmtL(liq.totalLitros)}L · ${fmtPesoCorto(liq.totalPesos)}</div><div style="font-size:11px;color:var(--gris2);margin-top:2px;">${liq.generadoPorNombre} · ${liq.fechaGeneracion} ${liq.horaGeneracion||''}</div></div><div style="display:flex;gap:6px;"><button class="btn btn-gris btn-sm" onclick="document.getElementById('${detId}').style.display=document.getElementById('${detId}').style.display==='none'?'block':'none'">📋</button><button class="btn btn-gris btn-sm" onclick="exportarQuincenaHistorial('${q.de}','${q.ha}','${q.label}')">⬇</button></div></div><div id="${detId}" style="display:none;margin-top:10px;background:var(--crema);border-radius:10px;padding:12px;"><div style="font-size:12px;font-weight:700;color:var(--verde);margin-bottom:6px;">📅 Litros por día</div>${diasHtml}${novsHtml}</div></div>`;
+    }else{
+      return`<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--gris1);"><div><div style="font-weight:600;font-size:14px;">${q.label}</div><div style="font-size:12px;color:var(--gris2);margin-top:2px;">⏳ Pendiente</div></div><button class="btn btn-gris btn-sm" onclick="exportarQuincenaHistorial('${q.de}','${q.ha}','${q.label}')">⬇ Exportar</button></div>`;
+    }
+  }).join('');
 }
 
 function nombreMes(m){return['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'][m];}
@@ -1753,7 +1790,7 @@ async function cargarEliminaciones(){
   }catch(e){cont.innerHTML='<div class="alerta alerta-rojo">Error al cargar eliminaciones</div>';console.error(e);}
 }window.cargarEliminaciones=cargarEliminaciones;
 
-function exportarLiqMatriz(de,ha,precio){
+async function exportarLiqMatriz(de,ha,precio){
   if(!datosRep.length)return;
   const fechas=[...new Set(datosRep.map(d=>d.fecha))].sort();
   const ganMap={};const ganRec={};datosRep.forEach(d=>{if(!ganMap[d.ganaderoId])ganMap[d.ganaderoId]=d.ganaderoNombre;if(!ganRec[d.ganaderoId])ganRec[d.ganaderoId]=new Set();ganRec[d.ganaderoId].add(d.recogedorNombre);});
@@ -1766,6 +1803,11 @@ function exportarLiqMatriz(de,ha,precio){
   const rows=gans.map(([gid,gn])=>{const dias=fechas.map(f=>celda[gid][f]?(celda[gid][f]):'0').join(',');const recs=[...ganRec[gid]].join(' / ');return`"${gn}",${dias},${fmtL(totalColL[gid])},${(totalColL[gid]*precio).toFixed(0)},"${recs}"`;}).join('\n');
   const totRow=`TOTAL DIA,${fechas.map(f=>{let s=0;gans.forEach(([gid])=>s+=(celda[gid][f]||0));return fmtL(s);}).join(',')},${fmtL(TL)},${(TL*precio).toFixed(0)},`;
   descargar(`LIQUIDACION QUINCENAL - ${de} al ${ha} - $${precio}/L\n${headers}${rows}\n${totRow}`,`liquidacion-${de}-${ha}.csv`);
+  try{
+    const litrosPorDia={};datosRep.forEach(d=>{litrosPorDia[d.fecha]=(litrosPorDia[d.fecha]||0)+(parseFloat(d.litros)||0);});
+    const novedades=datosRep.filter(d=>d.novedad&&d.novedad.trim()).map(d=>({fecha:d.fecha,ganadero:d.ganaderoNombre,recogedor:d.recogedorNombre,litros:parseFloat(d.litros)||0,novedad:d.novedad}));
+    await setDoc(doc(db,'liquidaciones',`${de}_${ha}`),{de,ha,precioPorLitro:precio,totalLitros:TL,totalPesos:TL*precio,totalGanaderos:gans.length,litrosPorDia,novedades,generadoPorId:UA.uid,generadoPorNombre:UA.nombre||UA.email,fechaGeneracion:hoy(),horaGeneracion:horaAhora(),timestamp:serverTimestamp()});
+  }catch(e){console.error('Error guardando liquidación:',e);}
 }window.exportarLiqMatriz=exportarLiqMatriz;
 // ── DETALLE COMPLETO ──
 
@@ -1860,8 +1902,8 @@ async function usuAdmin(){
         </div>
         <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
           <button class="btn btn-azul btn-sm" onclick="resetearContrasena('${x.email}')">📧 Restablecer clave</button>
-          ${x.id!==UA.uid?`<button class="btn btn-gris btn-sm" data-cambiarid="${x.id}" data-cambiarrol="${x.rol}" data-cambiarnombre="${x.nombre||x.email}" style="cursor:pointer;">🔄 Cambiar rol</button>`:''}
-          ${x.bloqueado?`<button class="btn btn-verde btn-sm" onclick="toggleBloqueo('${x.id}',false)">🔓 Desbloquear</button>`:x.id!==UA.uid?`<button class="btn btn-rojo btn-sm" onclick="toggleBloqueo('${x.id}',true)">🔒 Bloquear</button>`:''}
+          ${x.id!==UA.uid&&!SUPER_ADMINS.has(x.id)?`<button class="btn btn-gris btn-sm" data-cambiarid="${x.id}" data-cambiarrol="${x.rol}" data-cambiarnombre="${x.nombre||x.email}" style="cursor:pointer;">🔄 Cambiar rol</button>`:''}
+          ${x.bloqueado?`<button class="btn btn-verde btn-sm" onclick="toggleBloqueo('${x.id}',false)">🔓 Desbloquear</button>`:x.id!==UA.uid&&!SUPER_ADMINS.has(x.id)?`<button class="btn btn-rojo btn-sm" onclick="toggleBloqueo('${x.id}',true)">🔒 Bloquear</button>`:''}
           ${x.rol==='recogedor'?`<button class="btn btn-sm" style="background:${x.esRutaCombinada?'#7c3aed':'transparent'};color:${x.esRutaCombinada?'white':'#7c3aed'};border:2px solid #7c3aed;" onclick="toggleRutaCombinada('${x.id}',${!!x.esRutaCombinada})">${x.esRutaCombinada?'🔗 Ruta combinada':'🔗 Marcar ruta combinada'}</button>`:''}
         </div>
       </div>`).join('');
