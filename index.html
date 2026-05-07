@@ -135,6 +135,7 @@
       <button class="btn btn-verde2" style="font-size:17px;padding:20px;" onclick="irPantalla('screen-rec-buscar')">➕ REGISTRAR</button>
       <button class="btn btn-amarillo" style="font-size:17px;padding:20px;" onclick="abrirModalNuevoGanaderoRec()">🐄 NUEVO GANADERO</button>
     </div>
+    <button class="btn" style="width:100%;font-size:17px;padding:18px;margin-bottom:16px;background:#1D4ED8;color:white;border:none;border-radius:14px;font-weight:700;cursor:pointer;" onclick="abrirModalCombustible()">⛽ REGISTRAR COMBUSTIBLE</button>
     <div style="margin-bottom:12px;font-size:16px;font-weight:700;color:var(--gris3);">Mis registros de hoy</div>
     <div id="rec-lista-hoy"><div class="loading">Cargando...</div></div>
   </div>
@@ -508,12 +509,6 @@
     <button class="btn btn-verde btn-sm" onclick="abrirModalInter()" style="margin-bottom:12px;">+ Nuevo intermediario</button>
     <div class="alerta alerta-rojo" id="inter-error2"></div>
     <div id="lista-intermediarios2"><div class="loading">Cargando...</div></div>
-    <div style="margin-top:28px;padding:20px;background:var(--crema);border:2px solid var(--verde2);border-radius:16px;">
-      <div style="font-size:16px;font-weight:700;color:var(--gris3);margin-bottom:8px;">📅 Modo Carga Histórica</div>
-      <div style="font-size:14px;color:var(--gris2);margin-bottom:12px;">Permite a los recogedores registrar días anteriores del mes actual. Actívalo para cargar datos pasados y desactívalo cuando termines.</div>
-      <div id="modo-historico-estado" style="font-size:15px;font-weight:700;margin-bottom:12px;"></div>
-      <button id="btn-modo-historico" class="btn btn-verde" onclick="toggleModoHistorico()">Cargando...</button>
-    </div>
   </div>
 </div>
 
@@ -707,6 +702,20 @@
     <div class="fila" style="margin-top:8px;">
       <button class="btn btn-gris" onclick="cerrarModal('modal-usuario')">Cancelar</button>
       <button class="btn btn-verde" onclick="crearUsuario()">Crear</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-combustible">
+  <div class="modal">
+    <div class="modal-titulo">⛽ Registrar Combustible</div>
+    <div class="alerta alerta-rojo" id="m-comb-error"></div>
+    <div class="alerta alerta-verde" id="m-comb-ok"></div>
+    <div class="campo"><label>Valor pagado ($) *</label><input type="number" id="m-comb-valor" placeholder="Ej: 50000" inputmode="numeric"></div>
+    <div class="campo"><label>Galones *</label><input type="number" id="m-comb-galones" placeholder="Ej: 25.3" step="0.1" inputmode="decimal"></div>
+    <div class="fila" style="margin-top:8px;">
+      <button class="btn btn-gris" onclick="cerrarModal('modal-combustible')">Cancelar</button>
+      <button class="btn" style="background:#1D4ED8;color:white;" onclick="guardarCombustible()">Guardar</button>
     </div>
   </div>
 </div>
@@ -917,6 +926,21 @@ function seleccionarSugerencia(id){
   cerrarModal('modal-ganadero-rec');
   alert(`"${g.nombre}" ya está registrado. Si necesitas registrar leche de este ganadero, búscalo en la lista principal.`);
 }window.seleccionarSugerencia=seleccionarSugerencia;
+
+function abrirModalCombustible(){document.getElementById('m-comb-valor').value='';document.getElementById('m-comb-galones').value='';document.getElementById('m-comb-error').textContent='';document.getElementById('m-comb-ok').textContent='';document.getElementById('modal-combustible').classList.add('show');}window.abrirModalCombustible=abrirModalCombustible;
+async function guardarCombustible(){
+  const valor=parseFloat(document.getElementById('m-comb-valor').value);
+  const galones=parseFloat(document.getElementById('m-comb-galones').value);
+  if(!valor||valor<=0){alerta('m-comb-error','El valor es obligatorio','rojo');return;}
+  if(!galones||galones<=0){alerta('m-comb-error','Los galones son obligatorios','rojo');return;}
+  if(!navigator.onLine){alerta('m-comb-error','Sin conexión a internet','rojo');return;}
+  const fecha=hoy();const hora=horaAhora();const docId=UA.uid+'_'+fecha;
+  try{
+    await setDoc(doc(db,'combustible',docId),{recogedorId:UA.uid,recogedorNombre:UA.displayName||'',fecha,hora,valor,galones,timestamp:serverTimestamp()});
+    alerta('m-comb-ok','✅ Combustible registrado','verde');
+    setTimeout(()=>cerrarModal('modal-combustible'),1200);
+  }catch(e){alerta('m-comb-error','Error al guardar','rojo');}
+}window.guardarCombustible=guardarCombustible;
 
 async function guardarGanaderoRecogedor(){const n=document.getElementById('m-gan-rec-nombre').value.trim();const t=document.getElementById('m-gan-rec-tel').value.trim();const v=document.getElementById('m-gan-rec-vereda').value.trim();if(!n){alerta('m-gan-rec-error','El nombre es obligatorio','rojo');return;}
   // Validar duplicado
@@ -1927,13 +1951,15 @@ async function cargarProduccionHoy(){
     if(tandas.length===0&&!cierre){el.innerHTML='<div style="font-size:13px;color:var(--gris2);">Sin producción registrada hoy</div>';return;}
     const totalLitros=tandas.reduce((s,t)=>s+(parseFloat(t.litros)||0),0);
     const totalBloques=tandas.reduce((s,t)=>s+(parseInt(t.bloques2500)||0)+(parseInt(t.bloques1000)||0)+(parseInt(t.bloques500)||0),0);
+    const promedioTotal=totalBloques>0?((totalLitros/totalBloques)/5).toFixed(2):'—';
     const cuajador=tandas.length>0?tandas[0].cuajadorNombre:'—';
     const estado=cierre?'✅ Día cerrado':'⏳ En proceso';
     const estadoColor=cierre?'#15803d':'#D97706';
-    let html=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;margin-bottom:10px;">
+    let html=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;text-align:center;margin-bottom:10px;">
       <div><div style="font-size:10px;color:var(--gris2);font-weight:600;">TANDAS</div><div style="font-size:20px;font-weight:800;">${tandas.length}</div></div>
       <div><div style="font-size:10px;color:var(--gris2);font-weight:600;">LITROS</div><div style="font-size:20px;font-weight:800;">${fmtL(totalLitros)}</div></div>
       <div><div style="font-size:10px;color:var(--gris2);font-weight:600;">BLOQUES</div><div style="font-size:20px;font-weight:800;">${totalBloques}</div></div>
+      <div><div style="font-size:10px;color:var(--gris2);font-weight:600;">PROMEDIO</div><div style="font-size:20px;font-weight:800;">${promedioTotal}</div></div>
     </div>`;
     html+=`<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span>Cuajador: <strong>${cuajador}</strong></span><span style="color:${estadoColor};font-weight:700;">${estado}</span></div>`;
     if(cierre&&cierre.camposEditados&&cierre.camposEditados.length>0){html+=`<div style="background:#FEF3C7;padding:8px;border-radius:8px;font-size:12px;color:#92400E;margin-top:6px;">⚠️ Campos editados: ${cierre.camposEditados.join(', ')} — Motivo: "${cierre.motivoEdicion||'—'}"</div>`;}
@@ -2540,17 +2566,19 @@ async function usuAdmin(){
   try{
     const s=await getDocs(query(collection(db,'usuarios'),orderBy('nombre')));
     const u=[];s.forEach(d=>u.push({id:d.id,...d.data()}));
+    const _rolOrden={recogedor:0,recibidor:1,cuajador:2,admin:3};
+    u.sort((a,b)=>(_rolOrden[a.rol]??99)-(_rolOrden[b.rol]??99)||(a.nombre||'').localeCompare(b.nombre||''));
     const badgeRol=r=>r==='admin'?'badge-azul':r==='recibidor'?'badge-naranja':r==='cuajador'?'badge-verde':'badge-verde';
     document.getElementById('lista-usuarios').innerHTML=u.map(x=>`
       <div class="usr-card ${x.bloqueado?'bloqueado':''}">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-          <div><div style="font-size:17px;font-weight:700;">${x.nombre||'Sin nombre'} ${x.bloqueado?'🔒':''}</div><div style="font-size:13px;color:var(--gris2);margin-top:2px;">${x.email}</div></div>
+          <div><div style="font-size:17px;font-weight:700;">${x.nombre||'Sin nombre'} ${x.bloqueado?'🔒':''} <button onclick="editarNombreUsuario('${x.id}','${(x.nombre||'').replace(/'/g,"\\'")}')" style="background:var(--gris1);border:none;border-radius:8px;padding:4px 8px;cursor:pointer;font-size:14px;vertical-align:middle;">✏️</button></div><div style="font-size:13px;color:var(--gris2);margin-top:2px;">${x.email}</div></div>
           <span class="badge ${badgeRol(x.rol)}">${x.rol}</span>
         </div>
         <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
           <button class="btn btn-azul btn-sm" onclick="resetearContrasena('${x.email}')">📧 Restablecer clave</button>
-          ${x.id!==UA.uid&&!SUPER_ADMINS.has(x.id)?`<button class="btn btn-gris btn-sm" data-cambiarid="${x.id}" data-cambiarrol="${x.rol}" data-cambiarnombre="${x.nombre||x.email}" style="cursor:pointer;">🔄 Cambiar rol</button>`:''}
-          ${x.bloqueado?`<button class="btn btn-verde btn-sm" onclick="toggleBloqueo('${x.id}',false)">🔓 Desbloquear</button>`:x.id!==UA.uid&&!SUPER_ADMINS.has(x.id)?`<button class="btn btn-rojo btn-sm" onclick="toggleBloqueo('${x.id}',true)">🔒 Bloquear</button>`:''}
+          ${x.id!==UA.uid&&!SUPER_ADMINS.has(x.id)&&x.rol!=='admin'?`<button class="btn btn-gris btn-sm" data-cambiarid="${x.id}" data-cambiarrol="${x.rol}" data-cambiarnombre="${x.nombre||x.email}" style="cursor:pointer;">🔄 Cambiar rol</button>`:''}
+          ${x.rol==='admin'?'':(x.bloqueado?`<button class="btn btn-verde btn-sm" onclick="toggleBloqueo('${x.id}',false)">🔓 Desbloquear</button>`:x.id!==UA.uid&&!SUPER_ADMINS.has(x.id)?`<button class="btn btn-rojo btn-sm" onclick="toggleBloqueo('${x.id}',true)">🔒 Bloquear</button>`:'')}
           ${x.rol==='recogedor'?`<button class="btn btn-sm" style="background:${x.esRutaCombinada?'#7c3aed':'transparent'};color:${x.esRutaCombinada?'white':'#7c3aed'};border:2px solid #7c3aed;" onclick="toggleRutaCombinada('${x.id}',${!!x.esRutaCombinada})">${x.esRutaCombinada?'🔗 Ruta combinada':'🔗 Marcar ruta combinada'}</button>`:''}
           ${x.rol!=='admin'?`<button class="btn btn-sm" style="background:${x.modoHistorico?'#D97706':'transparent'};color:${x.modoHistorico?'white':'#D97706'};border:2px solid #D97706;" onclick="toggleModoHistoricoUsuario('${x.id}',${!!x.modoHistorico})">📅 ${x.modoHistorico?'Histórico ON':'Histórico'}</button>`:''}
         </div>
@@ -2583,6 +2611,7 @@ async function cambiarRol(uid,rolActual,nombre){
 }window.cambiarRol=cambiarRol;
 
 async function toggleBloqueo(uid,bloquear){try{await updateDoc(doc(db,'usuarios',uid),{bloqueado:bloquear});alerta('usr-ok',bloquear?'🔒 Usuario bloqueado':'🔓 Usuario desbloqueado','verde');await usuAdmin();}catch(e){alerta('usr-error','Error al actualizar','rojo');}}window.toggleBloqueo=toggleBloqueo;
+async function editarNombreUsuario(uid,nombreActual){const nuevo=prompt('Nuevo nombre:',nombreActual);if(!nuevo||!nuevo.trim()||nuevo.trim()===nombreActual)return;try{await updateDoc(doc(db,'usuarios',uid),{nombre:nuevo.trim()});alerta('usr-ok',`✅ Nombre actualizado a "${nuevo.trim()}"`,'verde');await usuAdmin();}catch(e){alerta('usr-error','Error al actualizar nombre','rojo');}}window.editarNombreUsuario=editarNombreUsuario;
 async function toggleModoHistoricoUsuario(uid,actual){try{await updateDoc(doc(db,'usuarios',uid),{modoHistorico:!actual});alerta('usr-ok',!actual?'📅 Modo histórico activado':'📅 Modo histórico desactivado','verde');await usuAdmin();}catch(e){alerta('usr-error','Error al actualizar','rojo');}}window.toggleModoHistoricoUsuario=toggleModoHistoricoUsuario;
 async function toggleRutaCombinada(uid,actual){
   try{
