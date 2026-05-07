@@ -1256,18 +1256,19 @@ async function cargarTandasHoy(){
     if(tandas.length===0){el.innerHTML='<div class="vacio"><div class="ico">🧀</div><p>Sin tandas registradas</p></div>';return;}
     el.innerHTML=tandas.map(t=>{
       const nov=t.novedad?'⚠️ ':'';const rep=t.reproceso?'🔄 ':'';
-      return`<div class="lista-item" style="position:relative;" onclick="editarTanda('${t.id}')"><div><div class="nombre">#${t.numero} · ${t.proveedorNombre}</div><div class="detalle">${rep}${nov}${fmtL(t.litros)}L · ${(t.bloques2500||0)+(t.bloques1000||0)+(t.bloques500||0)} bloques · ${t.hora||''}</div></div><div style="display:flex;align-items:center;gap:8px;"><button onclick="event.stopPropagation();eliminarTanda('${t.id}','${t.numero}','${(t.proveedorNombre||'').replace(/'/g,"\\'")}')" style="background:none;border:none;font-size:18px;cursor:pointer;padding:4px;">🗑️</button><span class="flecha">›</span></div></div>`;
+      return`<div class="lista-item" style="position:relative;" onclick="editarTanda('${t.id}')"><div><div class="nombre">#${t.numero} · ${t.proveedorNombre}</div><div class="detalle">${rep}${nov}${fmtL(t.litros)}L · ${(t.bloques2500||0)+(t.bloques1000||0)+(t.bloques500||0)} bloques · ${t.hora||''}</div></div><div style="display:flex;align-items:center;gap:8px;"><button onclick="event.stopPropagation();eliminarTanda('${t.id}')" style="background:#FEE2E2;border:1.5px solid #DC2626;border-radius:8px;font-size:16px;cursor:pointer;padding:6px 10px;color:#DC2626;">🗑️</button><span class="flecha">›</span></div></div>`;
     }).join('');
   }catch(e){console.error(e);el.innerHTML='<div class="vacio"><p>Error al cargar</p></div>';}
 }
 
-async function eliminarTanda(tandaId,numero,provNombre){
-  const motivo=prompt(`¿Por qué eliminas la tanda #${numero} (${provNombre})?\n\nEscribe el motivo:`);
-  if(!motivo||!motivo.trim())return;
+async function eliminarTanda(tandaId){
   try{
     const tandaDoc=await getDoc(doc(db,'tandas',tandaId));
-    const data=tandaDoc.exists()?tandaDoc.data():{};
-    await addDoc(collection(db,'eliminaciones'),{tipo:'tanda',registroId:tandaId,proveedorId:data.proveedorId||'',proveedorNombre:data.proveedorNombre||provNombre,litros:data.litros||0,hora:data.hora||'',fecha:data.fecha||'',cuajadorId:UA.uid,cuajadorNombre:UA.nombre||UA.email,motivo:motivo.trim(),eliminadoEn:hoy(),eliminadoHora:horaAhora(),eliminadoPorId:UA.uid,eliminadoPorNombre:UA.nombre||UA.email,eliminadoPorRol:'cuajador'});
+    if(!tandaDoc.exists()){alert('Tanda no encontrada');return;}
+    const data=tandaDoc.data();
+    const motivo=prompt(`¿Por qué eliminas la tanda #${data.numero} (${data.proveedorNombre})?\n\nEscribe el motivo:`);
+    if(!motivo||!motivo.trim())return;
+    await addDoc(collection(db,'eliminaciones'),{tipo:'tanda',registroId:tandaId,proveedorId:data.proveedorId||'',proveedorNombre:data.proveedorNombre||'',litros:data.litros||0,hora:data.hora||'',fecha:data.fecha||'',cuajadorId:UA.uid,cuajadorNombre:UA.nombre||UA.email,motivo:motivo.trim(),eliminadoEn:hoy(),eliminadoHora:horaAhora(),eliminadoPorId:UA.uid,eliminadoPorNombre:UA.nombre||UA.email,eliminadoPorRol:'cuajador'});
     await deleteDoc(doc(db,'tandas',tandaId));
     cargarTandasHoy();cargarResumenCuajadorSemanal();
   }catch(e){console.error(e);alert('Error al eliminar');}
@@ -1379,7 +1380,7 @@ async function guardarTanda(){
   const cuajo=parseFloat(document.getElementById('ct-cuajo').value);
   const acidez=parseFloat(document.getElementById('ct-acidez').value);
   const citrato=parseFloat(document.getElementById('ct-citrato').value)||0;
-  if(!litros||!cuajo||isNaN(acidez)){document.getElementById('ct-error').textContent='⚠️ Completa Litros, Cuajo y Acidez';document.getElementById('ct-error').style.display='block';return;}
+  if(isNaN(acidez)||acidez===null||acidez===undefined||document.getElementById('ct-acidez').value===''){document.getElementById('ct-error').textContent='⚠️ Completa la Acidez';document.getElementById('ct-error').style.display='block';return;}
   const bloques2500=parseInt(document.getElementById('ct-bloques2500').value)||0;
   const bloques1000=parseInt(document.getElementById('ct-bloques1000').value)||0;
   const bloques500=parseInt(document.getElementById('ct-bloques500').value)||0;
@@ -1438,8 +1439,18 @@ async function abrirCierreDia(){
   const snap=await getDocs(query(collection(db,'tandas'),where('fecha','==',fecha)));
   const tandas=[];snap.forEach(d=>{if(d.data().cuajadorId===UA.uid)tandas.push({id:d.id,...d.data()});});
   if(tandas.length===0){alertaEl.innerHTML='<div style="background:#FEE2E2;padding:12px;border-radius:10px;color:#DC2626;font-weight:600;">⚠️ No hay tandas registradas. Registra al menos una tanda antes de cerrar el día.</div>';ir('screen-cuajador-cierre');return;}
-  const incompletas=tandas.filter(t=>!t.litros||!t.cuajo||isNaN(t.acidez));
-  if(incompletas.length>0){alertaEl.innerHTML=incompletas.map(t=>`<div style="background:#FEE2E2;padding:10px;border-radius:10px;color:#DC2626;font-size:13px;margin-bottom:6px;">⚠️ Tanda #${t.numero} (${t.proveedorNombre}) tiene campos sin completar — <a href="#" onclick="editarTanda('${t.id}');return false;" style="color:#DC2626;font-weight:700;">Completar</a></div>`).join('');ir('screen-cuajador-cierre');return;}
+  const incompletas=[];
+  tandas.forEach(t=>{
+    const faltan=[];
+    if(!t.litros)faltan.push('Litros');
+    if(!t.cuajo)faltan.push('Cuajo');
+    if(isNaN(t.acidez)||t.acidez===undefined||t.acidez===null)faltan.push('Acidez');
+    if(!t.citrato)faltan.push('Citrato');
+    if(!t.bloques2500&&!t.bloques1000&&!t.bloques500)faltan.push('Bloques');
+    if(t.reproceso&&!t.reprocCant)faltan.push('Cantidad reproceso');
+    if(faltan.length>0)incompletas.push({...t,faltan});
+  });
+  if(incompletas.length>0){alertaEl.innerHTML=incompletas.map(t=>`<div style="background:#FEE2E2;padding:10px;border-radius:10px;color:#DC2626;font-size:13px;margin-bottom:6px;">⚠️ Tanda #${t.numero} (${t.proveedorNombre}): falta <strong>${t.faltan.join(', ')}</strong> — <a href="#" onclick="editarTanda('${t.id}');return false;" style="color:#DC2626;font-weight:700;">Completar</a></div>`).join('');ir('screen-cuajador-cierre');return;}
   alertaEl.innerHTML='<div style="background:#DCFCE7;padding:10px;border-radius:10px;color:#15803d;font-size:13px;">✅ Todas las tandas están completas ('+tandas.length+' tandas)</div>';
   // Auto-calculate fields
   const lecheProc=tandas.reduce((s,t)=>s+(parseFloat(t.litros)||0),0);
