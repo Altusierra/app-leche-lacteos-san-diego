@@ -2073,7 +2073,7 @@ function matchInicio(nombre,busqueda){if(!busqueda)return true;const palabras=no
 function mostrarSugerenciasNombre(inputId,contId,lista,emoji){
   const val=document.getElementById(inputId)?.value.trim()||'';
   const cont=document.getElementById(contId);if(!cont)return;
-  if(val.length<2){cont.style.display='none';return;}
+  if(val.length<1){cont.style.display='none';return;}
   const similares=lista.filter(item=>matchInicio(item.nombre,val)).slice(0,5);
   if(similares.length===0){cont.style.display='none';return;}
   cont.style.display='block';
