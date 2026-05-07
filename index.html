@@ -320,10 +320,9 @@
     </div>
     <div id="ct-reproceso-campos" style="display:none;margin-bottom:12px;">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-        <div><label style="font-size:12px;font-weight:600;">Reproceso 1</label><input type="number" id="ct-reproc1" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
-        <div><label style="font-size:12px;font-weight:600;">Reproceso 2</label><select id="ct-reproc2Tipo" style="width:100%;padding:8px;border:1.5px solid var(--gris1);border-radius:10px;font-size:13px;box-sizing:border-box;margin-top:4px;font-weight:600;"><option value="bloques">Bloques</option><option value="litros">Litros</option></select><input type="number" id="ct-reproc2" placeholder="Cantidad" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
+        <div><label style="font-size:12px;font-weight:600;">Tipo</label><select id="ct-reprocTipo" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;font-weight:600;"><option value="bloques">Bloques</option><option value="litros">Litros</option></select></div>
+        <div><label style="font-size:12px;font-weight:600;">Cantidad</label><input type="number" id="ct-reprocCant" placeholder="Cantidad" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
       </div>
-      <div style="font-size:11px;color:var(--gris2);margin-top:4px;">Al menos uno obligatorio</div>
     </div>
     <div style="margin-bottom:16px;"><label style="font-size:13px;font-weight:600;">Novedad (opcional)</label><textarea id="ct-novedad" placeholder="Ej: Daño sin sal..." rows="2" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;resize:none;"></textarea></div>
     <div id="ct-error" style="display:none;color:#DC2626;font-size:13px;margin-bottom:8px;"></div>
@@ -1346,8 +1345,8 @@ async function continuarATanda(){
   document.getElementById('cuajador-prov-nombre').textContent=_cuajadorProvsSeleccionados.map(s=>`${s.nombre} (${s.tipo})`).join(' + ');
   // Compat: set single provider vars from first selected
   _cuajadorProvId=_cuajadorProvsSeleccionados[0].id;_cuajadorProvNombre=_cuajadorProvsSeleccionados[0].nombre;_cuajadorProvTipo=_cuajadorProvsSeleccionados[0].tipo;
-  ['ct-litros','ct-cuajo','ct-acidez','ct-acidezLeche','ct-citrato','ct-bloques2500','ct-bloques1000','ct-bloques500','ct-novedad','ct-reproc1','ct-reproc2'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
-  const selR2=document.getElementById('ct-reproc2Tipo');if(selR2)selR2.value='bloques';
+  ['ct-litros','ct-cuajo','ct-acidez','ct-acidezLeche','ct-citrato','ct-bloques2500','ct-bloques1000','ct-bloques500','ct-novedad','ct-reprocCant'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  const selRT=document.getElementById('ct-reprocTipo');if(selRT)selRT.value='bloques';
   _cuajadorReproceso=false;document.getElementById('ct-reproceso-btn').textContent='NO';document.getElementById('ct-reproceso-btn').style.background='white';document.getElementById('ct-reproceso-btn').style.color='var(--gris3)';
   const repCampos=document.getElementById('ct-reproceso-campos');if(repCampos)repCampos.style.display='none';
   document.getElementById('ct-error').style.display='none';
@@ -1371,7 +1370,7 @@ async function selProveedorCuajador(id,nombre,tipo){
   document.getElementById('ct-lote-num').textContent=`#${num+1}`;
   document.getElementById('cuajador-prov-nombre').textContent=`${nombre} (${tipo})`;
   // Clear form
-  ['ct-litros','ct-cuajo','ct-acidez','ct-citrato','ct-bloques2500','ct-bloques1000','ct-bloques500','ct-novedad','ct-reproc1','ct-reproc2'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  ['ct-litros','ct-cuajo','ct-acidez','ct-citrato','ct-bloques2500','ct-bloques1000','ct-bloques500','ct-novedad','ct-reprocCant'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   _cuajadorReproceso=false;document.getElementById('ct-reproceso-btn').textContent='NO';document.getElementById('ct-reproceso-btn').style.background='white';document.getElementById('ct-reproceso-btn').style.color='var(--gris3)';
   const repCampos=document.getElementById('ct-reproceso-campos');if(repCampos)repCampos.style.display='none';
   document.getElementById('ct-error').style.display='none';
@@ -1386,7 +1385,7 @@ function toggleReproceso(){
   b.style.color=_cuajadorReproceso?'white':'var(--gris3)';
   const campos=document.getElementById('ct-reproceso-campos');
   if(campos)campos.style.display=_cuajadorReproceso?'block':'none';
-  if(!_cuajadorReproceso){const r1=document.getElementById('ct-reproc1');const r2=document.getElementById('ct-reproc2');if(r1)r1.value='';if(r2)r2.value='';}
+  if(!_cuajadorReproceso){const rc=document.getElementById('ct-reprocCant');if(rc)rc.value='';}
 }window.toggleReproceso=toggleReproceso;
 
 async function guardarTanda(){
@@ -1401,10 +1400,9 @@ async function guardarTanda(){
   const bloques1000=parseInt(document.getElementById('ct-bloques1000').value)||0;
   const bloques500=parseInt(document.getElementById('ct-bloques500').value)||0;
   if(!bloques2500&&!bloques1000&&!bloques500){document.getElementById('ct-error').textContent='⚠️ Ingresa al menos un tipo de bloque';document.getElementById('ct-error').style.display='block';return;}
-  const reproc1=parseFloat(document.getElementById('ct-reproc1')?.value)||0;
-  const reproc2=parseFloat(document.getElementById('ct-reproc2')?.value)||0;
-  const reproc2Tipo=(document.getElementById('ct-reproc2Tipo')?.value)||'bloques';
-  if(_cuajadorReproceso&&!reproc1&&!reproc2){document.getElementById('ct-error').textContent='⚠️ Reproceso activo: llena al menos Reproceso 1 o Reproceso 2';document.getElementById('ct-error').style.display='block';return;}
+  const reprocTipo=(document.getElementById('ct-reprocTipo')?.value)||'bloques';
+  const reprocCant=parseFloat(document.getElementById('ct-reprocCant')?.value)||0;
+  if(_cuajadorReproceso&&!reprocCant){document.getElementById('ct-error').textContent='⚠️ Reproceso activo: ingresa la cantidad';document.getElementById('ct-error').style.display='block';return;}
   const fecha=getFechaRegCuajador();
   const novedad=(document.getElementById('ct-novedad').value||'').trim();
   const proveedores=_cuajadorProvsSeleccionados.length>0?_cuajadorProvsSeleccionados.map(s=>({id:s.id,nombre:s.nombre,tipo:s.tipo})):[{id:_cuajadorProvId,nombre:_cuajadorProvNombre,tipo:_cuajadorProvTipo}];
@@ -1419,7 +1417,7 @@ async function guardarTanda(){
       numero=1;snap.forEach(d=>{if(d.data().cuajadorId===UA.uid)numero++;});
       tandaId=`${UA.uid}_${fecha}_${String(numero).padStart(2,'0')}`;
     }
-    await setDoc(doc(db,'tandas',tandaId),{cuajadorId:UA.uid,cuajadorNombre:UA.nombre||UA.email,fecha,hora:horaAhora(),numero,proveedorId:proveedores[0].id,proveedorNombre:proveedores.map(p=>p.nombre).join(' + '),proveedorTipo:proveedores[0].tipo,proveedores,litros,cuajo,acidez,acidezLeche,citrato,bloques2500,bloques1000,bloques500,reproceso:_cuajadorReproceso,reproc1,reproc2,reproc2Tipo,novedad,timestamp:serverTimestamp()});
+    await setDoc(doc(db,'tandas',tandaId),{cuajadorId:UA.uid,cuajadorNombre:UA.nombre||UA.email,fecha,hora:horaAhora(),numero,proveedorId:proveedores[0].id,proveedorNombre:proveedores.map(p=>p.nombre).join(' + '),proveedorTipo:proveedores[0].tipo,proveedores,litros,cuajo,acidez,acidezLeche,citrato,bloques2500,bloques1000,bloques500,reproceso:_cuajadorReproceso,reprocTipo,reprocCant,novedad,timestamp:serverTimestamp()});
     ir('screen-cuajador-home');cargarTandasHoy();cargarResumenCuajadorSemanal();
   }catch(e){console.error(e);document.getElementById('ct-error').textContent='❌ Error al guardar';document.getElementById('ct-error').style.display='block';}
 }window.guardarTanda=guardarTanda;
@@ -1444,9 +1442,8 @@ async function editarTanda(tandaId){
     _cuajadorReproceso=t.reproceso||false;
     const b=document.getElementById('ct-reproceso-btn');b.textContent=_cuajadorReproceso?'SÍ':'NO';b.style.background=_cuajadorReproceso?'var(--verde)':'white';b.style.color=_cuajadorReproceso?'white':'var(--gris3)';
     const repCampos=document.getElementById('ct-reproceso-campos');if(repCampos)repCampos.style.display=_cuajadorReproceso?'block':'none';
-    const r1El=document.getElementById('ct-reproc1');if(r1El)r1El.value=t.reproc1||'';
-    const r2El=document.getElementById('ct-reproc2');if(r2El)r2El.value=t.reproc2||'';
-    const r2Tipo=document.getElementById('ct-reproc2Tipo');if(r2Tipo)r2Tipo.value=t.reproc2Tipo||'bloques';
+    const rcEl=document.getElementById('ct-reprocCant');if(rcEl)rcEl.value=t.reprocCant||'';
+    const rtEl=document.getElementById('ct-reprocTipo');if(rtEl)rtEl.value=t.reprocTipo||'bloques';
     document.getElementById('ct-error').style.display='none';
     ir('screen-cuajador-tanda');
   }catch(e){console.error(e);}
