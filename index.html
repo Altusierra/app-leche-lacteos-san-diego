@@ -1256,7 +1256,7 @@ async function cargarTandasHoy(){
     if(tandas.length===0){el.innerHTML='<div class="vacio"><div class="ico">🧀</div><p>Sin tandas registradas</p></div>';return;}
     el.innerHTML=tandas.map(t=>{
       const nov=t.novedad?'⚠️ ':'';const rep=t.reproceso?'🔄 ':'';
-      return`<div class="lista-item" style="position:relative;" onclick="editarTanda('${t.id}')"><div><div class="nombre">#${t.numero} · ${t.proveedorNombre}</div><div class="detalle">${rep}${nov}${fmtL(t.litros)}L · ${(t.bloques2500||0)+(t.bloques1000||0)+(t.bloques500||0)} bloques · ${t.hora||''}</div></div><div style="display:flex;align-items:center;gap:8px;"><button onclick="event.stopPropagation();eliminarTanda('${t.id}')" style="background:#FEE2E2;border:1.5px solid #DC2626;border-radius:8px;font-size:16px;cursor:pointer;padding:6px 10px;color:#DC2626;">🗑️</button><span class="flecha">›</span></div></div>`;
+      return`<div class="lista-item" style="position:relative;flex-direction:column;align-items:stretch;" onclick="editarTanda('${t.id}')"><div style="display:flex;justify-content:space-between;align-items:center;"><div><div class="nombre">#${t.numero} · ${t.proveedorNombre}</div><div class="detalle">${rep}${nov}${fmtL(t.litros)}L · ${(t.bloques2500||0)+(t.bloques1000||0)+(t.bloques500||0)} bloques · ${t.hora||''}</div></div><span class="flecha">›</span></div><button onclick="event.stopPropagation();eliminarTanda('${t.id}')" style="background:var(--rojo2);color:var(--rojo);border:1px solid var(--rojo);border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;width:100%;text-align:center;margin-top:8px;">🗑️ Eliminar esta tanda</button></div>`;
     }).join('');
   }catch(e){console.error(e);el.innerHTML='<div class="vacio"><p>Error al cargar</p></div>';}
 }
