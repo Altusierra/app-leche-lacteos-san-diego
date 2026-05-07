@@ -285,9 +285,11 @@
     <h1 style="font-size:20px;">Nueva Tanda</h1><div></div>
   </div>
   <div style="padding:20px;">
-    <div style="font-weight:700;font-size:16px;margin-bottom:12px;">Selecciona el proveedor:</div>
+    <div style="font-weight:700;font-size:16px;margin-bottom:4px;">Selecciona proveedores (1-3):</div>
+    <div id="ct-provs-seleccionados" style="font-size:13px;color:var(--verde);font-weight:600;margin-bottom:12px;">0 seleccionados</div>
     <input type="text" id="cuajador-buscar-prov" placeholder="🔍 Buscar proveedor..." oninput="filtrarProveedoresCuajador()" style="width:100%;padding:10px 12px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-bottom:12px;">
     <div id="cuajador-lista-proveedores"></div>
+    <button id="btn-continuar-tanda" class="btn btn-verde" style="margin-top:16px;display:none;" onclick="continuarATanda()">Continuar →</button>
   </div>
 </div>
 
@@ -300,9 +302,10 @@
     <div id="cuajador-prov-nombre" style="font-size:16px;font-weight:700;color:var(--verde);margin-bottom:16px;"></div>
     <div id="ct-lote-auto" style="background:var(--verde3);border:2px solid var(--verde);border-radius:12px;padding:12px;margin-bottom:16px;text-align:center;"><span style="font-size:13px;color:var(--verde);font-weight:700;">LOTE DEL DÍA:</span> <span id="ct-lote-num" style="font-size:22px;font-weight:800;color:var(--verde);">#1</span></div>
     <div style="margin-bottom:12px;"><label style="font-size:13px;font-weight:600;">Litros</label><input type="number" id="ct-litros" placeholder="800" style="width:100%;padding:12px;border:1.5px solid var(--gris1);border-radius:10px;font-size:18px;font-weight:700;box-sizing:border-box;margin-top:4px;"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
       <div><label style="font-size:12px;font-weight:600;">Cuajo</label><input type="number" id="ct-cuajo" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
       <div><label style="font-size:12px;font-weight:600;">Acidez</label><input type="number" id="ct-acidez" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
+      <div><label style="font-size:12px;font-weight:600;">Acidez leche</label><input type="number" id="ct-acidezLeche" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
       <div><label style="font-size:12px;font-weight:600;">Citrato</label><input type="number" id="ct-citrato" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
     </div>
     <div style="font-weight:700;font-size:12px;color:var(--gris2);margin-bottom:8px;">NÚMERO DE BLOQUES (al menos uno obligatorio)</div>
@@ -318,7 +321,7 @@
     <div id="ct-reproceso-campos" style="display:none;margin-bottom:12px;">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
         <div><label style="font-size:12px;font-weight:600;">Reproceso 1</label><input type="number" id="ct-reproc1" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
-        <div><label style="font-size:12px;font-weight:600;">Reproceso 2</label><input type="number" id="ct-reproc2" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
+        <div><label style="font-size:12px;font-weight:600;">Reproceso 2</label><select id="ct-reproc2Tipo" style="width:100%;padding:8px;border:1.5px solid var(--gris1);border-radius:10px;font-size:13px;box-sizing:border-box;margin-top:4px;font-weight:600;"><option value="bloques">Bloques</option><option value="litros">Litros</option></select><input type="number" id="ct-reproc2" placeholder="Cantidad" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
       </div>
       <div style="font-size:11px;color:var(--gris2);margin-top:4px;">Al menos uno obligatorio</div>
     </div>
@@ -381,12 +384,12 @@
       <div><label style="font-size:12px;font-weight:600;">Leche sobra (opcional)</label><input type="number" id="cc-lecheSobra" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-      <div><label style="font-size:12px;font-weight:600;">Canastas</label><input type="number" id="cc-canastas" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
-      <div><label style="font-size:12px;font-weight:600;">Unidades</label><input type="number" id="cc-unidades" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
       <div><label style="font-size:12px;font-weight:600;">Reproceso de cuarto frío</label><input type="number" id="cc-reprocFrio" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
       <div><label style="font-size:12px;font-weight:600;">Diferencia</label><input type="number" id="cc-difResumen" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+      <div><label style="font-size:12px;font-weight:600;">Quesos</label><input type="number" id="cc-quesos" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
+      <div><label style="font-size:12px;font-weight:600;">Reproceso del día (opcional)</label><input type="number" id="cc-reprocDiaResumen" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
     </div>
     <div style="font-weight:700;font-size:14px;color:var(--verde);margin-bottom:8px;margin-top:16px;">CUARTO FRÍO</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
@@ -1227,6 +1230,7 @@ async function cargarResumenRecibiSemanal(){
 // ══════════════════════════════════════════
 let _cuajadorReproceso=false;
 let _cuajadorProvId=null,_cuajadorProvNombre=null,_cuajadorProvTipo=null;
+let _cuajadorProvsSeleccionados=[];
 let _cuajadorEditandoId=null;
 let _cuajadorSensorial=null,_cuajadorEmpacado=null;
 let _cuajadorCamposEditados=new Set();
@@ -1295,6 +1299,7 @@ async function cargarProveedoresCuajador(){
     todosRec.filter(u=>!uidsCombCuaj.has(u.id)).forEach(u=>_cuajadorProvsList.push({id:u.id,nombre:u.nombre,tipo:'recogedor'}));
     sInter.forEach(d=>{const da=d.data();if(da.activo!==false)_cuajadorProvsList.push({id:d.id,nombre:da.nombre,tipo:'intermediario'});});
     _cuajadorProvsList.sort((a,b)=>a.nombre.localeCompare(b.nombre));
+    _cuajadorProvsSeleccionados=[];
     renderProveedoresCuajador(_cuajadorProvsList);
   }catch(e){console.error(e);}
 }
@@ -1303,9 +1308,51 @@ function renderProveedoresCuajador(lista){
   const el=document.getElementById('cuajador-lista-proveedores');if(!el)return;
   el.innerHTML=lista.length===0?'<div class="vacio"><p>No hay proveedores</p></div>':lista.map(p=>{
     const icono=p.tipo==='intermediario'?'🚚':'🐄';
-    return`<div class="lista-item" onclick="selProveedorCuajador('${p.id}','${p.nombre.replace(/'/g,"\\'")}','${p.tipo}')"><div><div class="nombre">${icono} ${p.nombre}</div><div class="detalle">${p.tipo}</div></div><span class="flecha">›</span></div>`;
+    const sel=_cuajadorProvsSeleccionados.some(s=>s.id===p.id);
+    return`<div class="lista-item" style="border-color:${sel?'var(--verde)':'transparent'};background:${sel?'var(--verde3)':'white'};" data-provid="${p.id}" data-provnombre="${p.nombre.replace(/"/g,'&quot;')}" data-provtipo="${p.tipo}"><div><div class="nombre">${sel?'✅ ':''}${icono} ${p.nombre}</div><div class="detalle">${p.tipo}</div></div></div>`;
   }).join('');
+  el.querySelectorAll('[data-provid]').forEach(el=>{el.addEventListener('click',function(){toggleProvCuajador(this.dataset.provid,this.dataset.provnombre,this.dataset.provtipo);});});
+  actualizarContadorProvs();
 }
+
+function toggleProvCuajador(id,nombre,tipo){
+  const idx=_cuajadorProvsSeleccionados.findIndex(s=>s.id===id);
+  if(idx>=0){_cuajadorProvsSeleccionados.splice(idx,1);}
+  else{
+    if(_cuajadorProvsSeleccionados.length>=3){document.getElementById('ct-provs-seleccionados').textContent='⚠️ Máximo 3 proveedores';return;}
+    _cuajadorProvsSeleccionados.push({id,nombre,tipo});
+  }
+  const t=(document.getElementById('cuajador-buscar-prov')?.value||'').toLowerCase();
+  const filtrada=t?_cuajadorProvsList.filter(p=>p.nombre.toLowerCase().includes(t)):_cuajadorProvsList;
+  renderProveedoresCuajador(filtrada);
+}window.toggleProvCuajador=toggleProvCuajador;
+
+function actualizarContadorProvs(){
+  const n=_cuajadorProvsSeleccionados.length;
+  const lbl=document.getElementById('ct-provs-seleccionados');
+  if(lbl)lbl.textContent=n===0?'0 seleccionados':`✅ ${n} seleccionado${n>1?'s':''}: ${_cuajadorProvsSeleccionados.map(s=>s.nombre).join(', ')}`;
+  const btn=document.getElementById('btn-continuar-tanda');
+  if(btn)btn.style.display=n>0?'block':'none';
+}
+
+async function continuarATanda(){
+  if(_cuajadorProvsSeleccionados.length===0)return;
+  _cuajadorEditandoId=null;_cuajadorReproceso=false;
+  const fecha=getFechaRegCuajador();
+  const snap=await getDocs(query(collection(db,'tandas'),where('fecha','==',fecha)));
+  let num=0;snap.forEach(d=>{if(d.data().cuajadorId===UA.uid)num++;});
+  document.getElementById('cuajador-tanda-header').textContent=`Tanda #${num+1}`;
+  document.getElementById('ct-lote-num').textContent=`#${num+1}`;
+  document.getElementById('cuajador-prov-nombre').textContent=_cuajadorProvsSeleccionados.map(s=>`${s.nombre} (${s.tipo})`).join(' + ');
+  // Compat: set single provider vars from first selected
+  _cuajadorProvId=_cuajadorProvsSeleccionados[0].id;_cuajadorProvNombre=_cuajadorProvsSeleccionados[0].nombre;_cuajadorProvTipo=_cuajadorProvsSeleccionados[0].tipo;
+  ['ct-litros','ct-cuajo','ct-acidez','ct-acidezLeche','ct-citrato','ct-bloques2500','ct-bloques1000','ct-bloques500','ct-novedad','ct-reproc1','ct-reproc2'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  const selR2=document.getElementById('ct-reproc2Tipo');if(selR2)selR2.value='bloques';
+  _cuajadorReproceso=false;document.getElementById('ct-reproceso-btn').textContent='NO';document.getElementById('ct-reproceso-btn').style.background='white';document.getElementById('ct-reproceso-btn').style.color='var(--gris3)';
+  const repCampos=document.getElementById('ct-reproceso-campos');if(repCampos)repCampos.style.display='none';
+  document.getElementById('ct-error').style.display='none';
+  ir('screen-cuajador-tanda');
+}window.continuarATanda=continuarATanda;
 
 function filtrarProveedoresCuajador(){
   const t=(document.getElementById('cuajador-buscar-prov')?.value||'').toLowerCase();
@@ -1347,6 +1394,7 @@ async function guardarTanda(){
   const litros=parseFloat(document.getElementById('ct-litros').value);
   const cuajo=parseFloat(document.getElementById('ct-cuajo').value);
   const acidez=parseFloat(document.getElementById('ct-acidez').value);
+  const acidezLeche=parseFloat(document.getElementById('ct-acidezLeche')?.value)||0;
   const citrato=parseFloat(document.getElementById('ct-citrato').value);
   if(!litros||!cuajo||isNaN(acidez)||isNaN(citrato)){document.getElementById('ct-error').textContent='⚠️ Completa Litros, Cuajo, Acidez y Citrato';document.getElementById('ct-error').style.display='block';return;}
   const bloques2500=parseInt(document.getElementById('ct-bloques2500').value)||0;
@@ -1355,9 +1403,11 @@ async function guardarTanda(){
   if(!bloques2500&&!bloques1000&&!bloques500){document.getElementById('ct-error').textContent='⚠️ Ingresa al menos un tipo de bloque';document.getElementById('ct-error').style.display='block';return;}
   const reproc1=parseFloat(document.getElementById('ct-reproc1')?.value)||0;
   const reproc2=parseFloat(document.getElementById('ct-reproc2')?.value)||0;
+  const reproc2Tipo=(document.getElementById('ct-reproc2Tipo')?.value)||'bloques';
   if(_cuajadorReproceso&&!reproc1&&!reproc2){document.getElementById('ct-error').textContent='⚠️ Reproceso activo: llena al menos Reproceso 1 o Reproceso 2';document.getElementById('ct-error').style.display='block';return;}
   const fecha=getFechaRegCuajador();
   const novedad=(document.getElementById('ct-novedad').value||'').trim();
+  const proveedores=_cuajadorProvsSeleccionados.length>0?_cuajadorProvsSeleccionados.map(s=>({id:s.id,nombre:s.nombre,tipo:s.tipo})):[{id:_cuajadorProvId,nombre:_cuajadorProvNombre,tipo:_cuajadorProvTipo}];
   try{
     let tandaId=_cuajadorEditandoId;
     let numero;
@@ -1369,7 +1419,7 @@ async function guardarTanda(){
       numero=1;snap.forEach(d=>{if(d.data().cuajadorId===UA.uid)numero++;});
       tandaId=`${UA.uid}_${fecha}_${String(numero).padStart(2,'0')}`;
     }
-    await setDoc(doc(db,'tandas',tandaId),{cuajadorId:UA.uid,cuajadorNombre:UA.nombre||UA.email,fecha,hora:horaAhora(),numero,proveedorId:_cuajadorProvId,proveedorNombre:_cuajadorProvNombre,proveedorTipo:_cuajadorProvTipo,litros,cuajo,acidez,citrato,bloques2500,bloques1000,bloques500,reproceso:_cuajadorReproceso,reproc1,reproc2,novedad,timestamp:serverTimestamp()});
+    await setDoc(doc(db,'tandas',tandaId),{cuajadorId:UA.uid,cuajadorNombre:UA.nombre||UA.email,fecha,hora:horaAhora(),numero,proveedorId:proveedores[0].id,proveedorNombre:proveedores.map(p=>p.nombre).join(' + '),proveedorTipo:proveedores[0].tipo,proveedores,litros,cuajo,acidez,acidezLeche,citrato,bloques2500,bloques1000,bloques500,reproceso:_cuajadorReproceso,reproc1,reproc2,reproc2Tipo,novedad,timestamp:serverTimestamp()});
     ir('screen-cuajador-home');cargarTandasHoy();cargarResumenCuajadorSemanal();
   }catch(e){console.error(e);document.getElementById('ct-error').textContent='❌ Error al guardar';document.getElementById('ct-error').style.display='block';}
 }window.guardarTanda=guardarTanda;
@@ -1379,11 +1429,13 @@ async function editarTanda(tandaId){
     const d=await getDoc(doc(db,'tandas',tandaId));if(!d.exists())return;
     const t=d.data();
     _cuajadorEditandoId=tandaId;_cuajadorProvId=t.proveedorId;_cuajadorProvNombre=t.proveedorNombre;_cuajadorProvTipo=t.proveedorTipo;
+    _cuajadorProvsSeleccionados=t.proveedores||[{id:t.proveedorId,nombre:t.proveedorNombre,tipo:t.proveedorTipo}];
     document.getElementById('cuajador-tanda-header').textContent=`Tanda #${t.numero}`;
-    document.getElementById('cuajador-prov-nombre').textContent=`${t.proveedorNombre} (${t.proveedorTipo})`;
+    document.getElementById('cuajador-prov-nombre').textContent=t.proveedorNombre;
     document.getElementById('ct-litros').value=t.litros||'';
     document.getElementById('ct-cuajo').value=t.cuajo||'';
     document.getElementById('ct-acidez').value=t.acidez||'';
+    const alEl=document.getElementById('ct-acidezLeche');if(alEl)alEl.value=t.acidezLeche||'';
     document.getElementById('ct-citrato').value=t.citrato||'';
     document.getElementById('ct-bloques2500').value=t.bloques2500||'';
     document.getElementById('ct-bloques1000').value=t.bloques1000||'';
@@ -1394,6 +1446,7 @@ async function editarTanda(tandaId){
     const repCampos=document.getElementById('ct-reproceso-campos');if(repCampos)repCampos.style.display=_cuajadorReproceso?'block':'none';
     const r1El=document.getElementById('ct-reproc1');if(r1El)r1El.value=t.reproc1||'';
     const r2El=document.getElementById('ct-reproc2');if(r2El)r2El.value=t.reproc2||'';
+    const r2Tipo=document.getElementById('ct-reproc2Tipo');if(r2Tipo)r2Tipo.value=t.reproc2Tipo||'bloques';
     document.getElementById('ct-error').style.display='none';
     ir('screen-cuajador-tanda');
   }catch(e){console.error(e);}
@@ -1422,7 +1475,7 @@ async function abrirCierreDia(){
   document.getElementById('cc-motivos-container').style.display='none';
   document.getElementById('cc-motivo-edicion').value='';
   // Clear all manual fields
-  ['cc-lote','cc-estandarizacion','cc-tempCuajo','cc-cantCuajo','cc-tiempoCoag','cc-tiempoCorte','cc-tempHilado','cc-adicionSal','cc-citratoSodio','cc-tiempoHilado','cc-tempPesado','cc-tempAlmac','cc-lechePlat','cc-lecheSobra','cc-canastas','cc-unidades','cc-reprocFrio','cc-difResumen','cc-canastasFC','cc-unidadesFC'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  ['cc-lote','cc-estandarizacion','cc-tempCuajo','cc-cantCuajo','cc-tiempoCoag','cc-tiempoCorte','cc-tempHilado','cc-adicionSal','cc-citratoSodio','cc-tiempoHilado','cc-tempPesado','cc-tempAlmac','cc-lechePlat','cc-lecheSobra','cc-reprocFrio','cc-difResumen','cc-quesos','cc-reprocDiaResumen','cc-canastasFC','cc-unidadesFC'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   _cuajadorSensorial=null;_cuajadorEmpacado=null;
   ['cc-sensorial-c','cc-sensorial-nc','cc-empacado-c','cc-empacado-nc'].forEach(id=>{const e=document.getElementById(id);if(e){e.style.background='white';e.style.color='var(--gris3)';}});
   document.getElementById('cc-error').style.display='none';
@@ -1449,10 +1502,10 @@ async function abrirCierreDia(){
       document.getElementById('cc-tempAlmac').value=c.tempAlmac||'';
       document.getElementById('cc-lechePlat').value=c.lechePlataforma||'';
       document.getElementById('cc-lecheSobra').value=c.lecheSobra||'';
-      document.getElementById('cc-canastas').value=c.canastas||'';
-      document.getElementById('cc-unidades').value=c.unidades||'';
       document.getElementById('cc-reprocFrio').value=c.reprocCuartoFrio||'';
       document.getElementById('cc-difResumen').value=c.difResumen||'';
+      document.getElementById('cc-quesos').value=c.quesos||'';
+      document.getElementById('cc-reprocDiaResumen').value=c.reprocDiaResumen||'';
       document.getElementById('cc-canastasFC').value=c.canastasFC||'';
       document.getElementById('cc-unidadesFC').value=c.unidadesFC||'';
       if(c.pruebaSensorial)toggleSensorial(c.pruebaSensorial);
@@ -1494,7 +1547,7 @@ function calcDiferenciaLeche(){
 async function guardarCierreDia(){
   if(!navigator.onLine){document.getElementById('cc-error').textContent='❌ Sin conexión a internet';document.getElementById('cc-error').style.display='block';return;}
   // Validate required fields
-  const campos={lote:'cc-lote',estandarizacion:'cc-estandarizacion',tempCuajo:'cc-tempCuajo',cantCuajo:'cc-cantCuajo',tiempoCoag:'cc-tiempoCoag',tiempoCorte:'cc-tiempoCorte',tempHilado:'cc-tempHilado',adicionSal:'cc-adicionSal',citratoSodio:'cc-citratoSodio',tiempoHilado:'cc-tiempoHilado',tempPesado:'cc-tempPesado',tempAlmac:'cc-tempAlmac',lechePlat:'cc-lechePlat',canastas:'cc-canastas',unidades:'cc-unidades',reprocFrio:'cc-reprocFrio',canastasFC:'cc-canastasFC'};
+  const campos={lote:'cc-lote',estandarizacion:'cc-estandarizacion',tempCuajo:'cc-tempCuajo',cantCuajo:'cc-cantCuajo',tiempoCoag:'cc-tiempoCoag',tiempoCorte:'cc-tiempoCorte',tempHilado:'cc-tempHilado',adicionSal:'cc-adicionSal',citratoSodio:'cc-citratoSodio',tiempoHilado:'cc-tiempoHilado',tempPesado:'cc-tempPesado',tempAlmac:'cc-tempAlmac',lechePlat:'cc-lechePlat',reprocFrio:'cc-reprocFrio',quesos:'cc-quesos',canastasFC:'cc-canastasFC'};
   for(const[k,id]of Object.entries(campos)){
     const v=document.getElementById(id).value;
     if(v===''||v===null||v===undefined){document.getElementById('cc-error').textContent=`⚠️ Completa todos los campos para cerrar el día`;document.getElementById('cc-error').style.display='block';return;}
@@ -1524,9 +1577,9 @@ async function guardarCierreDia(){
       tempAlmac:parseFloat(document.getElementById('cc-tempAlmac').value)||0,
       lechePlataforma:parseFloat(document.getElementById('cc-lechePlat').value)||0,
       lecheSobra:parseFloat(document.getElementById('cc-lecheSobra').value)||0,
-      canastas:parseInt(document.getElementById('cc-canastas').value)||0,
-      unidades:parseInt(document.getElementById('cc-unidades').value)||0,
       reprocCuartoFrio:parseInt(document.getElementById('cc-reprocFrio').value)||0,
+      quesos:parseInt(document.getElementById('cc-quesos').value)||0,
+      reprocDiaResumen:parseInt(document.getElementById('cc-reprocDiaResumen').value)||0,
       difResumen:parseFloat(document.getElementById('cc-difResumen').value)||0,
       canastasFC:parseInt(document.getElementById('cc-canastasFC').value)||0,
       unidadesFC:parseInt(document.getElementById('cc-unidadesFC').value)||0,
