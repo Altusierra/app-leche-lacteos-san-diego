@@ -302,13 +302,12 @@
     <div id="cuajador-prov-nombre" style="font-size:16px;font-weight:700;color:var(--verde);margin-bottom:16px;"></div>
     <div id="ct-lote-auto" style="background:var(--verde3);border:2px solid var(--verde);border-radius:12px;padding:12px;margin-bottom:16px;text-align:center;"><span style="font-size:13px;color:var(--verde);font-weight:700;">LOTE DEL DÍA:</span> <span id="ct-lote-num" style="font-size:22px;font-weight:800;color:var(--verde);">#1</span></div>
     <div style="margin-bottom:12px;"><label style="font-size:13px;font-weight:600;">Litros</label><input type="number" id="ct-litros" placeholder="800" style="width:100%;padding:12px;border:1.5px solid var(--gris1);border-radius:10px;font-size:18px;font-weight:700;box-sizing:border-box;margin-top:4px;"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
       <div><label style="font-size:12px;font-weight:600;">Cuajo</label><input type="number" id="ct-cuajo" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
       <div><label style="font-size:12px;font-weight:600;">Acidez</label><input type="number" id="ct-acidez" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
-      <div><label style="font-size:12px;font-weight:600;">Acidez leche</label><input type="number" id="ct-acidezLeche" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
       <div><label style="font-size:12px;font-weight:600;">Citrato</label><input type="number" id="ct-citrato" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
     </div>
-    <div style="font-weight:700;font-size:12px;color:var(--gris2);margin-bottom:8px;">NÚMERO DE BLOQUES (al menos uno obligatorio)</div>
+    <div style="font-weight:700;font-size:12px;color:var(--gris2);margin-bottom:8px;">NÚMERO DE BLOQUES</div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
       <div><label style="font-size:12px;font-weight:600;">Bloques 2500g</label><input type="number" id="ct-bloques2500" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
       <div><label style="font-size:12px;font-weight:600;">Bloques 1000g</label><input type="number" id="ct-bloques1000" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
@@ -350,33 +349,6 @@
       <label style="font-size:12px;font-weight:600;color:#DC2626;">⚠️ ¿Por qué editaste los valores?</label>
       <textarea id="cc-motivo-edicion" placeholder="Obligatorio si editaste algún campo calculado..." rows="2" style="width:100%;padding:10px;border:1.5px solid #DC2626;border-radius:10px;font-size:13px;box-sizing:border-box;margin-top:4px;resize:none;"></textarea>
     </div>
-    <div style="font-weight:700;font-size:14px;color:var(--verde);margin-bottom:8px;margin-top:16px;">CONTROL DE CALIDAD</div>
-    <div style="margin-bottom:8px;"><label style="font-size:12px;font-weight:600;">Lote del día</label><input type="text" id="cc-lote" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-      <div><label style="font-size:12px;font-weight:600;">Estandarización °D</label><input type="number" id="cc-estandarizacion" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
-      <div><label style="font-size:12px;font-weight:600;">Temp. cuajo °C</label><input type="number" id="cc-tempCuajo" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-      <div><label style="font-size:12px;font-weight:600;">Cant. cuajo ml</label><input type="number" id="cc-cantCuajo" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
-      <div><label style="font-size:12px;font-weight:600;">T. coagulación min</label><input type="number" id="cc-tiempoCoag" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-      <div><label style="font-size:12px;font-weight:600;">T. corte min</label><input type="number" id="cc-tiempoCorte" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
-      <div><label style="font-size:12px;font-weight:600;">Temp. hilado °C</label><input type="number" id="cc-tempHilado" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-      <div><label style="font-size:12px;font-weight:600;">Adición sal %</label><input type="number" step="0.1" id="cc-adicionSal" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
-      <div><label style="font-size:12px;font-weight:600;">Citrato sodio %</label><input type="number" step="0.1" id="cc-citratoSodio" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-      <div><label style="font-size:12px;font-weight:600;">T. hilado min</label><input type="number" id="cc-tiempoHilado" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
-      <div><label style="font-size:12px;font-weight:600;">Temp. pesado °C</label><input type="number" id="cc-tempPesado" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
-      <div><label style="font-size:12px;font-weight:600;">Prueba sensorial</label><div style="display:flex;gap:6px;margin-top:4px;"><button id="cc-sensorial-c" onclick="toggleSensorial('c')" class="btn btn-sm" style="flex:1;border:2px solid var(--gris1);background:white;font-weight:700;">C</button><button id="cc-sensorial-nc" onclick="toggleSensorial('nc')" class="btn btn-sm" style="flex:1;border:2px solid var(--gris1);background:white;font-weight:700;">NC</button></div></div>
-      <div><label style="font-size:12px;font-weight:600;">Empacado</label><div style="display:flex;gap:6px;margin-top:4px;"><button id="cc-empacado-c" onclick="toggleEmpacado('c')" class="btn btn-sm" style="flex:1;border:2px solid var(--gris1);background:white;font-weight:700;">C</button><button id="cc-empacado-nc" onclick="toggleEmpacado('nc')" class="btn btn-sm" style="flex:1;border:2px solid var(--gris1);background:white;font-weight:700;">NC</button></div></div>
-    </div>
-    <div style="margin-bottom:12px;"><label style="font-size:12px;font-weight:600;">Temp. almacenamiento °C</label><input type="number" step="0.1" id="cc-tempAlmac" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
     <div style="font-weight:700;font-size:14px;color:var(--verde);margin-bottom:8px;margin-top:16px;">RESUMEN DEL DÍA</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
       <div><label style="font-size:12px;font-weight:600;">Leche plataforma</label><input type="number" id="cc-lechePlat" oninput="calcDiferenciaLeche()" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
@@ -1284,18 +1256,29 @@ async function cargarTandasHoy(){
     if(tandas.length===0){el.innerHTML='<div class="vacio"><div class="ico">🧀</div><p>Sin tandas registradas</p></div>';return;}
     el.innerHTML=tandas.map(t=>{
       const nov=t.novedad?'⚠️ ':'';const rep=t.reproceso?'🔄 ':'';
-      return`<div class="lista-item" onclick="editarTanda('${t.id}')"><div><div class="nombre">#${t.numero} · ${t.proveedorNombre}</div><div class="detalle">${rep}${nov}${fmtL(t.litros)}L · ${t.bloques2500||0} bloques</div></div><span class="flecha">›</span></div>`;
+      return`<div class="lista-item" style="position:relative;" onclick="editarTanda('${t.id}')"><div><div class="nombre">#${t.numero} · ${t.proveedorNombre}</div><div class="detalle">${rep}${nov}${fmtL(t.litros)}L · ${(t.bloques2500||0)+(t.bloques1000||0)+(t.bloques500||0)} bloques · ${t.hora||''}</div></div><div style="display:flex;align-items:center;gap:8px;"><button onclick="event.stopPropagation();eliminarTanda('${t.id}','${t.numero}','${(t.proveedorNombre||'').replace(/'/g,"\\'")}')" style="background:none;border:none;font-size:18px;cursor:pointer;padding:4px;">🗑️</button><span class="flecha">›</span></div></div>`;
     }).join('');
   }catch(e){console.error(e);el.innerHTML='<div class="vacio"><p>Error al cargar</p></div>';}
 }
+
+async function eliminarTanda(tandaId,numero,provNombre){
+  const motivo=prompt(`¿Por qué eliminas la tanda #${numero} (${provNombre})?\n\nEscribe el motivo:`);
+  if(!motivo||!motivo.trim())return;
+  try{
+    const tandaDoc=await getDoc(doc(db,'tandas',tandaId));
+    const data=tandaDoc.exists()?tandaDoc.data():{};
+    await addDoc(collection(db,'eliminaciones'),{tipo:'tanda',registroId:tandaId,proveedorId:data.proveedorId||'',proveedorNombre:data.proveedorNombre||provNombre,litros:data.litros||0,hora:data.hora||'',fecha:data.fecha||'',cuajadorId:UA.uid,cuajadorNombre:UA.nombre||UA.email,motivo:motivo.trim(),eliminadoEn:hoy(),eliminadoHora:horaAhora(),eliminadoPorId:UA.uid,eliminadoPorNombre:UA.nombre||UA.email,eliminadoPorRol:'cuajador'});
+    await deleteDoc(doc(db,'tandas',tandaId));
+    cargarTandasHoy();cargarResumenCuajadorSemanal();
+  }catch(e){console.error(e);alert('Error al eliminar');}
+}window.eliminarTanda=eliminarTanda;
 
 async function cargarProveedoresCuajador(){
   try{
     const [sRec,sInter]=await Promise.all([getDocs(query(collection(db,'usuarios'),where('rol','in',['recogedor']))),getDocs(collection(db,'intermediarios'))]);
     _cuajadorProvsList=[];
     const todosRec=[];sRec.forEach(d=>{const da=d.data();if(!da.bloqueado)todosRec.push({id:d.id,nombre:da.nombre||da.email,tipo:'recogedor',esRutaCombinada:da.esRutaCombinada,combinaUids:da.combinaUids});});
-    const uidsCombCuaj=new Set(todosRec.filter(u=>u.esRutaCombinada&&u.combinaUids).flatMap(u=>u.combinaUids||[]));
-    todosRec.filter(u=>!uidsCombCuaj.has(u.id)).forEach(u=>_cuajadorProvsList.push({id:u.id,nombre:u.nombre,tipo:'recogedor'}));
+    todosRec.forEach(u=>_cuajadorProvsList.push({id:u.id,nombre:u.nombre,tipo:'recogedor'}));
     sInter.forEach(d=>{const da=d.data();if(da.activo!==false)_cuajadorProvsList.push({id:d.id,nombre:da.nombre,tipo:'intermediario'});});
     _cuajadorProvsList.sort((a,b)=>a.nombre.localeCompare(b.nombre));
     _cuajadorProvsSeleccionados=[];
@@ -1345,7 +1328,8 @@ async function continuarATanda(){
   document.getElementById('cuajador-prov-nombre').textContent=_cuajadorProvsSeleccionados.map(s=>`${s.nombre} (${s.tipo})`).join(' + ');
   // Compat: set single provider vars from first selected
   _cuajadorProvId=_cuajadorProvsSeleccionados[0].id;_cuajadorProvNombre=_cuajadorProvsSeleccionados[0].nombre;_cuajadorProvTipo=_cuajadorProvsSeleccionados[0].tipo;
-  ['ct-litros','ct-cuajo','ct-acidez','ct-acidezLeche','ct-citrato','ct-bloques2500','ct-bloques1000','ct-bloques500','ct-novedad','ct-reprocCant'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  ['ct-acidez','ct-citrato','ct-bloques2500','ct-bloques1000','ct-bloques500','ct-novedad','ct-reprocCant'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  document.getElementById('ct-litros').value=800;document.getElementById('ct-cuajo').value=70;
   const selRT=document.getElementById('ct-reprocTipo');if(selRT)selRT.value='bloques';
   _cuajadorReproceso=false;document.getElementById('ct-reproceso-btn').textContent='NO';document.getElementById('ct-reproceso-btn').style.background='white';document.getElementById('ct-reproceso-btn').style.color='var(--gris3)';
   const repCampos=document.getElementById('ct-reproceso-campos');if(repCampos)repCampos.style.display='none';
@@ -1370,7 +1354,8 @@ async function selProveedorCuajador(id,nombre,tipo){
   document.getElementById('ct-lote-num').textContent=`#${num+1}`;
   document.getElementById('cuajador-prov-nombre').textContent=`${nombre} (${tipo})`;
   // Clear form
-  ['ct-litros','ct-cuajo','ct-acidez','ct-citrato','ct-bloques2500','ct-bloques1000','ct-bloques500','ct-novedad','ct-reprocCant'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  ['ct-acidez','ct-citrato','ct-bloques2500','ct-bloques1000','ct-bloques500','ct-novedad','ct-reprocCant'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  document.getElementById('ct-litros').value=800;document.getElementById('ct-cuajo').value=70;;
   _cuajadorReproceso=false;document.getElementById('ct-reproceso-btn').textContent='NO';document.getElementById('ct-reproceso-btn').style.background='white';document.getElementById('ct-reproceso-btn').style.color='var(--gris3)';
   const repCampos=document.getElementById('ct-reproceso-campos');if(repCampos)repCampos.style.display='none';
   document.getElementById('ct-error').style.display='none';
@@ -1393,13 +1378,11 @@ async function guardarTanda(){
   const litros=parseFloat(document.getElementById('ct-litros').value);
   const cuajo=parseFloat(document.getElementById('ct-cuajo').value);
   const acidez=parseFloat(document.getElementById('ct-acidez').value);
-  const acidezLeche=parseFloat(document.getElementById('ct-acidezLeche')?.value)||0;
-  const citrato=parseFloat(document.getElementById('ct-citrato').value);
-  if(!litros||!cuajo||isNaN(acidez)||isNaN(citrato)){document.getElementById('ct-error').textContent='⚠️ Completa Litros, Cuajo, Acidez y Citrato';document.getElementById('ct-error').style.display='block';return;}
+  const citrato=parseFloat(document.getElementById('ct-citrato').value)||0;
+  if(!litros||!cuajo||isNaN(acidez)){document.getElementById('ct-error').textContent='⚠️ Completa Litros, Cuajo y Acidez';document.getElementById('ct-error').style.display='block';return;}
   const bloques2500=parseInt(document.getElementById('ct-bloques2500').value)||0;
   const bloques1000=parseInt(document.getElementById('ct-bloques1000').value)||0;
   const bloques500=parseInt(document.getElementById('ct-bloques500').value)||0;
-  if(!bloques2500&&!bloques1000&&!bloques500){document.getElementById('ct-error').textContent='⚠️ Ingresa al menos un tipo de bloque';document.getElementById('ct-error').style.display='block';return;}
   const reprocTipo=(document.getElementById('ct-reprocTipo')?.value)||'bloques';
   const reprocCant=parseFloat(document.getElementById('ct-reprocCant')?.value)||0;
   if(_cuajadorReproceso&&!reprocCant){document.getElementById('ct-error').textContent='⚠️ Reproceso activo: ingresa la cantidad';document.getElementById('ct-error').style.display='block';return;}
@@ -1417,7 +1400,7 @@ async function guardarTanda(){
       numero=1;snap.forEach(d=>{if(d.data().cuajadorId===UA.uid)numero++;});
       tandaId=`${UA.uid}_${fecha}_${String(numero).padStart(2,'0')}`;
     }
-    await setDoc(doc(db,'tandas',tandaId),{cuajadorId:UA.uid,cuajadorNombre:UA.nombre||UA.email,fecha,hora:horaAhora(),numero,proveedorId:proveedores[0].id,proveedorNombre:proveedores.map(p=>p.nombre).join(' + '),proveedorTipo:proveedores[0].tipo,proveedores,litros,cuajo,acidez,acidezLeche,citrato,bloques2500,bloques1000,bloques500,reproceso:_cuajadorReproceso,reprocTipo,reprocCant,novedad,timestamp:serverTimestamp()});
+    await setDoc(doc(db,'tandas',tandaId),{cuajadorId:UA.uid,cuajadorNombre:UA.nombre||UA.email,fecha,hora:horaAhora(),numero,proveedorId:proveedores[0].id,proveedorNombre:proveedores.map(p=>p.nombre).join(' + '),proveedorTipo:proveedores[0].tipo,proveedores,litros,cuajo,acidez,citrato,bloques2500,bloques1000,bloques500,reproceso:_cuajadorReproceso,reprocTipo,reprocCant,novedad,timestamp:serverTimestamp()});
     ir('screen-cuajador-home');cargarTandasHoy();cargarResumenCuajadorSemanal();
   }catch(e){console.error(e);document.getElementById('ct-error').textContent='❌ Error al guardar';document.getElementById('ct-error').style.display='block';}
 }window.guardarTanda=guardarTanda;
@@ -1433,7 +1416,6 @@ async function editarTanda(tandaId){
     document.getElementById('ct-litros').value=t.litros||'';
     document.getElementById('ct-cuajo').value=t.cuajo||'';
     document.getElementById('ct-acidez').value=t.acidez||'';
-    const alEl=document.getElementById('ct-acidezLeche');if(alEl)alEl.value=t.acidezLeche||'';
     document.getElementById('ct-citrato').value=t.citrato||'';
     document.getElementById('ct-bloques2500').value=t.bloques2500||'';
     document.getElementById('ct-bloques1000').value=t.bloques1000||'';
@@ -1456,7 +1438,7 @@ async function abrirCierreDia(){
   const snap=await getDocs(query(collection(db,'tandas'),where('fecha','==',fecha)));
   const tandas=[];snap.forEach(d=>{if(d.data().cuajadorId===UA.uid)tandas.push({id:d.id,...d.data()});});
   if(tandas.length===0){alertaEl.innerHTML='<div style="background:#FEE2E2;padding:12px;border-radius:10px;color:#DC2626;font-weight:600;">⚠️ No hay tandas registradas. Registra al menos una tanda antes de cerrar el día.</div>';ir('screen-cuajador-cierre');return;}
-  const incompletas=tandas.filter(t=>!t.litros||!t.cuajo||isNaN(t.acidez)||isNaN(t.citrato)||(!t.bloques2500&&!t.bloques1000&&!t.bloques500));
+  const incompletas=tandas.filter(t=>!t.litros||!t.cuajo||isNaN(t.acidez));
   if(incompletas.length>0){alertaEl.innerHTML=incompletas.map(t=>`<div style="background:#FEE2E2;padding:10px;border-radius:10px;color:#DC2626;font-size:13px;margin-bottom:6px;">⚠️ Tanda #${t.numero} (${t.proveedorNombre}) tiene campos sin completar — <a href="#" onclick="editarTanda('${t.id}');return false;" style="color:#DC2626;font-weight:700;">Completar</a></div>`).join('');ir('screen-cuajador-cierre');return;}
   alertaEl.innerHTML='<div style="background:#DCFCE7;padding:10px;border-radius:10px;color:#15803d;font-size:13px;">✅ Todas las tandas están completas ('+tandas.length+' tandas)</div>';
   // Auto-calculate fields
@@ -1472,9 +1454,7 @@ async function abrirCierreDia(){
   document.getElementById('cc-motivos-container').style.display='none';
   document.getElementById('cc-motivo-edicion').value='';
   // Clear all manual fields
-  ['cc-lote','cc-estandarizacion','cc-tempCuajo','cc-cantCuajo','cc-tiempoCoag','cc-tiempoCorte','cc-tempHilado','cc-adicionSal','cc-citratoSodio','cc-tiempoHilado','cc-tempPesado','cc-tempAlmac','cc-lechePlat','cc-lecheSobra','cc-reprocFrio','cc-difResumen','cc-quesos','cc-reprocDiaResumen','cc-canastasFC','cc-unidadesFC'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
-  _cuajadorSensorial=null;_cuajadorEmpacado=null;
-  ['cc-sensorial-c','cc-sensorial-nc','cc-empacado-c','cc-empacado-nc'].forEach(id=>{const e=document.getElementById(id);if(e){e.style.background='white';e.style.color='var(--gris3)';}});
+  ['cc-lechePlat','cc-lecheSobra','cc-reprocFrio','cc-difResumen','cc-quesos','cc-reprocDiaResumen','cc-canastasFC','cc-unidadesFC'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   document.getElementById('cc-error').style.display='none';
   // Load existing cierre if any
   try{
@@ -1485,18 +1465,6 @@ async function abrirCierreDia(){
       document.getElementById('cc-totalBloques').value=c.totalBloques||totalBloques;
       document.getElementById('cc-reprocDia').value=c.reprocDia??reprocDia;
       document.getElementById('cc-diferencia').value=c.diferencia||'';
-      document.getElementById('cc-lote').value=c.lote||'';
-      document.getElementById('cc-estandarizacion').value=c.estandarizacion||'';
-      document.getElementById('cc-tempCuajo').value=c.tempCuajo||'';
-      document.getElementById('cc-cantCuajo').value=c.cantCuajo||'';
-      document.getElementById('cc-tiempoCoag').value=c.tiempoCoag||'';
-      document.getElementById('cc-tiempoCorte').value=c.tiempoCorte||'';
-      document.getElementById('cc-tempHilado').value=c.tempHilado||'';
-      document.getElementById('cc-adicionSal').value=c.adicionSal||'';
-      document.getElementById('cc-citratoSodio').value=c.citratoSodio||'';
-      document.getElementById('cc-tiempoHilado').value=c.tiempoHilado||'';
-      document.getElementById('cc-tempPesado').value=c.tempPesado||'';
-      document.getElementById('cc-tempAlmac').value=c.tempAlmac||'';
       document.getElementById('cc-lechePlat').value=c.lechePlataforma||'';
       document.getElementById('cc-lecheSobra').value=c.lecheSobra||'';
       document.getElementById('cc-reprocFrio').value=c.reprocCuartoFrio||'';
@@ -1505,8 +1473,6 @@ async function abrirCierreDia(){
       document.getElementById('cc-reprocDiaResumen').value=c.reprocDiaResumen||'';
       document.getElementById('cc-canastasFC').value=c.canastasFC||'';
       document.getElementById('cc-unidadesFC').value=c.unidadesFC||'';
-      if(c.pruebaSensorial)toggleSensorial(c.pruebaSensorial);
-      if(c.correctoEmpacado)toggleEmpacado(c.correctoEmpacado);
     }
   }catch(e){}
   ir('screen-cuajador-cierre');
@@ -1544,13 +1510,11 @@ function calcDiferenciaLeche(){
 async function guardarCierreDia(){
   if(!navigator.onLine){document.getElementById('cc-error').textContent='❌ Sin conexión a internet';document.getElementById('cc-error').style.display='block';return;}
   // Validate required fields
-  const campos={lote:'cc-lote',estandarizacion:'cc-estandarizacion',tempCuajo:'cc-tempCuajo',cantCuajo:'cc-cantCuajo',tiempoCoag:'cc-tiempoCoag',tiempoCorte:'cc-tiempoCorte',tempHilado:'cc-tempHilado',adicionSal:'cc-adicionSal',citratoSodio:'cc-citratoSodio',tiempoHilado:'cc-tiempoHilado',tempPesado:'cc-tempPesado',tempAlmac:'cc-tempAlmac',lechePlat:'cc-lechePlat',reprocFrio:'cc-reprocFrio',quesos:'cc-quesos',canastasFC:'cc-canastasFC'};
+  const campos={lechePlat:'cc-lechePlat',reprocFrio:'cc-reprocFrio',quesos:'cc-quesos',canastasFC:'cc-canastasFC'};
   for(const[k,id]of Object.entries(campos)){
     const v=document.getElementById(id).value;
     if(v===''||v===null||v===undefined){document.getElementById('cc-error').textContent=`⚠️ Completa todos los campos para cerrar el día`;document.getElementById('cc-error').style.display='block';return;}
   }
-  if(!_cuajadorSensorial){document.getElementById('cc-error').textContent='⚠️ Selecciona Prueba Sensorial (C o NC)';document.getElementById('cc-error').style.display='block';return;}
-  if(!_cuajadorEmpacado){document.getElementById('cc-error').textContent='⚠️ Selecciona Correcto Empacado (C o NC)';document.getElementById('cc-error').style.display='block';return;}
   if(_cuajadorCamposEditados.size>0&&!(document.getElementById('cc-motivo-edicion').value||'').trim()){document.getElementById('cc-error').textContent='⚠️ Debes explicar por qué editaste los campos calculados';document.getElementById('cc-error').style.display='block';return;}
   const fecha=getFechaRegCuajador();
   try{
@@ -1559,19 +1523,6 @@ async function guardarCierreDia(){
       totalBloques:parseInt(document.getElementById('cc-totalBloques').value)||0,
       reprocDia:parseInt(document.getElementById('cc-reprocDia').value)||0,
       diferencia:parseFloat(document.getElementById('cc-diferencia').value)||0,
-      lote:document.getElementById('cc-lote').value.trim(),
-      estandarizacion:parseFloat(document.getElementById('cc-estandarizacion').value)||0,
-      tempCuajo:parseFloat(document.getElementById('cc-tempCuajo').value)||0,
-      cantCuajo:parseFloat(document.getElementById('cc-cantCuajo').value)||0,
-      tiempoCoag:parseFloat(document.getElementById('cc-tiempoCoag').value)||0,
-      tiempoCorte:parseFloat(document.getElementById('cc-tiempoCorte').value)||0,
-      tempHilado:parseFloat(document.getElementById('cc-tempHilado').value)||0,
-      adicionSal:parseFloat(document.getElementById('cc-adicionSal').value)||0,
-      citratoSodio:parseFloat(document.getElementById('cc-citratoSodio').value)||0,
-      tiempoHilado:parseFloat(document.getElementById('cc-tiempoHilado').value)||0,
-      tempPesado:parseFloat(document.getElementById('cc-tempPesado').value)||0,
-      pruebaSensorial:_cuajadorSensorial,correctoEmpacado:_cuajadorEmpacado,
-      tempAlmac:parseFloat(document.getElementById('cc-tempAlmac').value)||0,
       lechePlataforma:parseFloat(document.getElementById('cc-lechePlat').value)||0,
       lecheSobra:parseFloat(document.getElementById('cc-lecheSobra').value)||0,
       reprocCuartoFrio:parseInt(document.getElementById('cc-reprocFrio').value)||0,
