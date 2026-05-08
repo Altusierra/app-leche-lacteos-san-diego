@@ -111,6 +111,7 @@
     #screen-admin-reportes{max-width:100%;padding:20px;}
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 </head>
 <body>
 
@@ -118,7 +119,7 @@
 <div id="screen-login" class="screen active">
   <div style="background:#1a1a1a;border-radius:14px;padding:12px 20px;margin-bottom:24px;text-align:center;"><span style="color:#ea580c;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;">Vereda Guan Cantería · Cumbal - Nariño</span></div><div class="login-logo"><div class="emoji">🐄</div><h1>Lácteos San Diego</h1><p>Sistema de recolección de leche</p></div>
   <div class="alerta alerta-rojo" id="login-error"></div>
-  <div class="campo"><label>Correo electrónico</label><input type="email" id="login-email" placeholder="tu@correo.com" inputmode="email" autocomplete="username"></div>
+  <div class="campo"><label>Usuario</label><input type="text" id="login-email" placeholder="Tu nombre" inputmode="text" autocomplete="username"></div>
   <div class="campo"><label>Contraseña</label><input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password"></div>
   <button class="btn btn-verde" id="btn-entrar" style="margin-top:8px;cursor:pointer;">ENTRAR</button>
   <p style="text-align:center;color:var(--gris2);font-size:13px;margin-top:20px;">¿Problemas? Contacta al administrador</p>
@@ -126,7 +127,7 @@
 
 <!-- ══ RECOGEDOR ══ -->
 <div id="screen-rec-home" class="screen">
-  <div class="header"><div><div class="sub">🐄 Lácteos San Diego</div><h1 id="rec-nombre-header">Recogedor</h1></div><button class="btn-salir" onclick="cerrarSesion()">Salir</button></div>
+  <div class="header"><div><div class="sub">🐄 Lácteos San Diego</div><h1 id="rec-nombre-header">Recogedor</h1><div id="rec-rol-header" style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.7);margin-top:-4px;text-transform:uppercase;letter-spacing:1px;"></div></div><button class="btn-salir" onclick="cerrarSesion()">Salir</button></div>
   <div style="padding:20px;">
     <div id="rec-fecha" style="font-size:15px;color:var(--gris2);margin-bottom:16px;"></div>
     <span id="rec-litros-hoy" style="display:none;">0</span><span id="rec-registros-hoy" style="display:none;">0</span>
@@ -182,7 +183,7 @@
 
 <!-- ══ RECIBIDOR ══ -->
 <div id="screen-recibi-home" class="screen">
-  <div class="header"><div><div class="sub">🐄 Lácteos San Diego</div><h1 id="recibi-nombre-header">Recibidor</h1></div><button class="btn-salir" onclick="cerrarSesion()">Salir</button></div>
+  <div class="header"><div><div class="sub">🐄 Lácteos San Diego</div><h1 id="recibi-nombre-header">Recibidor</h1><div id="recibi-rol-header" style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.7);margin-top:-4px;text-transform:uppercase;letter-spacing:1px;"></div></div><button class="btn-salir" onclick="cerrarSesion()">Salir</button></div>
   <div style="padding:20px;">
     <div id="recibi-fecha" style="font-size:15px;color:var(--gris2);margin-bottom:16px;"></div>
     <div id="recibi-alertas-container"></div>
@@ -268,7 +269,7 @@
 
 <!-- ══ CUAJADOR ══ -->
 <div id="screen-cuajador-home" class="screen">
-  <div class="header"><div><div class="sub">🐄 Lácteos San Diego</div><h1 id="cuajador-nombre-header">Cuajador</h1></div><button class="btn-salir" onclick="cerrarSesion()">Salir</button></div>
+  <div class="header"><div><div class="sub">🐄 Lácteos San Diego</div><h1 id="cuajador-nombre-header">Cuajador</h1><div id="cuajador-rol-header" style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.7);margin-top:-4px;text-transform:uppercase;letter-spacing:1px;"></div></div><button class="btn-salir" onclick="cerrarSesion()">Salir</button></div>
   <div style="padding:20px;">
     <div id="cuajador-fecha" style="font-size:15px;color:var(--gris2);margin-bottom:16px;"></div>
     <div id="cuajador-fecha-selector" style="display:none;margin-bottom:12px;"><label style="font-size:13px;font-weight:600;color:var(--gris2);">📅 Fecha (modo histórico):</label><input type="date" id="cuajador-fecha-input" onchange="cambiarFechaCuajador()" style="width:100%;padding:8px;border:1.5px solid var(--gris1);border-radius:8px;margin-top:4px;"></div>
@@ -380,7 +381,7 @@
 
 <!-- ══ ADMIN DASHBOARD ══ -->
 <div id="screen-admin-dashboard" class="screen">
-  <div class="header"><div><div class="sub">🐄 Lácteos San Diego</div><h1 id="admin-nombre-header">Admin</h1></div><button class="btn-salir" onclick="cerrarSesion()">Salir</button></div>
+  <div class="header"><div><div class="sub">🐄 Lácteos San Diego</div><h1 id="admin-nombre-header">Admin</h1><div id="admin-rol-header" style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.7);margin-top:-4px;text-transform:uppercase;letter-spacing:1px;"></div></div><button class="btn-salir" onclick="cerrarSesion()">Salir</button></div>
   <div style="padding:20px;">
     <div id="admin-fecha" style="font-size:15px;color:var(--gris2);margin-bottom:16px;"></div>
     <div class="fila">
@@ -735,12 +736,22 @@
     <div class="modal-titulo">⛽ Registrar Combustible</div>
     <div class="alerta alerta-rojo" id="m-comb-error"></div>
     <div class="alerta alerta-verde" id="m-comb-ok"></div>
-    <div class="campo"><label>Valor pagado ($) *</label><input type="number" id="m-comb-valor" placeholder="Ej: 50000" inputmode="numeric"></div>
+    <div class="campo"><label>Valor pagado ($) *</label><input type="text" id="m-comb-valor" placeholder="Ej: 50.000" inputmode="numeric" oninput="formatearValorComb(this)"></div>
     <div class="campo"><label>Galones *</label><input type="number" id="m-comb-galones" placeholder="Ej: 25.3" step="0.1" inputmode="decimal"></div>
     <div class="fila" style="margin-top:8px;">
       <button class="btn btn-gris" onclick="cerrarModal('modal-combustible')">Cancelar</button>
       <button class="btn" style="background:#1D4ED8;color:white;" onclick="guardarCombustible()">Guardar</button>
     </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-qr">
+  <div class="modal" style="text-align:center;">
+    <div class="modal-titulo">📱 QR de acceso</div>
+    <div id="qr-nombre-label" style="font-size:16px;font-weight:700;margin-bottom:8px;"></div>
+    <canvas id="qr-canvas" style="margin:0 auto;display:block;"></canvas>
+    <div style="font-size:12px;color:var(--gris2);margin-top:8px;">Escanea con la cámara del celular</div>
+    <button class="btn btn-gris" style="margin-top:12px;" onclick="cerrarModal('modal-qr')">Cerrar</button>
   </div>
 </div>
 
@@ -784,6 +795,9 @@ function fmtFecha(f){return new Date(f+'T00:00:00').toLocaleDateString('es-CO',{
 function fmtFechaCorta(f){const d=new Date(f+'T00:00:00');return`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;}
 function fmtPeso(v){return new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(v);}
 function fmtPesoCorto(v){if(v>=1000000)return`$${(v/1000000).toFixed(1)}M`;if(v>=1000)return`$${(v/1000).toFixed(0)}k`;return`$${v.toFixed(0)}`;}
+
+// ── QR AUTO-LOGIN ──
+(function(){try{const params=new URLSearchParams(window.location.search);const qu=params.get('u');const qp=params.get('p');if(qu&&qp){const nombre=decodeURIComponent(escape(atob(qu)));const pass=decodeURIComponent(escape(atob(qp)));document.getElementById('login-email').value=nombre;document.getElementById('login-pass').value=pass;window.history.replaceState({},'',window.location.pathname);setTimeout(()=>hacerLogin(),500);}}catch(e){}})();
 
 // ── AUTH ──
 onAuthStateChanged(auth,async u=>{
@@ -832,7 +846,19 @@ onAuthStateChanged(auth,async u=>{
     await signOut(auth);
   }
 });
-async function hacerLogin(){const e=document.getElementById('login-email').value.trim();const p=document.getElementById('login-pass').value;if(!e||!p){alerta('login-error','Completa todos los campos','rojo');return;}ocult('login-error');try{await signInWithEmailAndPassword(auth,e,p);}catch(err){const msg=err.code==='auth/network-request-failed'?'Sin conexión a internet':err.code==='auth/too-many-requests'?'Demasiados intentos fallidos. Espera unos minutos e intenta de nuevo.':err.code==='auth/user-disabled'?'Esta cuenta está bloqueada. Contacta al administrador.':'Correo o contraseña incorrectos';alerta('login-error',msg,'rojo');}}window.hacerLogin=hacerLogin;
+async function hacerLogin(){const u=document.getElementById('login-email').value.trim();const p=document.getElementById('login-pass').value;if(!u||!p){alerta('login-error','Completa todos los campos','rojo');return;}ocult('login-error');
+  try{
+    let email=u;
+    // Si no parece email, buscar por nombre en Firestore
+    if(!u.includes('@')){
+      const snap=await getDocs(collection(db,'usuarios'));
+      const norm=normNombre(u);let found=null;
+      snap.forEach(d=>{const dat=d.data();if(normNombre(dat.nombre||'')===norm)found=dat.email;});
+      if(!found){alerta('login-error','Usuario no encontrado','rojo');return;}
+      email=found;
+    }
+    await signInWithEmailAndPassword(auth,email,p);
+  }catch(err){const msg=err.code==='auth/network-request-failed'?'Sin conexión a internet':err.code==='auth/too-many-requests'?'Demasiados intentos fallidos. Espera unos minutos.':err.code==='auth/user-disabled'?'Cuenta bloqueada. Contacta al administrador.':'Usuario o contraseña incorrectos';alerta('login-error',msg,'rojo');}}window.hacerLogin=hacerLogin;
 async function cerrarSesion(){await signOut(auth);}window.cerrarSesion=cerrarSesion;
 
 // ══════════════════════════════════════════
@@ -840,6 +866,7 @@ async function cerrarSesion(){await signOut(auth);}window.cerrarSesion=cerrarSes
 // ══════════════════════════════════════════
 async function initRec(){
   document.getElementById('rec-nombre-header').textContent=UA.nombre||'Recogedor';
+  document.getElementById('rec-rol-header').textContent='recogedor';
   const s=await getDocs(query(collection(db,'configuracion'),limit(1)));
   if(!s.empty){const d=s.docs[0].data();precioActual=d.precioPorLitro||0;}
   try{const uDoc=await getDoc(doc(db,'usuarios',UA.uid));modoHistorico=uDoc.exists()&&uDoc.data().modoHistorico||false;}catch(e){modoHistorico=false;}
@@ -971,17 +998,23 @@ function seleccionarSugerencia(id){
 }window.seleccionarSugerencia=seleccionarSugerencia;
 
 function abrirModalCombustible(){document.getElementById('m-comb-valor').value='';document.getElementById('m-comb-galones').value='';document.getElementById('m-comb-error').textContent='';document.getElementById('m-comb-ok').textContent='';document.getElementById('modal-combustible').classList.add('show');}window.abrirModalCombustible=abrirModalCombustible;
+function formatearValorComb(el){let v=el.value.replace(/\D/g,'');if(!v){el.value='';return;}el.value=parseInt(v).toLocaleString('es-CO');}window.formatearValorComb=formatearValorComb;
 async function guardarCombustible(){
-  const valor=parseFloat(document.getElementById('m-comb-valor').value);
+  const valorRaw=document.getElementById('m-comb-valor').value.replace(/\./g,'').replace(/,/g,'');
+  const valor=parseFloat(valorRaw);
   const galones=parseFloat(document.getElementById('m-comb-galones').value);
   if(!valor||valor<=0){alerta('m-comb-error','El valor es obligatorio','rojo');return;}
   if(!galones||galones<=0){alerta('m-comb-error','Los galones son obligatorios','rojo');return;}
+  if(valor<10000){
+    const conf=confirm(`¿Seguro que son $${valor.toLocaleString('es-CO')}?\n¿O quisiste poner $${(valor*1000).toLocaleString('es-CO')} o $${(valor*100).toLocaleString('es-CO')}?`);
+    if(!conf)return;
+  }
   if(!navigator.onLine){alerta('m-comb-error','Sin conexión a internet','rojo');return;}
   const fecha=hoy();const hora=horaAhora();const docId=UA.uid+'_'+fecha;
   try{
     await setDoc(doc(db,'combustible',docId),{recogedorId:UA.uid,recogedorNombre:UA.displayName||'',fecha,hora,valor,galones,timestamp:serverTimestamp()});
     alerta('m-comb-ok','✅ Combustible registrado','verde');
-    setTimeout(()=>cerrarModal('modal-combustible'),1200);
+    setTimeout(()=>{cerrarModal('modal-combustible');resumenRec();},1200);
   }catch(e){alerta('m-comb-error','Error al guardar','rojo');}
 }window.guardarCombustible=guardarCombustible;
 async function eliminarCombustible(docId){
@@ -1023,7 +1056,7 @@ async function cargarResumenRecSemanal(){
 // ══════════════════════════════════════════
 //  RECIBIDOR
 // ══════════════════════════════════════════
-async function initRecibidor(){document.getElementById('recibi-nombre-header').textContent=UA.nombre||'Recibidor';document.getElementById('recibi-fecha').textContent=fmtFecha(hoy());ir('screen-recibi-home');await resumenRecibidor();await cargarInter();cargarResumenRecibiSemanal();}
+async function initRecibidor(){document.getElementById('recibi-nombre-header').textContent=UA.nombre||'Recibidor';document.getElementById('recibi-rol-header').textContent='recibidor';document.getElementById('recibi-fecha').textContent=fmtFecha(hoy());ir('screen-recibi-home');await resumenRecibidor();await cargarInter();cargarResumenRecibiSemanal();}
 async function resumenRecibidor(){
   try{
     // Solo los registros que hizo el recibidor actual hoy
@@ -1301,6 +1334,7 @@ function getFechaRegCuajador(){
 
 async function initCuajador(){
   document.getElementById('cuajador-nombre-header').textContent=UA.nombre||'Cuajador';
+  document.getElementById('cuajador-rol-header').textContent='cuajador';
   document.getElementById('cuajador-fecha').textContent=fmtFecha(hoy());
   // Check modo historico individual
   try{
@@ -1669,6 +1703,7 @@ window.irPantalla=function(id){
 // ══════════════════════════════════════════
 async function initAdmin(){
   document.getElementById('admin-nombre-header').textContent=UA.nombre||'Admin';
+  document.getElementById('admin-rol-header').textContent='admin';
   document.getElementById('admin-fecha').textContent=fmtFecha(hoy());
   ir('screen-admin-dashboard');
   dashAdmin();ganAdmin();usuAdmin();interAdmin();interAdmin2();actualizarUIHistorico();
@@ -2634,16 +2669,18 @@ async function usuAdmin(){
     document.getElementById('lista-usuarios').innerHTML=u.map(x=>`
       <div class="usr-card ${x.bloqueado?'bloqueado':''}">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-          <div><div style="font-size:17px;font-weight:700;">${x.nombre||'Sin nombre'} ${x.bloqueado?'🔒':''} <button onclick="editarNombreUsuario('${x.id}','${(x.nombre||'').replace(/'/g,"\\'")}')" style="background:var(--gris1);border:none;border-radius:8px;padding:4px 8px;cursor:pointer;font-size:14px;vertical-align:middle;">✏️</button></div><div style="font-size:13px;color:var(--gris2);margin-top:2px;">${x.email}</div></div>
+          <div><div style="font-size:17px;font-weight:700;">${x.nombre||'Sin nombre'} ${x.bloqueado?'🔒':''} ${x.rol!=='admin'?`<button onclick="editarNombreUsuario('${x.id}','${(x.nombre||'').replace(/'/g,"\\'")}')" style="background:var(--gris1);border:none;border-radius:8px;padding:4px 8px;cursor:pointer;font-size:14px;vertical-align:middle;">✏️</button>`:''}</div><div style="font-size:13px;color:var(--gris2);margin-top:2px;">${x.email}</div></div>
           <span class="badge ${badgeRol(x.rol)}">${x.rol}</span>
         </div>
+        ${x.nota?`<div style="font-size:12px;color:#1D4ED8;margin-top:6px;background:#DBEAFE;padding:4px 8px;border-radius:6px;">🔑 ${x.nota}</div>`:''}
         <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
-          <button class="btn btn-azul btn-sm" onclick="resetearContrasena('${x.email}')">📧 Restablecer clave</button>
           ${x.id!==UA.uid&&!SUPER_ADMINS.has(x.id)&&x.rol!=='admin'?`<button class="btn btn-gris btn-sm" data-cambiarid="${x.id}" data-cambiarrol="${x.rol}" data-cambiarnombre="${x.nombre||x.email}" style="cursor:pointer;">🔄 Cambiar rol</button>`:''}
           ${x.rol==='admin'?'':(x.bloqueado?`<button class="btn btn-verde btn-sm" onclick="toggleBloqueo('${x.id}',false)">🔓 Desbloquear</button>`:x.id!==UA.uid&&!SUPER_ADMINS.has(x.id)?`<button class="btn btn-rojo btn-sm" onclick="toggleBloqueo('${x.id}',true)">🔒 Bloquear</button>`:'')}
           ${x.rol==='recogedor'?`<button class="btn btn-sm" style="background:${x.esRutaCombinada?'#7c3aed':'transparent'};color:${x.esRutaCombinada?'white':'#7c3aed'};border:2px solid #7c3aed;" onclick="toggleRutaCombinada('${x.id}',${!!x.esRutaCombinada})">${x.esRutaCombinada?'🔗 Ruta combinada':'🔗 Marcar ruta combinada'}</button>`:''}
           ${x.rol!=='admin'?`<button class="btn btn-sm" style="background:${x.modoHistorico?'#D97706':'transparent'};color:${x.modoHistorico?'white':'#D97706'};border:2px solid #D97706;" onclick="toggleModoHistoricoUsuario('${x.id}',${!!x.modoHistorico})">📅 ${x.modoHistorico?'Histórico ON':'Histórico'}</button>`:''}
           ${x.rol!=='admin'?`<button class="btn btn-sm" style="background:${x.nominaActual?'#15803d':'transparent'};color:${x.nominaActual?'white':'#15803d'};border:2px solid #15803d;" onclick="editarNomina('${x.id}','${(x.nombre||'').replace(/'/g,"\\'")}')">💰 ${x.nominaActual?fmtPeso(x.nominaActual):'Nómina'}</button>`:''}
+          <button class="btn btn-sm" style="background:${x.nota?'#1D4ED8':'transparent'};color:${x.nota?'white':'#1D4ED8'};border:2px solid #1D4ED8;" onclick="editarNota('${x.id}','${(x.nota||'').replace(/'/g,"\\'")}')">🔑 ${x.nota?'Editar nota':'Agregar nota'}</button>
+          <button class="btn btn-sm" style="background:transparent;color:#7c3aed;border:2px solid #7c3aed;" onclick="generarQR('${(x.nombre||'').replace(/'/g,"\\'")}','${(x.nota||'').replace(/'/g,"\\'")}')">📱 QR</button>
         </div>
       </div>`).join('');
     // Event delegation para botones cambiar rol
@@ -2674,7 +2711,11 @@ async function cambiarRol(uid,rolActual,nombre){
 }window.cambiarRol=cambiarRol;
 
 async function toggleBloqueo(uid,bloquear){try{await updateDoc(doc(db,'usuarios',uid),{bloqueado:bloquear});alerta('usr-ok',bloquear?'🔒 Usuario bloqueado':'🔓 Usuario desbloqueado','verde');await usuAdmin();}catch(e){alerta('usr-error','Error al actualizar','rojo');}}window.toggleBloqueo=toggleBloqueo;
-async function editarNombreUsuario(uid,nombreActual){const nuevo=prompt('Nuevo nombre:',nombreActual);if(!nuevo||!nuevo.trim()||nuevo.trim()===nombreActual)return;try{await updateDoc(doc(db,'usuarios',uid),{nombre:nuevo.trim()});alerta('usr-ok',`✅ Nombre actualizado a "${nuevo.trim()}"`,'verde');await usuAdmin();}catch(e){alerta('usr-error','Error al actualizar nombre','rojo');}}window.editarNombreUsuario=editarNombreUsuario;
+function normNombre(s){return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();}
+async function editarNombreUsuario(uid,nombreActual){const nuevo=prompt('Nuevo nombre (este será su usuario de login):',nombreActual);if(!nuevo||!nuevo.trim()||nuevo.trim()===nombreActual)return;
+  try{const snap=await getDocs(collection(db,'usuarios'));let dup=false;snap.forEach(d=>{if(d.id!==uid&&normNombre(d.data().nombre||'')===normNombre(nuevo))dup=true;});
+  if(dup){alerta('usr-error','❌ Ya existe un usuario con ese nombre','rojo');return;}
+  await updateDoc(doc(db,'usuarios',uid),{nombre:nuevo.trim()});alerta('usr-ok',`✅ Nombre actualizado a "${nuevo.trim()}"`,'verde');await usuAdmin();}catch(e){alerta('usr-error','Error al actualizar nombre','rojo');}}window.editarNombreUsuario=editarNombreUsuario;
 async function toggleModoHistoricoUsuario(uid,actual){try{await updateDoc(doc(db,'usuarios',uid),{modoHistorico:!actual});alerta('usr-ok',!actual?'📅 Modo histórico activado':'📅 Modo histórico desactivado','verde');await usuAdmin();}catch(e){alerta('usr-error','Error al actualizar','rojo');}}window.toggleModoHistoricoUsuario=toggleModoHistoricoUsuario;
 async function toggleRutaCombinada(uid,actual){
   try{
@@ -2906,6 +2947,15 @@ async function editarNomina(uid,nombre){
   alerta('usr-ok',`✅ Nómina de ${nombre}: ${fmtPeso(precio)}`,'verde');await usuAdmin();
   }catch(e){alerta('usr-error','Error al guardar nómina','rojo');}
 }window.editarNomina=editarNomina;
+async function editarNota(uid,notaActual){const nota=prompt('Nota (contraseña u observación):',notaActual);if(nota===null)return;try{await updateDoc(doc(db,'usuarios',uid),{nota:nota.trim()});alerta('usr-ok','✅ Nota actualizada','verde');await usuAdmin();}catch(e){alerta('usr-error','Error al guardar nota','rojo');}}window.editarNota=editarNota;
+function generarQR(nombre,nota){
+  if(!nombre){alert('El usuario no tiene nombre');return;}
+  if(!nota){alert('Primero agrega la contraseña en la nota');return;}
+  const url=window.location.origin+window.location.pathname+'?u='+btoa(unescape(encodeURIComponent(nombre)))+'&p='+btoa(unescape(encodeURIComponent(nota)));
+  document.getElementById('qr-nombre-label').textContent=nombre;
+  document.getElementById('modal-qr').classList.add('show');
+  setTimeout(()=>{new QRious({element:document.getElementById('qr-canvas'),value:url,size:250,level:'M'});},100);
+}window.generarQR=generarQR;
 
 function navAdmin(p,b){ir(p);document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('activo'));b.classList.add('activo');if(p==='screen-admin-dashboard')dashAdmin();if(p==='screen-admin-ganaderos')ganAdmin();if(p==='screen-admin-costos')initCostos();if(p==='screen-admin-usuarios'){usuAdmin();interAdmin2();actualizarUIHistorico();}}window.navAdmin=navAdmin;
 document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')hacerLogin();});
