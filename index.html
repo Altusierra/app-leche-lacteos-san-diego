@@ -402,7 +402,8 @@
       <div id="admin-inter-fecha-label" style="font-size:14px;font-weight:700;color:var(--naranja);margin-top:8px;"></div>
     </div>
     <div class="card">
-      <div class="card-titulo" style="color:var(--verde);">🧀 Producción hoy</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><div class="card-titulo" style="margin:0;color:var(--verde);">🧀 Producción</div><input type="date" id="produccion-fecha" style="padding:6px 10px;border:1.5px solid var(--gris1);border-radius:8px;font-size:13px;font-weight:600;color:var(--verde);" onchange="sincronizarFecha(this.value)"></div>
+      <div id="admin-produccion-fecha-label" style="font-size:14px;font-weight:700;color:var(--verde);margin-bottom:8px;"></div>
       <div id="admin-produccion-hoy"><div class="loading">Cargando...</div></div>
     </div>
     <div class="card">
@@ -512,11 +513,34 @@
   </div>
 </div>
 
+<div id="screen-admin-costos" class="screen">
+  <div class="header"><div><div class="sub">⛽ Lácteos San Diego</div><h1>Costos</h1></div></div>
+  <div style="padding:20px;">
+    <div class="card">
+      <div class="card-titulo" style="color:#1D4ED8;">⛽ Combustible</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap;">
+        <label style="font-size:13px;font-weight:600;">Desde</label><input type="date" id="costos-desde" style="padding:6px 10px;border:1.5px solid var(--gris1);border-radius:8px;font-size:13px;">
+        <label style="font-size:13px;font-weight:600;">Hasta</label><input type="date" id="costos-hasta" style="padding:6px 10px;border:1.5px solid var(--gris1);border-radius:8px;font-size:13px;">
+        <button class="btn btn-sm" style="background:#1D4ED8;color:white;" onclick="cargarSeccionCostos()">Consultar</button>
+      </div>
+      <div id="costos-filtro-rec" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;"></div>
+      <div id="costos-cards" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;margin-bottom:12px;"></div>
+      <div id="costos-tabla"></div>
+      <div id="costos-export" style="margin-top:8px;"></div>
+    </div>
+    <div class="card">
+      <div class="card-titulo" style="color:#1D4ED8;">📊 Costo transporte por litro</div>
+      <div id="costos-transporte"><div style="font-size:13px;color:var(--gris2);">Consulta combustible primero</div></div>
+    </div>
+  </div>
+</div>
+
 <!-- BOTTOM NAV -->
 <div class="bottom-nav" id="bottom-nav" style="display:none;">
   <button class="nav-item activo" onclick="navAdmin('screen-admin-dashboard',this)"><span class="nav-ico">🏠</span><span class="nav-txt">Inicio</span></button>
   <button class="nav-item" onclick="navAdmin('screen-admin-ganaderos',this)"><span class="nav-ico">🐄</span><span class="nav-txt">Ganaderos</span></button>
   <button class="nav-item" onclick="navAdmin('screen-admin-reportes',this)"><span class="nav-ico">📊</span><span class="nav-txt">Reportes</span></button>
+  <button class="nav-item" onclick="navAdmin('screen-admin-costos',this)"><span class="nav-ico">⛽</span><span class="nav-txt">Costos</span></button>
   <button class="nav-item" onclick="navAdmin('screen-admin-usuarios',this)"><span class="nav-ico">⚙️</span><span class="nav-txt">Admin</span></button>
 </div>
 
@@ -731,7 +755,7 @@ const app2=initializeApp(cfg,'secondary');const auth2=getAuth(app2);
 
 const SUPER_ADMINS=new Set(['WLPvBEGv9xeurUkJxfgZ1aWWf982','aldWRG0sMebNMjboOWb3MpPKFvn2','iTOJ7AOgNgYRG4vMSGsvAZuEeR23']);
 let UA=null,rol=null,ganList=[],regHoyGan={},_porGan={},_porRec={},_porRecPlanta={},_uidsCombinados=new Set(),precioActual=0,tabRep=0,editGanId=null,datosRep=[],datosInter=[],datosRecepciones=[],soloNovGlobal=false,modoElim=false;
-let recibSeleccionado=null,ganSel=null,listaRecogedores=[],modoHistorico=false,fechaReg=null;
+let recibSeleccionado=null,ganSel=null,listaRecogedores=[],modoHistorico=false,fechaReg=null,_costosRecFilter='todos';
 let _litrosPorGanadero={},_ordenGan='az';
 
 // ── HELPERS ──
@@ -838,26 +862,45 @@ async function initRec(){
 }
 async function resumenRec(){
   try{
-    const s=await getDocs(query(collection(db,'recolecciones'),where('recogedorId','==',UA.uid),where('fecha','==',getFechaReg())));
+    const fechaHoy=getFechaReg();
+    const s=await getDocs(query(collection(db,'recolecciones'),where('recogedorId','==',UA.uid),where('fecha','==',fechaHoy)));
     let L=0;const it=[];
     s.forEach(d=>{const da=d.data();L+=parseFloat(da.litros)||0;it.push(da);});
     document.getElementById('rec-litros-hoy').textContent=fmtL(L);
     document.getElementById('rec-registros-hoy').textContent=it.length;
     const listaEl=document.getElementById('rec-lista-hoy');
-    if(it.length===0){listaEl.innerHTML='<div class="vacio"><div class="ico">🐄</div><p>Sin registros hoy</p></div>';}
+    let htmlReg='';
+    if(it.length===0){htmlReg='<div class="vacio"><div class="ico">🐄</div><p>Sin registros hoy</p></div>';}
     else{
-      listaEl.innerHTML=it.sort((a,b)=>b.hora>a.hora?1:-1).map(x=>`
+      htmlReg=it.sort((a,b)=>b.hora>a.hora?1:-1).map(x=>`
         <div class="lista-item" style="cursor:default;flex-direction:column;align-items:stretch;gap:10px;">
           <div style="display:flex;justify-content:space-between;align-items:center;">
             <div><div class="nombre">${x.ganaderoNombre}</div><div class="detalle">${x.hora} · ${parseFloat(x.litros)}L${x.novedad?' · ⚠️ '+x.novedad:''}</div></div>
             <span class="badge badge-verde">${fmtL(parseFloat(x.litros))}L</span>
           </div>
-          <button data-docid="${UA.uid}_${x.ganaderoId}_${getFechaReg()}" data-nombre="${x.ganaderoNombre}" data-litros="${fmtL(parseFloat(x.litros))}" data-hora="${x.hora}" class="btn-elim-reg" style="background:var(--rojo2);color:var(--rojo);border:1px solid var(--rojo);border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;width:100%;text-align:center;">🗑️ Eliminar este registro</button>
+          <button data-docid="${UA.uid}_${x.ganaderoId}_${fechaHoy}" data-nombre="${x.ganaderoNombre}" data-litros="${fmtL(parseFloat(x.litros))}" data-hora="${x.hora}" class="btn-elim-reg" style="background:var(--rojo2);color:var(--rojo);border:1px solid var(--rojo);border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;width:100%;text-align:center;">🗑️ Eliminar este registro</button>
         </div>`).join('');
-      listaEl.querySelectorAll('.btn-elim-reg').forEach(function(btn){
-        btn.addEventListener('click',function(){abrirEliminarRegistro(this.dataset.docid,this.dataset.nombre,this.dataset.litros,this.dataset.hora);});
-      });
     }
+    // Cargar combustible del día
+    try{
+      const combDoc=await getDoc(doc(db,'combustible',UA.uid+'_'+fechaHoy));
+      if(combDoc.exists()){
+        const c=combDoc.data();
+        const puedeElim=fechaHoy===hoy();
+        htmlReg+=`<div style="margin-top:12px;font-size:14px;font-weight:700;color:#1D4ED8;">⛽ Combustible</div>`;
+        htmlReg+=`<div class="lista-item" style="cursor:default;flex-direction:column;align-items:stretch;gap:10px;border-left:4px solid #1D4ED8;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div><div class="nombre" style="color:#1D4ED8;">⛽ Combustible</div><div class="detalle">${c.hora} · ${c.galones} gal</div></div>
+            <span class="badge" style="background:#DBEAFE;color:#1D4ED8;font-weight:700;">${fmtPeso(c.valor)}</span>
+          </div>
+          ${puedeElim?`<button onclick="eliminarCombustible('${UA.uid+'_'+fechaHoy}')" style="background:#FEE2E2;color:var(--rojo);border:1px solid var(--rojo);border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;width:100%;text-align:center;">🗑️ Eliminar combustible</button>`:''}
+        </div>`;
+      }
+    }catch(e){}
+    listaEl.innerHTML=htmlReg;
+    listaEl.querySelectorAll('.btn-elim-reg').forEach(function(btn){
+      btn.addEventListener('click',function(){abrirEliminarRegistro(this.dataset.docid,this.dataset.nombre,this.dataset.litros,this.dataset.hora);});
+    });
   }catch(e){}
 }
 async function cargarGanaderos(){
@@ -941,6 +984,20 @@ async function guardarCombustible(){
     setTimeout(()=>cerrarModal('modal-combustible'),1200);
   }catch(e){alerta('m-comb-error','Error al guardar','rojo');}
 }window.guardarCombustible=guardarCombustible;
+async function eliminarCombustible(docId){
+  const motivo=prompt('¿Por qué eliminas este registro de combustible? (obligatorio)');
+  if(!motivo||!motivo.trim())return;
+  try{
+    const combDoc=await getDoc(doc(db,'combustible',docId));
+    if(combDoc.exists()){
+      const c=combDoc.data();
+      await addDoc(collection(db,'eliminaciones'),{tipo:'combustible',registroId:docId,proveedorId:c.recogedorId,proveedorNombre:c.recogedorNombre,valor:c.valor,galones:c.galones,fecha:c.fecha,hora:c.hora,motivo:motivo.trim(),eliminadoEn:hoy(),eliminadoHora:horaAhora(),eliminadoPorId:UA.uid,eliminadoPorNombre:UA.nombre||UA.email,eliminadoPorRol:'recogedor'});
+      await deleteDoc(doc(db,'combustible',docId));
+      alert('✅ Combustible eliminado');
+      await resumenRec();
+    }
+  }catch(e){alert('Error al eliminar');}
+}window.eliminarCombustible=eliminarCombustible;
 
 async function guardarGanaderoRecogedor(){const n=document.getElementById('m-gan-rec-nombre').value.trim();const t=document.getElementById('m-gan-rec-tel').value.trim();const v=document.getElementById('m-gan-rec-vereda').value.trim();if(!n){alerta('m-gan-rec-error','El nombre es obligatorio','rojo');return;}
   // Validar duplicado
@@ -1848,6 +1905,7 @@ async function cargarResumenSemanal(fechaRef){
     function fechaLocal(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
     const hoyD=fechaRef?new Date(fechaRef+'T12:00:00'):new Date();
     const inp=document.getElementById('semana-fecha-ref');if(inp&&!fechaRef)inp.value=fechaLocal(new Date());
+    const inpProd=document.getElementById('produccion-fecha');if(inpProd&&!fechaRef)inpProd.value=fechaLocal(new Date());
     // 7 days back from reference date (today by default)
     const esHoyRef=!fechaRef||fechaRef===fechaLocal(new Date());const dias=[];const maxI=esHoyRef?2:0;for(let i=maxI;i>=0;i--){const d=new Date(hoyD);d.setDate(hoyD.getDate()-i);dias.push(fechaLocal(d));}
     const snap=await getDocs(query(collection(db,'recolecciones'),where('fecha','>=',dias[0]),where('fecha','<=',dias[dias.length-1])));
@@ -1871,9 +1929,13 @@ async function sincronizarFecha(fecha){
   const inp1=document.getElementById('semana-fecha-ref');if(inp1)inp1.value=fecha;
   const inp2=document.getElementById('desglose-fecha');if(inp2)inp2.value=fecha;
   const inp3=document.getElementById('inter-fecha');if(inp3)inp3.value=fecha;
+  const inp4=document.getElementById('produccion-fecha');if(inp4)inp4.value=fecha;
+  const lblProd=document.getElementById('admin-produccion-fecha-label');
+  if(lblProd)lblProd.textContent=fecha===hoy()?'':'📅 '+fmtFecha(fecha);
   recargarTotales(fecha);
   cargarResumenSemanal(fecha);
   recargarDesglose(fecha);
+  cargarProduccionHoy(fecha);
 }
 window.sincronizarFecha=sincronizarFecha;
 
@@ -1938,9 +2000,9 @@ function calcularQuincenaPago(){
   if(lbl)lbl.textContent=`Quincena: ${deLabel}`;
 }
 
-async function cargarProduccionHoy(){
+async function cargarProduccionHoy(fechaParam){
   const el=document.getElementById('admin-produccion-hoy');if(!el)return;
-  const fecha=hoy();
+  const fecha=fechaParam||hoy();
   try{
     // Load tandas of today
     const snapT=await getDocs(query(collection(db,'tandas'),where('fecha','==',fecha)));
@@ -2581,6 +2643,7 @@ async function usuAdmin(){
           ${x.rol==='admin'?'':(x.bloqueado?`<button class="btn btn-verde btn-sm" onclick="toggleBloqueo('${x.id}',false)">🔓 Desbloquear</button>`:x.id!==UA.uid&&!SUPER_ADMINS.has(x.id)?`<button class="btn btn-rojo btn-sm" onclick="toggleBloqueo('${x.id}',true)">🔒 Bloquear</button>`:'')}
           ${x.rol==='recogedor'?`<button class="btn btn-sm" style="background:${x.esRutaCombinada?'#7c3aed':'transparent'};color:${x.esRutaCombinada?'white':'#7c3aed'};border:2px solid #7c3aed;" onclick="toggleRutaCombinada('${x.id}',${!!x.esRutaCombinada})">${x.esRutaCombinada?'🔗 Ruta combinada':'🔗 Marcar ruta combinada'}</button>`:''}
           ${x.rol!=='admin'?`<button class="btn btn-sm" style="background:${x.modoHistorico?'#D97706':'transparent'};color:${x.modoHistorico?'white':'#D97706'};border:2px solid #D97706;" onclick="toggleModoHistoricoUsuario('${x.id}',${!!x.modoHistorico})">📅 ${x.modoHistorico?'Histórico ON':'Histórico'}</button>`:''}
+          ${x.rol!=='admin'?`<button class="btn btn-sm" style="background:${x.nominaActual?'#15803d':'transparent'};color:${x.nominaActual?'white':'#15803d'};border:2px solid #15803d;" onclick="editarNomina('${x.id}','${(x.nombre||'').replace(/'/g,"\\'")}')">💰 ${x.nominaActual?fmtPeso(x.nominaActual):'Nómina'}</button>`:''}
         </div>
       </div>`).join('');
     // Event delegation para botones cambiar rol
@@ -2757,7 +2820,94 @@ async function confirmarEliminarRegistro(){
   }catch(e){alerta('m-elim-error','Error al eliminar. Verifica tu conexión.','rojo');console.error(e);}
 }window.confirmarEliminarRegistro=confirmarEliminarRegistro;
 
-function navAdmin(p,b){ir(p);document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('activo'));b.classList.add('activo');if(p==='screen-admin-dashboard')dashAdmin();if(p==='screen-admin-ganaderos')ganAdmin();if(p==='screen-admin-usuarios'){usuAdmin();interAdmin2();actualizarUIHistorico();}}window.navAdmin=navAdmin;
+// ── COSTOS ──
+function initCostos(){
+  const h=hoy();const d=parseInt(h.split('-')[2]);
+  const desde=d<=15?h.slice(0,8)+'01':h.slice(0,8)+'16';
+  document.getElementById('costos-desde').value=desde;
+  document.getElementById('costos-hasta').value=h;
+}
+async function cargarSeccionCostos(){
+  const desde=document.getElementById('costos-desde').value;
+  const hasta=document.getElementById('costos-hasta').value;
+  if(!desde||!hasta){alert('Selecciona fechas');return;}
+  try{
+  const snapC=await getDocs(query(collection(db,'combustible'),where('fecha','>=',desde),where('fecha','<=',hasta)));
+  const combustibles=[];snapC.forEach(d=>combustibles.push({id:d.id,...d.data()}));
+  const snapU=await getDocs(query(collection(db,'usuarios'),where('rol','==','recogedor')));
+  const recs=[];snapU.forEach(d=>recs.push({id:d.id,...d.data()}));
+  const snapR=await getDocs(query(collection(db,'recolecciones'),where('fecha','>=',desde),where('fecha','<=',hasta)));
+  const recolecciones=[];snapR.forEach(d=>recolecciones.push(d.data()));
+  const snapN=await getDocs(collection(db,'historialNomina'));
+  const nominas=[];snapN.forEach(d=>nominas.push(d.data()));
+  // Filtro recogedores
+  const filtroEl=document.getElementById('costos-filtro-rec');
+  let fH=`<button class="btn btn-sm" style="background:${_costosRecFilter==='todos'?'#1D4ED8':'transparent'};color:${_costosRecFilter==='todos'?'white':'#1D4ED8'};border:2px solid #1D4ED8;" onclick="_costosRecFilter='todos';cargarSeccionCostos()">Todos</button>`;
+  recs.forEach(r=>{fH+=`<button class="btn btn-sm" style="background:${_costosRecFilter===r.id?'#1D4ED8':'transparent'};color:${_costosRecFilter===r.id?'white':'#1D4ED8'};border:2px solid #1D4ED8;" onclick="_costosRecFilter='${r.id}';cargarSeccionCostos()">${r.nombre||r.email}</button>`;});
+  filtroEl.innerHTML=fH;
+  const combFilt=_costosRecFilter==='todos'?combustibles:combustibles.filter(c=>c.recogedorId===_costosRecFilter);
+  // Cards
+  const totalValor=combFilt.reduce((s,c)=>s+(parseFloat(c.valor)||0),0);
+  const totalGal=combFilt.reduce((s,c)=>s+(parseFloat(c.galones)||0),0);
+  const precioGal=totalGal>0?Math.round(totalValor/totalGal):'—';
+  document.getElementById('costos-cards').innerHTML=`
+    <div style="background:var(--crema);border-radius:12px;padding:10px;"><div style="font-size:10px;color:var(--gris2);font-weight:600;">TOTAL GASTADO</div><div style="font-size:18px;font-weight:800;">${fmtPeso(totalValor)}</div></div>
+    <div style="background:var(--crema);border-radius:12px;padding:10px;"><div style="font-size:10px;color:var(--gris2);font-weight:600;">TOTAL GALONES</div><div style="font-size:18px;font-weight:800;">${totalGal.toFixed(1)}</div></div>
+    <div style="background:var(--crema);border-radius:12px;padding:10px;"><div style="font-size:10px;color:var(--gris2);font-weight:600;">$/GALÓN</div><div style="font-size:18px;font-weight:800;">${precioGal==='—'?'—':fmtPeso(precioGal)}</div></div>`;
+  // Tabla combustible
+  if(combFilt.length===0){document.getElementById('costos-tabla').innerHTML='<div style="font-size:13px;color:var(--gris2);text-align:center;padding:12px;">Sin registros de combustible</div>';}
+  else{
+    let tH='<table class="tabla"><thead><tr><th>Fecha</th><th>Hora</th><th>Recogedor</th><th>Valor</th><th>Galones</th></tr></thead><tbody>';
+    combFilt.sort((a,b)=>b.fecha>a.fecha?1:b.fecha<a.fecha?-1:b.hora>a.hora?1:-1).forEach(c=>{tH+=`<tr><td>${c.fecha}</td><td>${c.hora}</td><td>${c.recogedorNombre}</td><td>${fmtPeso(c.valor)}</td><td>${c.galones}</td></tr>`;});
+    tH+='</tbody></table>';
+    document.getElementById('costos-tabla').innerHTML=tH;
+  }
+  document.getElementById('costos-export').innerHTML=combFilt.length>0?`<button class="btn btn-sm" style="background:#1D4ED8;color:white;" onclick="exportarCombustibleCSV()">⬇ Exportar CSV</button>`:'';
+  // ── COSTO TRANSPORTE POR LITRO ──
+  const d1=new Date(desde+'T12:00:00');const d2=new Date(hasta+'T12:00:00');
+  const diasRango=Math.round((d2-d1)/(1000*60*60*24))+1;
+  const porRec={};
+  recs.forEach(r=>{porRec[r.id]={nombre:r.nombre||r.email,litros:0,combustible:0,galones:0,ganaderos:new Set(),nomina:0};});
+  recolecciones.forEach(r=>{if(porRec[r.recogedorId]){porRec[r.recogedorId].litros+=parseFloat(r.litros)||0;porRec[r.recogedorId].ganaderos.add(r.ganaderoId);}});
+  combustibles.forEach(c=>{if(porRec[c.recogedorId]){porRec[c.recogedorId].combustible+=parseFloat(c.valor)||0;porRec[c.recogedorId].galones+=parseFloat(c.galones)||0;}});
+  recs.forEach(r=>{const noms=nominas.filter(n=>n.userId===r.id).sort((a,b)=>b.fechaDesde>a.fechaDesde?1:-1);if(noms.length>0)porRec[r.id].nomina=parseFloat(noms[0].precio)||0;});
+  const trEl=document.getElementById('costos-transporte');
+  const recsShow=_costosRecFilter==='todos'?Object.entries(porRec):Object.entries(porRec).filter(([id])=>id===_costosRecFilter);
+  if(recsShow.length===0||recsShow.every(([,v])=>v.litros===0)){trEl.innerHTML='<div style="font-size:13px;color:var(--gris2);">Sin datos de recolección en este rango</div>';}
+  else{
+    let trH=`<div style="font-size:12px;color:var(--gris2);margin-bottom:8px;">Rango: ${diasRango} días (${desde} → ${hasta})</div>`;
+    trH+='<table class="tabla"><thead><tr><th>Recogedor</th><th>Nómina/L</th><th>Comb/L</th><th>Total/L</th><th>Gal/1000L</th><th>$/Ganadero</th></tr></thead><tbody>';
+    recsShow.forEach(([id,v])=>{
+      if(v.litros===0)return;
+      const nominaPer=(v.nomina/30)*diasRango;const nomL=nominaPer/v.litros;const combL=v.combustible/v.litros;const totL=nomL+combL;
+      const galL=v.galones>0?((v.galones/v.litros)*1000).toFixed(2):'—';
+      const costoGan=v.ganaderos.size>0?Math.round(v.combustible/v.ganaderos.size):'—';
+      trH+=`<tr><td>${v.nombre}</td><td>${fmtPeso(Math.round(nomL))}</td><td>${fmtPeso(Math.round(combL))}</td><td style="font-weight:700;">${fmtPeso(Math.round(totL))}</td><td>${galL}</td><td>${costoGan==='—'?'—':fmtPeso(costoGan)}</td></tr>`;
+    });
+    trH+='</tbody></table>';
+    trH+='<div style="font-size:11px;color:var(--gris2);margin-top:6px;">Nómina/L = (salario÷30×días)÷litros · Comb/L = combustible÷litros · Gal/1000L = galones por cada 1000L · $/Ganadero = combustible÷ganaderos</div>';
+    trEl.innerHTML=trH;
+  }
+  }catch(e){console.error('Error costos:',e);}
+}window.cargarSeccionCostos=cargarSeccionCostos;
+function exportarCombustibleCSV(){
+  const desde=document.getElementById('costos-desde').value;const hasta=document.getElementById('costos-hasta').value;
+  const rows=document.querySelectorAll('#costos-tabla table tbody tr');
+  let csv='Fecha,Hora,Recogedor,Valor,Galones\n';
+  rows.forEach(r=>{const cells=[...r.querySelectorAll('td')].map(c=>c.textContent);csv+=cells.join(',')+'\n';});
+  descargar(csv,`combustible_${desde}_${hasta}.csv`);
+}window.exportarCombustibleCSV=exportarCombustibleCSV;
+async function editarNomina(uid,nombre){
+  const actual=prompt(`Nómina mensual de ${nombre} (en pesos):`);
+  if(!actual||!actual.trim())return;const precio=parseFloat(actual.trim());
+  if(isNaN(precio)||precio<=0){alert('Valor no válido');return;}
+  try{await addDoc(collection(db,'historialNomina'),{userId:uid,userName:nombre,precio,fechaDesde:hoy(),adminId:UA.uid,adminNombre:UA.nombre||UA.email,timestamp:serverTimestamp()});
+  await updateDoc(doc(db,'usuarios',uid),{nominaActual:precio});
+  alerta('usr-ok',`✅ Nómina de ${nombre}: ${fmtPeso(precio)}`,'verde');await usuAdmin();
+  }catch(e){alerta('usr-error','Error al guardar nómina','rojo');}
+}window.editarNomina=editarNomina;
+
+function navAdmin(p,b){ir(p);document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('activo'));b.classList.add('activo');if(p==='screen-admin-dashboard')dashAdmin();if(p==='screen-admin-ganaderos')ganAdmin();if(p==='screen-admin-costos')initCostos();if(p==='screen-admin-usuarios'){usuAdmin();interAdmin2();actualizarUIHistorico();}}window.navAdmin=navAdmin;
 document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')hacerLogin();});
 // iOS fix: usar tanto click como touchend
 const btnEntrar=document.getElementById('btn-entrar');
