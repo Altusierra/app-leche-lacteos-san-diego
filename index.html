@@ -1782,7 +1782,7 @@ async function abrirCierreDia(){
       const c=cDoc.data();
       document.getElementById('cc-lecheProc').value=c.lecheProc||lecheProc;
       document.getElementById('cc-totalBloques').value=c.totalBloques||totalBloques;
-      document.getElementById('cc-reprocDia').value=c.reprocDia??reprocDia;
+      // reprocDia siempre se calcula desde tandas, no del cierre guardado
       document.getElementById('cc-lechePlat').value=c.lechePlataforma||'';
       document.getElementById('cc-lecheSobra').value=c.lecheSobra||'';
       document.getElementById('cc-reprocFrio').value=c.reprocCuartoFrio||'';
@@ -2283,30 +2283,37 @@ async function cargarProduccionHoy(fechaParam){
     if(tandas.length===0&&!cierre){el.innerHTML='<div style="font-size:13px;color:var(--gris2);">Sin producción registrada hoy</div>';return;}
     const totalLitros=tandas.reduce((s,t)=>s+(parseFloat(t.litros)||0),0);
     const totalBloques=tandas.reduce((s,t)=>s+(parseInt(t.bloques2500)||0)+(parseInt(t.bloques1000)||0)+(parseInt(t.bloques500)||0),0);
-    // Reprocesos día = suma de bloques de reproceso
+    // Reprocesos día = suma de bloques de reproceso (siempre desde tandas)
     const reprocBloquesDia=tandas.reduce((s,t)=>{if(!t.reproceso)return s;const tipo=t.reprocTipo||'bloques';if(tipo==='bloques'||tipo==='ambos')return s+(parseInt(t.reprocBloques)||0);return s;},0);
-    const bloquesReales=cierre?cierre.bloquesReales||(totalBloques-reprocBloquesDia):(totalBloques-reprocBloquesDia);
+    const bloquesReales=totalBloques-reprocBloquesDia;
     const promedioReal=bloquesReales>0?((totalLitros/bloquesReales)/5).toFixed(2):'—';
     const cuajador=tandas.length>0?tandas[0].cuajadorNombre:'—';
     const estado=cierre?'✅ Día cerrado':'⏳ En proceso';
     const estadoColor=cierre?'#15803d':'#D97706';
-    // Canastas y unidades
-    let canastasReales=cierre?.canastasReales||0;
-    let unidadesReales=cierre?.unidadesReales||0;
-    let html=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;text-align:center;margin-bottom:10px;">
-      <div><div style="font-size:10px;color:var(--gris2);font-weight:600;">TANDAS</div><div style="font-size:20px;font-weight:800;">${tandas.length}</div></div>
-      <div><div style="font-size:9px;color:var(--gris2);font-weight:600;">LECHE PROC.</div><div style="font-size:20px;font-weight:800;">${fmtL(totalLitros)}</div></div>
-      <div><div style="font-size:9px;color:var(--gris2);font-weight:600;">BLQ. REALES</div><div style="font-size:20px;font-weight:800;color:#15803d;">${bloquesReales}</div></div>
-      <div><div style="font-size:10px;color:var(--gris2);font-weight:600;">PROMEDIO</div><div style="font-size:20px;font-weight:800;">${promedioReal}</div></div>
+    // Calcular canastas y unidades en vivo
+    const _cFC=cierre?parseInt(cierre.canastasFC)||0:0;
+    const _uFC=cierre?parseInt(cierre.unidadesFC)||0:0;
+    let ventasBlq2500Admin=0;
+    if(cierre&&cierre.ventasPlanta){cierre.ventasPlanta.forEach(v=>{if(v.tamano==='2500g')ventasBlq2500Admin+=parseInt(v.unidades)||0;});}
+    const bloquesParaCanastasAdmin=bloquesReales-ventasBlq2500Admin;
+    const canProd=Math.floor(bloquesParaCanastasAdmin/16);
+    const uniProd=bloquesParaCanastasAdmin-(canProd*16);
+    let canastasReales=canProd+_cFC;
+    let unidadesReales=uniProd+_uFC;
+    if(unidadesReales>=16){canastasReales+=Math.floor(unidadesReales/16);unidadesReales=unidadesReales%16;}
+    let html=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:6px;text-align:center;margin-bottom:10px;">
+      <div><div style="font-size:9px;color:var(--gris2);font-weight:600;">TANDAS</div><div style="font-size:18px;font-weight:800;">${tandas.length}</div></div>
+      <div><div style="font-size:8px;color:var(--gris2);font-weight:600;">LECHE PROC.</div><div style="font-size:18px;font-weight:800;">${fmtL(totalLitros)}</div></div>
+      <div><div style="font-size:9px;color:var(--gris2);font-weight:600;">BLOQUES</div><div style="font-size:18px;font-weight:800;">${totalBloques}</div></div>
+      <div><div style="font-size:8px;color:#15803d;font-weight:600;">BLQ. REALES</div><div style="font-size:18px;font-weight:800;color:#15803d;">${bloquesReales}</div></div>
+      <div><div style="font-size:9px;color:var(--gris2);font-weight:600;">PROMEDIO</div><div style="font-size:18px;font-weight:800;">${promedioReal}</div></div>
     </div>`;
-    // Canastas y unidades reales
-    if(cierre){
-      html+=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;margin-bottom:10px;background:#DCFCE7;border-radius:10px;padding:10px;">
-        <div><div style="font-size:9px;color:#15803d;font-weight:600;">CANASTAS</div><div style="font-size:20px;font-weight:800;color:#15803d;">${canastasReales}</div></div>
-        <div><div style="font-size:9px;color:#15803d;font-weight:600;">UNIDADES</div><div style="font-size:20px;font-weight:800;color:#15803d;">${unidadesReales}</div></div>
-        <div><div style="font-size:9px;color:#15803d;font-weight:600;">REPROC.</div><div style="font-size:20px;font-weight:800;color:#D97706;">${cierre.reprocDia||reprocBloquesDia}</div></div>
-      </div>`;
-    }
+    // Canastas, unidades, reprocesos
+    html+=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;margin-bottom:10px;background:#DCFCE7;border-radius:10px;padding:10px;">
+      <div><div style="font-size:9px;color:#15803d;font-weight:600;">CANASTAS</div><div style="font-size:20px;font-weight:800;color:#15803d;">${canastasReales}</div></div>
+      <div><div style="font-size:9px;color:#15803d;font-weight:600;">UNIDADES</div><div style="font-size:20px;font-weight:800;color:#15803d;">${unidadesReales}</div></div>
+      <div><div style="font-size:9px;color:#15803d;font-weight:600;">REPROC.</div><div style="font-size:20px;font-weight:800;color:#D97706;">${reprocBloquesDia}</div></div>
+    </div>`;
     html+=`<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span>Cuajador: <strong>${cuajador}</strong></span><span style="color:${estadoColor};font-weight:700;">${estado}</span></div>`;
     // Comparación leche plataforma recibidor vs cuajador
     if(cierre&&cierre.lechePlataforma){
