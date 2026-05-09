@@ -140,6 +140,7 @@
   <div class="header"><div><div class="sub">🐄 Lácteos San Diego</div><h1 id="rec-nombre-header">Recogedor</h1><div id="rec-rol-header" style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.7);margin-top:-4px;text-transform:uppercase;letter-spacing:1px;"></div></div><button class="btn-salir" onclick="cerrarSesion()">Salir</button></div>
   <div style="padding:20px;">
     <div id="rec-fecha" style="font-size:15px;color:var(--gris2);margin-bottom:16px;"></div>
+    <div id="rec-fecha-selector" style="display:none;margin-bottom:12px;"><label style="font-size:13px;font-weight:600;color:var(--gris2);">📅 Fecha (modo histórico):</label><input type="date" id="rec-fecha-home-input" onchange="cambiarFechaRecogedor()" style="width:100%;padding:8px;border:1.5px solid var(--gris1);border-radius:8px;margin-top:4px;"></div>
     <span id="rec-litros-hoy" style="display:none;">0</span><span id="rec-registros-hoy" style="display:none;">0</span>
     <div id="rec-resumen-semanal"></div>
     <div class="fila" style="margin-bottom:16px;">
@@ -196,6 +197,7 @@
   <div class="header"><div><div class="sub">🐄 Lácteos San Diego</div><h1 id="recibi-nombre-header">Recibidor</h1><div id="recibi-rol-header" style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.7);margin-top:-4px;text-transform:uppercase;letter-spacing:1px;"></div></div><button class="btn-salir" onclick="cerrarSesion()">Salir</button></div>
   <div style="padding:20px;">
     <div id="recibi-fecha" style="font-size:15px;color:var(--gris2);margin-bottom:16px;"></div>
+    <div id="recibi-fecha-selector" style="display:none;margin-bottom:12px;"><label style="font-size:13px;font-weight:600;color:var(--gris2);">📅 Fecha (modo histórico):</label><input type="date" id="recibi-fecha-home-input" onchange="cambiarFechaRecibidor()" style="width:100%;padding:8px;border:1.5px solid var(--gris1);border-radius:8px;margin-top:4px;"></div>
     <div id="recibi-alertas-container"></div>
     <span id="recibi-total-hoy" style="display:none;">0</span>
     <div id="recibi-resumen-semanal"></div>
@@ -360,7 +362,11 @@
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px;">
       <div><label style="font-size:12px;font-weight:600;">Reprocesos día</label><input type="number" id="cc-reprocDia" onchange="marcarEditado('reprocDia')" style="width:100%;padding:10px;border:1.5px solid var(--verde3);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;background:var(--crema);"></div>
-      <div><label style="font-size:12px;font-weight:600;">Diferencia leche</label><input type="number" id="cc-diferencia" onchange="marcarEditado('diferencia')" style="width:100%;padding:10px;border:1.5px solid var(--verde3);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;background:var(--crema);"></div>
+      <div><label style="font-size:12px;font-weight:600;">Bloques reales</label><input type="number" id="cc-bloquesReales" readonly style="width:100%;padding:10px;border:1.5px solid #15803d;border-radius:10px;font-size:14px;font-weight:700;color:#15803d;box-sizing:border-box;margin-top:4px;background:#DCFCE7;"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px;">
+      <div><label style="font-size:12px;font-weight:600;">Canastas reales</label><input type="number" id="cc-canastasReales" readonly style="width:100%;padding:10px;border:1.5px solid #15803d;border-radius:10px;font-size:14px;font-weight:700;color:#15803d;box-sizing:border-box;margin-top:4px;background:#DCFCE7;"></div>
+      <div><label style="font-size:12px;font-weight:600;">Unidades reales</label><input type="number" id="cc-unidadesReales" readonly style="width:100%;padding:10px;border:1.5px solid #15803d;border-radius:10px;font-size:14px;font-weight:700;color:#15803d;box-sizing:border-box;margin-top:4px;background:#DCFCE7;"></div>
     </div>
     <div id="cc-motivos-container" style="display:none;margin-bottom:12px;margin-top:4px;">
       <label style="font-size:12px;font-weight:600;color:#DC2626;">⚠️ ¿Por qué editaste los valores?</label>
@@ -368,7 +374,7 @@
     </div>
     <div style="font-weight:700;font-size:14px;color:var(--verde);margin-bottom:8px;margin-top:16px;">RESUMEN DEL DÍA</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-      <div><label style="font-size:12px;font-weight:600;">Leche plataforma</label><input type="number" id="cc-lechePlat" oninput="calcDiferenciaLeche()" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
+      <div><label style="font-size:12px;font-weight:600;">Leche plataforma</label><input type="number" id="cc-lechePlat" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
       <div><label style="font-size:12px;font-weight:600;">Leche sobra (opcional)</label><input type="number" id="cc-lecheSobra" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
@@ -376,15 +382,17 @@
       <div><label style="font-size:12px;font-weight:600;">Diferencia</label><input type="number" id="cc-difResumen" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-      <div><label style="font-size:12px;font-weight:600;">Quesos</label><input type="number" id="cc-quesos" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
       <div><label style="font-size:12px;font-weight:600;">Reproceso del día (opcional)</label><input type="number" id="cc-reprocDiaResumen" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
+      <div><label style="font-size:12px;font-weight:600;">Saldos (opcional)</label><input type="number" id="cc-saldos" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
     </div>
-    <div style="margin-bottom:8px;"><label style="font-size:12px;font-weight:600;">Saldos (opcional)</label><input type="number" id="cc-saldos" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
     <div style="font-weight:700;font-size:14px;color:var(--verde);margin-bottom:8px;margin-top:16px;">CUARTO FRÍO</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-      <div><label style="font-size:12px;font-weight:600;">Canastas cuarto frío</label><input type="number" id="cc-canastasFC" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
-      <div><label style="font-size:12px;font-weight:600;">Unidades (opcional)</label><input type="number" id="cc-unidadesFC" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
+      <div><label style="font-size:12px;font-weight:600;">Canastas cuarto frío</label><input type="number" id="cc-canastasFC" onchange="calcularBloquesReales()" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
+      <div><label style="font-size:12px;font-weight:600;">Unidades (opcional)</label><input type="number" id="cc-unidadesFC" onchange="calcularBloquesReales()" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
     </div>
+    <div style="font-weight:700;font-size:14px;color:var(--verde);margin-bottom:8px;margin-top:16px;">🧀 BLOQUES VENDIDOS EN PLANTA (opcional)</div>
+    <div id="cc-ventas-container"></div>
+    <button type="button" onclick="agregarVentaPlanta()" style="background:var(--verde3);color:var(--verde);border:2px solid var(--verde);border-radius:10px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;width:100%;margin-bottom:16px;">+ Agregar venta</button>
     <div id="cc-error" style="display:none;color:#DC2626;font-size:13px;margin-bottom:8px;"></div>
     <button class="btn" style="font-size:18px;padding:18px;background:var(--verde);color:white;width:100%;margin-top:8px;" onclick="guardarCierreDia()">✅ GUARDAR Y CERRAR DÍA</button>
   </div>
@@ -993,12 +1001,25 @@ async function initRec(){
       inp.max=hoy();
       inp.min=`${h.getFullYear()}-${String(h.getMonth()+1).padStart(2,'0')}-01`;
       inp.value=hoy();
-      inp.onchange=()=>{fechaReg=inp.value||hoy();document.getElementById('rec-fecha').textContent=fmtFecha(fechaReg);cargarGanaderos();resumenRec();}
+      inp.onchange=()=>{fechaReg=inp.value||hoy();document.getElementById('rec-fecha').textContent=fmtFecha(fechaReg);const hi=document.getElementById('rec-fecha-home-input');if(hi)hi.value=fechaReg;cargarGanaderos();resumenRec();}
     }
+    // Selector en home
+    const selHome=document.getElementById('rec-fecha-selector');if(selHome)selHome.style.display='block';
+    const inpHome=document.getElementById('rec-fecha-home-input');
+    if(inpHome){const h=new Date();inpHome.max=hoy();inpHome.min=`${h.getFullYear()}-${String(h.getMonth()+1).padStart(2,'0')}-01`;inpHome.value=hoy();}
+  }else{
+    const selHome=document.getElementById('rec-fecha-selector');if(selHome)selHome.style.display='none';
   }
   ir('screen-rec-home');
   await cargarGanaderos();await resumenRec();cargarResumenRecSemanal();
 }
+function cambiarFechaRecogedor(){
+  const inp=document.getElementById('rec-fecha-home-input');
+  fechaReg=inp?inp.value||hoy():hoy();
+  document.getElementById('rec-fecha').textContent=fmtFecha(fechaReg);
+  const regInp=document.getElementById('reg-fecha');if(regInp)regInp.value=fechaReg;
+  cargarGanaderos();resumenRec();
+}window.cambiarFechaRecogedor=cambiarFechaRecogedor;
 async function resumenRec(){
   try{
     const fechaHoy=getFechaReg();
@@ -1170,11 +1191,35 @@ async function cargarResumenRecSemanal(){
 // ══════════════════════════════════════════
 //  RECIBIDOR
 // ══════════════════════════════════════════
-async function initRecibidor(){document.getElementById('recibi-nombre-header').textContent=UA.nombre||'Recibidor';document.getElementById('recibi-rol-header').textContent='recibidor';document.getElementById('recibi-fecha').textContent=fmtFecha(hoy());ir('screen-recibi-home');await resumenRecibidor();await cargarInter();cargarResumenRecibiSemanal();}
+let fechaRegRecibi=null;
+function getFechaRegRecibidor(){return fechaRegRecibi||hoy();}
+async function initRecibidor(){
+  document.getElementById('recibi-nombre-header').textContent=UA.nombre||'Recibidor';
+  document.getElementById('recibi-rol-header').textContent='recibidor';
+  fechaRegRecibi=hoy();
+  document.getElementById('recibi-fecha').textContent=fmtFecha(fechaRegRecibi);
+  // Check modo historico
+  let modoHistRecibi=false;
+  try{const uDoc=await getDoc(doc(db,'usuarios',UA.uid));modoHistRecibi=uDoc.exists()&&uDoc.data().modoHistorico||false;}catch(e){}
+  const selHome=document.getElementById('recibi-fecha-selector');
+  if(modoHistRecibi){
+    if(selHome)selHome.style.display='block';
+    const inpHome=document.getElementById('recibi-fecha-home-input');
+    if(inpHome){const h=new Date();inpHome.max=hoy();inpHome.min=`${h.getFullYear()}-${String(h.getMonth()+1).padStart(2,'0')}-01`;inpHome.value=hoy();}
+  }else{if(selHome)selHome.style.display='none';}
+  ir('screen-recibi-home');await resumenRecibidor();await cargarInter();cargarResumenRecibiSemanal();
+}
+function cambiarFechaRecibidor(){
+  const inp=document.getElementById('recibi-fecha-home-input');
+  fechaRegRecibi=inp?inp.value||hoy():hoy();
+  document.getElementById('recibi-fecha').textContent=fmtFecha(fechaRegRecibi);
+  resumenRecibidor();cargarInter();
+}window.cambiarFechaRecibidor=cambiarFechaRecibidor;
 async function resumenRecibidor(){
   try{
-    // Solo los registros que hizo el recibidor actual hoy
-    const sRec=await getDocs(query(collection(db,'recepciones'),where('fecha','==',hoy())));
+    // Solo los registros que hizo el recibidor actual
+    const _fechaRecibi=getFechaRegRecibidor();
+    const sRec=await getDocs(query(collection(db,'recepciones'),where('fecha','==',_fechaRecibi)));
     let totalMio=0;const receps={};
     sRec.forEach(d=>{const da=d.data();if(da.recibidorId!==UA.uid)return;totalMio+=parseFloat(da.litros)||0;receps[da.recogedorId]={litros:parseFloat(da.litros)||0,nombre:da.recogedorNombre,novedad:da.novedad||''};});
     // total se actualiza después de contar también intermediarios
@@ -1190,10 +1235,10 @@ async function resumenRecibidor(){
             </div>
             <span class="badge badge-verde">${fmtL(rv.litros)}L</span>
           </div>
-          <button data-recepelimid="${rid}_${hoy()}" data-recepnombre="${rv.nombre}" data-receplitros="${fmtL(rv.litros)}" class="btn-elim-recep" style="background:var(--rojo2);color:var(--rojo);border:1px solid var(--rojo);border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;width:100%;text-align:center;">🗑️ Eliminar este registro</button>
+          <button data-recepelimid="${rid}_${_fechaRecibi}" data-recepnombre="${rv.nombre}" data-receplitros="${fmtL(rv.litros)}" class="btn-elim-recep" style="background:var(--rojo2);color:var(--rojo);border:1px solid var(--rojo);border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;width:100%;text-align:center;">🗑️ Eliminar este registro</button>
         </div>`).join('');
     // Intermediarios del día
-    const sInter=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','==',hoy())));
+    const sInter=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','==',_fechaRecibi)));
     let totalInter=0;const recepsInter={};
     sInter.forEach(d=>{const da=d.data();if(da.recibidorId!==UA.uid)return;totalInter+=parseFloat(da.litros)||0;recepsInter[da.intermediarioId]={id:d.id,litros:parseFloat(da.litros)||0,nombre:da.intermediarioNombre,novedad:da.novedad||''};});
     document.getElementById('recibi-total-hoy').textContent=Object.keys(receps).length+Object.keys(recepsInter).length;
@@ -1228,9 +1273,10 @@ async function cargarRecogedoresParaRecibidor(){
     // Agregar la ruta combinada al final de la lista
     todosRec.filter(u=>u.esRutaCombinada).forEach(u=>listaRecogedores.push(u));
     listaRecogedores.sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es'));
-    const sCol=await getDocs(query(collection(db,'recolecciones'),where('fecha','==',hoy())));
+    const _fRec=getFechaRegRecibidor();
+    const sCol=await getDocs(query(collection(db,'recolecciones'),where('fecha','==',_fRec)));
     const rutaTot={};sCol.forEach(d=>{const da=d.data();if(!rutaTot[da.recogedorId])rutaTot[da.recogedorId]=0;rutaTot[da.recogedorId]+=parseFloat(da.litros)||0;});
-    const sRec=await getDocs(query(collection(db,'recepciones'),where('fecha','==',hoy())));
+    const sRec=await getDocs(query(collection(db,'recepciones'),where('fecha','==',_fRec)));
     const yaReg={};sRec.forEach(d=>{const da=d.data();yaReg[da.recogedorId]=parseFloat(da.litros)||0;});
     document.getElementById('lista-recogedores-recibi').innerHTML=listaRecogedores.length===0?'<div class="vacio"><div class="ico">👤</div><p>No hay recogedores</p></div>':listaRecogedores.map(r=>{const rutaL=rutaTot[r.id]||0;const tieneReg=yaReg[r.id]!==undefined;return`<div class="lista-item" onclick="selRecibidor('${r.id}')"><div><div class="nombre">${r.nombre||r.email}</div><div class="detalle">${tieneReg?'✅ Registrado: '+fmtL(yaReg[r.id])+'L':'⏳ Pendiente'}</div></div><span class="flecha">›</span></div>`;}).join('');
   }catch(e){console.error(e);}
@@ -1240,8 +1286,8 @@ async function cargarInter(){
     const s=await getDocs(query(collection(db,'intermediarios'),where('activo','==',true)));
     listaInter=[];s.forEach(d=>listaInter.push({id:d.id,...d.data()}));
     listaInter.sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es'));
-    // Check which intermediarios already registered today
-    const sReg=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','==',hoy())));
+    // Check which intermediarios already registered
+    const sReg=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','==',getFechaRegRecibidor())));
     const regHoy={};sReg.forEach(d=>{const da=d.data();regHoy[da.intermediarioId]=parseFloat(da.litros)||0;});
     renderInterRecibi(listaInter,regHoy);
   }catch(e){console.error(e);}
@@ -1271,7 +1317,7 @@ async function seleccionarInter(id){
   document.getElementById('recibi-inter-litros').value='';
   document.getElementById('recibi-inter-novedad').value='';
   ocult('recibi-inter-error');
-  const docId=`${interSeleccionado.id}_${hoy()}`;
+  const docId=`${interSeleccionado.id}_${getFechaRegRecibidor()}`;
   const ex=await getDoc(doc(db,'recepcionesInter',docId));
   const av=document.getElementById('recibi-inter-ya-reg');
   if(ex.exists()){av.style.display='block';av.textContent=`⚠️ Ya registraste ${ex.data().litros}L de este intermediario hoy. Si guardas, se reemplazará.`;}
@@ -1286,10 +1332,10 @@ async function guardarRecepcionInter(){
   if(!L||L<=0){alerta('recibi-inter-error','Ingresa los litros','rojo');if(_btn){_btn.disabled=false;_btn.textContent='💾 GUARDAR';}return;}
   if(!navigator.onLine){alerta('recibi-inter-error','⚠️ Sin internet. El registro no se guardó. Conéctate e intenta de nuevo.','rojo');if(_btn){_btn.disabled=false;_btn.textContent='💾 GUARDAR';}return;}
   try{
-    const docId=`${interSeleccionado.id}_${hoy()}`;
+    const docId=`${interSeleccionado.id}_${getFechaRegRecibidor()}`;
     await setDoc(doc(db,'recepcionesInter',docId),{
       intermediarioId:interSeleccionado.id,intermediarioNombre:interSeleccionado.nombre,
-      litros:L,novedad,fecha:hoy(),hora:horaAhora(),
+      litros:L,novedad,fecha:getFechaRegRecibidor(),hora:horaAhora(),
       recibidorId:UA.uid,recibidorNombre:UA.nombre||UA.email,
       timestamp:serverTimestamp()
     });
@@ -1387,9 +1433,9 @@ async function confirmarEliminarRecepcion(){
 async function selRecibidor(id){
   recibSeleccionado=listaRecogedores.find(r=>r.id===id);if(!recibSeleccionado)return;
   try{
-  const sCol=await getDocs(query(collection(db,'recolecciones'),where('fecha','==',hoy())));
+  const sCol=await getDocs(query(collection(db,'recolecciones'),where('fecha','==',getFechaRegRecibidor())));
   let rutaTotal=0;sCol.forEach(d=>{const da=d.data();if(da.recogedorId===id)rutaTotal+=parseFloat(da.litros)||0;});
-  const docId=`${id}_${hoy()}`;const ex=await getDoc(doc(db,'recepciones',docId));
+  const docId=`${id}_${getFechaRegRecibidor()}`;const ex=await getDoc(doc(db,'recepciones',docId));
   document.getElementById('recibi-recogedor-nombre').textContent=recibSeleccionado.nombre||recibSeleccionado.email;
   document.getElementById('recibi-recogedor-ruta-total').textContent=`Total ruta hoy: ${fmtL(rutaTotal)} litros`;
   const av=document.getElementById('recibi-ya-registrado');
@@ -1404,10 +1450,11 @@ async function guardarRecepcion(){
   if(!L||L<=0){alerta('recibi-form-error','Ingresa los litros recibidos','rojo');if(_btn){_btn.disabled=false;_btn.textContent='💾 GUARDAR';}return;}
   if(!navigator.onLine){alerta('recibi-form-error','⚠️ Sin internet. El registro no se guardó. Conéctate e intenta de nuevo.','rojo');if(_btn){_btn.disabled=false;_btn.textContent='💾 GUARDAR';}return;}
   try{
-    const sCol=await getDocs(query(collection(db,'recolecciones'),where('recogedorId','==',recibSeleccionado.id),where('fecha','==',hoy())));
+    const _fGR=getFechaRegRecibidor();
+    const sCol=await getDocs(query(collection(db,'recolecciones'),where('recogedorId','==',recibSeleccionado.id),where('fecha','==',_fGR)));
     let rutaTotal=0;sCol.forEach(d=>{rutaTotal+=parseFloat(d.data().litros)||0;});
-    const docId=`${recibSeleccionado.id}_${hoy()}`;
-    await setDoc(doc(db,'recepciones',docId),{recogedorId:recibSeleccionado.id,recogedorNombre:recibSeleccionado.nombre||recibSeleccionado.email,litros:L,novedad,fecha:hoy(),hora:horaAhora(),recibidorId:UA.uid,recibidorNombre:UA.nombre||UA.email,timestamp:serverTimestamp()});
+    const docId=`${recibSeleccionado.id}_${_fGR}`;
+    await setDoc(doc(db,'recepciones',docId),{recogedorId:recibSeleccionado.id,recogedorNombre:recibSeleccionado.nombre||recibSeleccionado.email,litros:L,novedad,fecha:_fGR,hora:horaAhora(),recibidorId:UA.uid,recibidorNombre:UA.nombre||UA.email,timestamp:serverTimestamp()});
     const hayAlerta=L>rutaTotal;
     document.getElementById('recibi-exito-detalle').textContent=`${L}L de ${recibSeleccionado.nombre||recibSeleccionado.email}. Ruta: ${fmtL(rutaTotal)}L`;
     const ad=document.getElementById('recibi-exito-alerta');
@@ -1597,7 +1644,7 @@ async function selProveedorCuajador(id,nombre,tipo){
   document.getElementById('cuajador-prov-nombre').textContent=`${nombre} (${tipo})`;
   // Clear form
   ['ct-acidez','ct-citrato','ct-acidoCitrico','ct-bloques2500','ct-bloques1000','ct-bloques500','ct-novedad','ct-reprocBloques','ct-reprocLitros'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
-  document.getElementById('ct-litros').value=800;document.getElementById('ct-cuajo').value=70;;
+  document.getElementById('ct-litros').value=800;document.getElementById('ct-cuajo').value=70;
   _cuajadorReproceso=false;document.getElementById('ct-reproceso-btn').textContent='NO';document.getElementById('ct-reproceso-btn').style.background='white';document.getElementById('ct-reproceso-btn').style.color='var(--gris3)';
   const repCampos=document.getElementById('ct-reproceso-campos');if(repCampos)repCampos.style.display='none';
   document.getElementById('ct-error').style.display='none';
@@ -1702,8 +1749,7 @@ async function abrirCierreDia(){
     if(!t.litros)faltan.push('Litros');
     if(!t.cuajo)faltan.push('Cuajo');
     if(isNaN(t.acidez)||t.acidez===undefined||t.acidez===null)faltan.push('Acidez');
-    if(!t.citrato)faltan.push('Citrato');
-    if(!t.bloques2500&&!t.bloques1000&&!t.bloques500)faltan.push('Bloques');
+    // citrato y bloques son opcionales (pueden ser 0)
     if(t.reproceso&&t.reprocTipo==='bloques'&&!t.reprocBloques&&!t.reprocCant)faltan.push('Bloques reproceso');
     if(t.reproceso&&t.reprocTipo==='litros'&&!t.reprocLitros)faltan.push('Litros reproceso');
     if(t.reproceso&&t.reprocTipo==='ambos'&&!t.reprocBloques&&!t.reprocLitros)faltan.push('Bloques/Litros reproceso');
@@ -1714,19 +1760,22 @@ async function abrirCierreDia(){
   // Auto-calculate fields
   const lecheProc=tandas.reduce((s,t)=>s+(parseFloat(t.litros)||0),0);
   const totalBloques=tandas.reduce((s,t)=>s+(parseInt(t.bloques2500)||0)+(parseInt(t.bloques1000)||0)+(parseInt(t.bloques500)||0),0);
-  const reprocDia=tandas.filter(t=>t.reproceso).length;
-  _cuajadorAutoCalc={lecheProc,totalBloques,reprocDia,diferencia:0};
+  // Reprocesos día = suma de bloques de reproceso (no count de tandas)
+  const reprocDia=tandas.reduce((s,t)=>{if(!t.reproceso)return s;const tipo=t.reprocTipo||'bloques';if(tipo==='bloques'||tipo==='ambos')return s+(parseInt(t.reprocBloques)||0);return s;},0);
+  _cuajadorAutoCalc={lecheProc,totalBloques,reprocDia};
   _cuajadorCamposEditados=new Set();
   document.getElementById('cc-lecheProc').value=lecheProc;
   document.getElementById('cc-totalBloques').value=totalBloques;
   document.getElementById('cc-reprocDia').value=reprocDia;
-  document.getElementById('cc-diferencia').value='';
   document.getElementById('cc-motivos-container').style.display='none';
   document.getElementById('cc-motivo-edicion').value='';
   // Clear all manual fields
-  ['cc-lechePlat','cc-lecheSobra','cc-reprocFrio','cc-difResumen','cc-quesos','cc-reprocDiaResumen','cc-canastasFC','cc-unidadesFC','cc-saldos'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  ['cc-lechePlat','cc-lecheSobra','cc-reprocFrio','cc-difResumen','cc-reprocDiaResumen','cc-canastasFC','cc-unidadesFC','cc-saldos'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   document.getElementById('cc-error').style.display='none';
+  // Clear ventas
+  document.getElementById('cc-ventas-container').innerHTML='';
   // Load existing cierre if any
+  let ventasCargadas=[];
   try{
     const cDoc=await getDoc(doc(db,'cierresDia',fecha));
     if(cDoc.exists()){
@@ -1734,18 +1783,23 @@ async function abrirCierreDia(){
       document.getElementById('cc-lecheProc').value=c.lecheProc||lecheProc;
       document.getElementById('cc-totalBloques').value=c.totalBloques||totalBloques;
       document.getElementById('cc-reprocDia').value=c.reprocDia??reprocDia;
-      document.getElementById('cc-diferencia').value=c.diferencia||'';
       document.getElementById('cc-lechePlat').value=c.lechePlataforma||'';
       document.getElementById('cc-lecheSobra').value=c.lecheSobra||'';
       document.getElementById('cc-reprocFrio').value=c.reprocCuartoFrio||'';
       document.getElementById('cc-difResumen').value=c.difResumen||'';
-      document.getElementById('cc-quesos').value=c.quesos||'';
       document.getElementById('cc-reprocDiaResumen').value=c.reprocDiaResumen||'';
       document.getElementById('cc-canastasFC').value=c.canastasFC||'';
       document.getElementById('cc-unidadesFC').value=c.unidadesFC||'';
       document.getElementById('cc-saldos').value=c.saldos||'';
+      // Cargar ventas si existen
+      if(c.ventasPlanta&&c.ventasPlanta.length>0){
+        ventasCargadas=c.ventasPlanta;
+        c.ventasPlanta.forEach(v=>agregarVentaPlanta(v));
+      }
     }
   }catch(e){}
+  // Calcular bloques reales, canastas, unidades
+  calcularBloquesReales();
   ir('screen-cuajador-cierre');
 }window.abrirCierreDia=abrirCierreDia;
 
@@ -1754,6 +1808,7 @@ function marcarEditado(campo){
   const orig=_cuajadorAutoCalc[campo];
   if(val!==orig){_cuajadorCamposEditados.add(campo);}else{_cuajadorCamposEditados.delete(campo);}
   document.getElementById('cc-motivos-container').style.display=_cuajadorCamposEditados.size>0?'block':'none';
+  if(campo==='totalBloques'||campo==='reprocDia')calcularBloquesReales();
 }window.marcarEditado=marcarEditado;
 
 function toggleSensorial(val){
@@ -1770,39 +1825,95 @@ function toggleEmpacado(val){
   nc.style.background=val==='nc'?'#DC2626':'white';nc.style.color=val==='nc'?'white':'var(--gris3)';
 }window.toggleEmpacado=toggleEmpacado;
 
-function calcDiferenciaLeche(){
-  const plat=parseFloat(document.getElementById('cc-lechePlat').value)||0;
-  const proc=parseFloat(document.getElementById('cc-lecheProc').value)||0;
-  const diff=plat-proc;
-  document.getElementById('cc-diferencia').value=diff;
-  _cuajadorAutoCalc.diferencia=diff;
-}window.calcDiferenciaLeche=calcDiferenciaLeche;
+function calcularBloquesReales(){
+  const totalBloques=parseInt(document.getElementById('cc-totalBloques').value)||0;
+  const reprocDia=parseInt(document.getElementById('cc-reprocDia').value)||0;
+  const bloquesReales=totalBloques-reprocDia;
+  document.getElementById('cc-bloquesReales').value=bloquesReales;
+  // Canastas y unidades: solo bloques de 2500g cuentan para canastas
+  const canastasFC=parseInt(document.getElementById('cc-canastasFC').value)||0;
+  const unidadesFC=parseInt(document.getElementById('cc-unidadesFC').value)||0;
+  // Restar ventas de bloques de 2500g
+  let ventasBlq2500=0;
+  document.querySelectorAll('.venta-row').forEach(row=>{
+    const tam=row.querySelector('.venta-tamano')?.value;
+    const uni=parseInt(row.querySelector('.venta-unidades')?.value)||0;
+    if(tam==='2500g')ventasBlq2500+=uni;
+  });
+  const bloquesParaCanastas=bloquesReales-ventasBlq2500;
+  const canastasProduccion=Math.floor(bloquesParaCanastas/16);
+  const unidadesProduccion=bloquesParaCanastas-(canastasProduccion*16);
+  let totalCanastas=canastasProduccion+canastasFC;
+  let totalUnidades=unidadesProduccion+unidadesFC;
+  // Normalizar: si unidades >= 16, convertir a canasta extra
+  if(totalUnidades>=16){totalCanastas+=Math.floor(totalUnidades/16);totalUnidades=totalUnidades%16;}
+  document.getElementById('cc-canastasReales').value=totalCanastas;
+  document.getElementById('cc-unidadesReales').value=totalUnidades;
+}window.calcularBloquesReales=calcularBloquesReales;
+
+let _ventaCounter=0;
+function agregarVentaPlanta(datos){
+  _ventaCounter++;
+  const id=_ventaCounter;
+  const cont=document.getElementById('cc-ventas-container');
+  const div=document.createElement('div');
+  div.className='venta-row';
+  div.id='venta-'+id;
+  div.style.cssText='background:white;border:1.5px solid var(--gris1);border-radius:10px;padding:12px;margin-bottom:8px;';
+  div.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><span style="font-size:12px;font-weight:700;color:var(--verde);">Venta #${id}</span><button type="button" onclick="quitarVentaPlanta('venta-${id}')" style="background:var(--rojo2);color:var(--rojo);border:1px solid var(--rojo);border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;">✕ Quitar</button></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+<div><label style="font-size:11px;font-weight:600;">Nombre</label><input type="text" class="venta-nombre" placeholder="Comprador" value="${datos?.nombre||''}" style="width:100%;padding:8px;border:1.5px solid var(--gris1);border-radius:8px;font-size:13px;box-sizing:border-box;margin-top:2px;"></div>
+<div><label style="font-size:11px;font-weight:600;">Tipo</label><select class="venta-tipo" style="width:100%;padding:8px;border:1.5px solid var(--gris1);border-radius:8px;font-size:13px;box-sizing:border-box;margin-top:2px;"><option value="comprado" ${datos?.tipo==='fiado'?'':'selected'}>Comprado</option><option value="fiado" ${datos?.tipo==='fiado'?'selected':''}>Fiado</option></select></div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+<div><label style="font-size:11px;font-weight:600;">Unidades</label><input type="number" class="venta-unidades" placeholder="0" value="${datos?.unidades||''}" onchange="calcularBloquesReales()" style="width:100%;padding:8px;border:1.5px solid var(--gris1);border-radius:8px;font-size:13px;box-sizing:border-box;margin-top:2px;"></div>
+<div><label style="font-size:11px;font-weight:600;">Tamaño</label><select class="venta-tamano" onchange="calcularBloquesReales()" style="width:100%;padding:8px;border:1.5px solid var(--gris1);border-radius:8px;font-size:13px;box-sizing:border-box;margin-top:2px;"><option value="2500g" ${datos?.tamano==='1000g'||datos?.tamano==='500g'?'':'selected'}>2500g</option><option value="1000g" ${datos?.tamano==='1000g'?'selected':''}>1000g</option><option value="500g" ${datos?.tamano==='500g'?'selected':''}>500g</option></select></div>
+</div>`;
+  cont.appendChild(div);
+  calcularBloquesReales();
+}window.agregarVentaPlanta=agregarVentaPlanta;
+
+function quitarVentaPlanta(id){
+  const el=document.getElementById(id);if(el)el.remove();
+  calcularBloquesReales();
+}window.quitarVentaPlanta=quitarVentaPlanta;
+
+function recogerVentasPlanta(){
+  const ventas=[];
+  document.querySelectorAll('.venta-row').forEach(row=>{
+    const nombre=(row.querySelector('.venta-nombre')?.value||'').trim();
+    const tipo=row.querySelector('.venta-tipo')?.value||'comprado';
+    const unidades=parseInt(row.querySelector('.venta-unidades')?.value)||0;
+    const tamano=row.querySelector('.venta-tamano')?.value||'2500g';
+    if(nombre||unidades>0)ventas.push({nombre,tipo,unidades,tamano});
+  });
+  return ventas;
+}
 
 async function guardarCierreDia(){
   if(!navigator.onLine){document.getElementById('cc-error').textContent='❌ Sin conexión a internet';document.getElementById('cc-error').style.display='block';return;}
-  // Validate required fields
-  const campos={lechePlat:'cc-lechePlat',reprocFrio:'cc-reprocFrio',quesos:'cc-quesos',canastasFC:'cc-canastasFC'};
-  for(const[k,id]of Object.entries(campos)){
-    const v=document.getElementById(id).value;
-    if(v===''||v===null||v===undefined){document.getElementById('cc-error').textContent=`⚠️ Completa todos los campos para cerrar el día`;document.getElementById('cc-error').style.display='block';return;}
-  }
+  // Campos del resumen son opcionales
   if(_cuajadorCamposEditados.size>0&&!(document.getElementById('cc-motivo-edicion').value||'').trim()){document.getElementById('cc-error').textContent='⚠️ Debes explicar por qué editaste los campos calculados';document.getElementById('cc-error').style.display='block';return;}
   const fecha=getFechaRegCuajador();
   try{
+    const totalBloques=parseInt(document.getElementById('cc-totalBloques').value)||0;
+    const reprocDia=parseInt(document.getElementById('cc-reprocDia').value)||0;
+    const bloquesReales=totalBloques-reprocDia;
+    const canastasReales=parseInt(document.getElementById('cc-canastasReales').value)||0;
+    const unidadesReales=parseInt(document.getElementById('cc-unidadesReales').value)||0;
+    const ventasPlanta=recogerVentasPlanta();
     const data={fecha,cuajadorId:UA.uid,cuajadorNombre:UA.nombre||UA.email,
       lecheProc:parseFloat(document.getElementById('cc-lecheProc').value)||0,
-      totalBloques:parseInt(document.getElementById('cc-totalBloques').value)||0,
-      reprocDia:parseInt(document.getElementById('cc-reprocDia').value)||0,
-      diferencia:parseFloat(document.getElementById('cc-diferencia').value)||0,
+      totalBloques,reprocDia,bloquesReales,canastasReales,unidadesReales,
       lechePlataforma:parseFloat(document.getElementById('cc-lechePlat').value)||0,
       lecheSobra:parseFloat(document.getElementById('cc-lecheSobra').value)||0,
       reprocCuartoFrio:parseInt(document.getElementById('cc-reprocFrio').value)||0,
-      quesos:parseInt(document.getElementById('cc-quesos').value)||0,
       reprocDiaResumen:parseInt(document.getElementById('cc-reprocDiaResumen').value)||0,
       difResumen:parseFloat(document.getElementById('cc-difResumen').value)||0,
       canastasFC:parseInt(document.getElementById('cc-canastasFC').value)||0,
       unidadesFC:parseInt(document.getElementById('cc-unidadesFC').value)||0,
       saldos:parseFloat(document.getElementById('cc-saldos').value)||0,
+      ventasPlanta,
       horaCierre:horaAhora(),timestamp:serverTimestamp()};
     if(_cuajadorCamposEditados.size>0){
       data.camposEditados=[..._cuajadorCamposEditados];
@@ -2172,24 +2283,60 @@ async function cargarProduccionHoy(fechaParam){
     if(tandas.length===0&&!cierre){el.innerHTML='<div style="font-size:13px;color:var(--gris2);">Sin producción registrada hoy</div>';return;}
     const totalLitros=tandas.reduce((s,t)=>s+(parseFloat(t.litros)||0),0);
     const totalBloques=tandas.reduce((s,t)=>s+(parseInt(t.bloques2500)||0)+(parseInt(t.bloques1000)||0)+(parseInt(t.bloques500)||0),0);
-    const promedioTotal=totalBloques>0?((totalLitros/totalBloques)/5).toFixed(2):'—';
+    // Reprocesos día = suma de bloques de reproceso
+    const reprocBloquesDia=tandas.reduce((s,t)=>{if(!t.reproceso)return s;const tipo=t.reprocTipo||'bloques';if(tipo==='bloques'||tipo==='ambos')return s+(parseInt(t.reprocBloques)||0);return s;},0);
+    const bloquesReales=cierre?cierre.bloquesReales||(totalBloques-reprocBloquesDia):(totalBloques-reprocBloquesDia);
+    const promedioReal=bloquesReales>0?((totalLitros/bloquesReales)/5).toFixed(2):'—';
     const cuajador=tandas.length>0?tandas[0].cuajadorNombre:'—';
     const estado=cierre?'✅ Día cerrado':'⏳ En proceso';
     const estadoColor=cierre?'#15803d':'#D97706';
+    // Canastas y unidades
+    let canastasReales=cierre?.canastasReales||0;
+    let unidadesReales=cierre?.unidadesReales||0;
     let html=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;text-align:center;margin-bottom:10px;">
       <div><div style="font-size:10px;color:var(--gris2);font-weight:600;">TANDAS</div><div style="font-size:20px;font-weight:800;">${tandas.length}</div></div>
-      <div><div style="font-size:10px;color:var(--gris2);font-weight:600;">LITROS</div><div style="font-size:20px;font-weight:800;">${fmtL(totalLitros)}</div></div>
-      <div><div style="font-size:10px;color:var(--gris2);font-weight:600;">BLOQUES</div><div style="font-size:20px;font-weight:800;">${totalBloques}</div></div>
-      <div><div style="font-size:10px;color:var(--gris2);font-weight:600;">PROMEDIO</div><div style="font-size:20px;font-weight:800;">${promedioTotal}</div></div>
+      <div><div style="font-size:9px;color:var(--gris2);font-weight:600;">LECHE PROC.</div><div style="font-size:20px;font-weight:800;">${fmtL(totalLitros)}</div></div>
+      <div><div style="font-size:9px;color:var(--gris2);font-weight:600;">BLQ. REALES</div><div style="font-size:20px;font-weight:800;color:#15803d;">${bloquesReales}</div></div>
+      <div><div style="font-size:10px;color:var(--gris2);font-weight:600;">PROMEDIO</div><div style="font-size:20px;font-weight:800;">${promedioReal}</div></div>
     </div>`;
+    // Canastas y unidades reales
+    if(cierre){
+      html+=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;margin-bottom:10px;background:#DCFCE7;border-radius:10px;padding:10px;">
+        <div><div style="font-size:9px;color:#15803d;font-weight:600;">CANASTAS</div><div style="font-size:20px;font-weight:800;color:#15803d;">${canastasReales}</div></div>
+        <div><div style="font-size:9px;color:#15803d;font-weight:600;">UNIDADES</div><div style="font-size:20px;font-weight:800;color:#15803d;">${unidadesReales}</div></div>
+        <div><div style="font-size:9px;color:#15803d;font-weight:600;">REPROC.</div><div style="font-size:20px;font-weight:800;color:#D97706;">${cierre.reprocDia||reprocBloquesDia}</div></div>
+      </div>`;
+    }
     html+=`<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span>Cuajador: <strong>${cuajador}</strong></span><span style="color:${estadoColor};font-weight:700;">${estado}</span></div>`;
+    // Comparación leche plataforma recibidor vs cuajador
+    if(cierre&&cierre.lechePlataforma){
+      // Leche plataforma del recibidor (recepciones + intermediarios)
+      try{
+        const sRecP=await getDocs(query(collection(db,'recepciones'),where('fecha','==',fecha)));
+        let lechePlatRecibidor=0;sRecP.forEach(d=>{lechePlatRecibidor+=parseFloat(d.data().litros)||0;});
+        const sInterP=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','==',fecha)));
+        sInterP.forEach(d=>{lechePlatRecibidor+=parseFloat(d.data().litros)||0;});
+        const lechePlatCuajador=cierre.lechePlataforma;
+        const diffPlat=lechePlatRecibidor-lechePlatCuajador;
+        const coincide=Math.abs(diffPlat)<1;
+        html+=`<div style="background:${coincide?'#DCFCE7':'#FEF3C7'};padding:8px;border-radius:8px;font-size:12px;margin-top:6px;margin-bottom:6px;">
+          <div style="font-weight:700;color:${coincide?'#15803d':'#92400E'};margin-bottom:4px;">${coincide?'✅':'⚠️'} Leche plataforma</div>
+          <div style="color:${coincide?'#15803d':'#92400E'};">Recibidor: ${fmtL(lechePlatRecibidor)}L · Cuajador: ${fmtL(lechePlatCuajador)}L${coincide?'':` · Dif: ${diffPlat>0?'+':''}${fmtL(diffPlat)}L`}</div>
+        </div>`;
+      }catch(e){}
+    }
     if(cierre&&cierre.camposEditados&&cierre.camposEditados.length>0){html+=`<div style="background:#FEF3C7;padding:8px;border-radius:8px;font-size:12px;color:#92400E;margin-top:6px;">⚠️ Campos editados: ${cierre.camposEditados.join(', ')} — Motivo: "${cierre.motivoEdicion||'—'}"</div>`;}
-    // Promedio por tanda
-    const tandasProm=tandas.map(t=>{const b=(parseInt(t.bloques2500)||0)+(parseInt(t.bloques1000)||0)+(parseInt(t.bloques500)||0);const l=parseFloat(t.litros)||0;const prom=b>0?((l/b)/5).toFixed(2):'—';return{numero:t.numero,prov:t.proveedorNombre,litros:l,bloques:b,prom};});
+    // Ventas en planta
+    if(cierre&&cierre.ventasPlanta&&cierre.ventasPlanta.length>0){
+      html+=`<div style="font-size:12px;font-weight:700;color:var(--verde);margin-top:10px;margin-bottom:4px;">🧀 Ventas en planta (${cierre.ventasPlanta.length})</div>`;
+      html+=cierre.ventasPlanta.map(v=>`<div style="font-size:12px;padding:3px 0;border-bottom:1px solid var(--gris1);">${v.nombre||'—'} · ${v.unidades} blq ${v.tamano} · <span style="color:${v.tipo==='fiado'?'var(--rojo)':'#15803d'};font-weight:600;">${v.tipo}</span></div>`).join('');
+    }
+    // Promedio por tanda (con bloques reales por tanda)
+    const tandasProm=tandas.map(t=>{const b=(parseInt(t.bloques2500)||0)+(parseInt(t.bloques1000)||0)+(parseInt(t.bloques500)||0);const l=parseFloat(t.litros)||0;const repB=t.reproceso?(parseInt(t.reprocBloques)||0):0;const bReal=b-repB;const prom=bReal>0?((l/bReal)/5).toFixed(2):'—';return{numero:t.numero,prov:t.proveedorNombre,litros:l,bloques:b,bloquesReales:bReal,repB,prom};});
     if(tandasProm.length>0){
-      html+=`<div style="font-size:12px;font-weight:700;color:var(--verde);margin-top:10px;margin-bottom:4px;">📊 Promedio por tanda (L÷B÷5)</div>`;
-      html+=tandasProm.slice(0,3).map(tp=>`<div style="font-size:12px;padding:3px 0;border-bottom:1px solid var(--gris1);">Tanda #${tp.numero} (${tp.prov}): ${fmtL(tp.litros)}L ÷ ${tp.bloques}B = <strong>${tp.prom}</strong></div>`).join('');
-      if(tandasProm.length>3){html+=`<div id="prod-prom-extra" style="display:none;">${tandasProm.slice(3).map(tp=>`<div style="font-size:12px;padding:3px 0;border-bottom:1px solid var(--gris1);">Tanda #${tp.numero} (${tp.prov}): ${fmtL(tp.litros)}L ÷ ${tp.bloques}B = <strong>${tp.prom}</strong></div>`).join('')}</div><div style="text-align:center;margin-top:4px;"><a id="prod-prom-toggle" href="#" onclick="const x=document.getElementById('prod-prom-extra');const t=document.getElementById('prod-prom-toggle');if(x.style.display==='none'){x.style.display='block';t.textContent='Ver menos ▲';}else{x.style.display='none';t.textContent='Ver más (${tandasProm.length-3} más) ▼';}return false;" style="font-size:12px;color:var(--verde);font-weight:700;">Ver más (${tandasProm.length-3} más) ▼</a></div>`;}
+      html+=`<div style="font-size:12px;font-weight:700;color:var(--verde);margin-top:10px;margin-bottom:4px;">📊 Promedio por tanda (L÷BR÷5)</div>`;
+      html+=tandasProm.slice(0,3).map(tp=>`<div style="font-size:12px;padding:3px 0;border-bottom:1px solid var(--gris1);">Tanda #${tp.numero} (${tp.prov}): ${fmtL(tp.litros)}L ÷ ${tp.bloquesReales}BR${tp.repB?` (${tp.bloques}-${tp.repB})`:''} = <strong>${tp.prom}</strong></div>`).join('');
+      if(tandasProm.length>3){html+=`<div id="prod-prom-extra" style="display:none;">${tandasProm.slice(3).map(tp=>`<div style="font-size:12px;padding:3px 0;border-bottom:1px solid var(--gris1);">Tanda #${tp.numero} (${tp.prov}): ${fmtL(tp.litros)}L ÷ ${tp.bloquesReales}BR${tp.repB?` (${tp.bloques}-${tp.repB})`:''} = <strong>${tp.prom}</strong></div>`).join('')}</div><div style="text-align:center;margin-top:4px;"><a id="prod-prom-toggle" href="#" onclick="const x=document.getElementById('prod-prom-extra');const t=document.getElementById('prod-prom-toggle');if(x.style.display==='none'){x.style.display='block';t.textContent='Ver menos ▲';}else{x.style.display='none';t.textContent='Ver más (${tandasProm.length-3} más) ▼';}return false;" style="font-size:12px;color:var(--verde);font-weight:700;">Ver más (${tandasProm.length-3} más) ▼</a></div>`;}
     }
     // Reprocesos detallados
     const reprocs=tandas.filter(t=>t.reproceso);
