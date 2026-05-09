@@ -109,6 +109,15 @@
     @media(max-width:600px){.aviso-movil{display:block;}}
     /* Pantalla reportes sin límite de ancho */
     #screen-admin-reportes{max-width:100%;padding:20px;}
+    /* MODAL CUSTOM */
+    .mc-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;align-items:center;justify-content:center;padding:20px;}
+    .mc-overlay.show{display:flex;}
+    .mc-box{background:white;border-radius:20px;padding:24px;width:100%;max-width:380px;box-shadow:0 8px 32px rgba(0,0,0,0.25);animation:mcIn 0.2s ease;}
+    @keyframes mcIn{from{opacity:0;transform:scale(0.92);}to{opacity:1;transform:scale(1);}}
+    .mc-msg{font-size:16px;color:var(--gris3);margin-bottom:20px;line-height:1.5;white-space:pre-line;}
+    .mc-input{width:100%;padding:14px;font-size:18px;font-weight:700;border:2px solid #d1d5db;border-radius:12px;box-sizing:border-box;margin-bottom:16px;text-align:center;color:var(--verde);}
+    .mc-input:focus{outline:none;border-color:var(--verde2);}
+    .mc-btns{display:flex;gap:10px;}.mc-btns .btn{flex:1;padding:14px;font-size:15px;}
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
@@ -287,6 +296,7 @@
     <h1 style="font-size:20px;">Nueva Tanda</h1><div></div>
   </div>
   <div style="padding:20px;">
+    <div id="ct-tandas-hoy-count" style="background:var(--verde3);border:2px solid var(--verde);border-radius:12px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;"><span style="font-size:14px;font-weight:700;color:var(--verde);">🧀 Tandas hoy:</span><span id="ct-tandas-num" style="font-size:22px;font-weight:800;color:var(--verde);">0</span></div>
     <div style="font-weight:700;font-size:16px;margin-bottom:4px;">Selecciona proveedores (1-3):</div>
     <div id="ct-provs-seleccionados" style="font-size:13px;color:var(--verde);font-weight:600;margin-bottom:12px;">0 seleccionados</div>
     <input type="text" id="cuajador-buscar-prov" placeholder="🔍 Buscar proveedor..." oninput="filtrarProveedoresCuajador()" style="width:100%;padding:10px 12px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-bottom:12px;">
@@ -331,7 +341,7 @@
     </div>
     <div style="margin-bottom:16px;"><label style="font-size:13px;font-weight:600;">Novedad (opcional)</label><textarea id="ct-novedad" placeholder="Ej: Daño sin sal..." rows="2" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;resize:none;"></textarea></div>
     <div id="ct-error" style="display:none;color:#DC2626;font-size:13px;margin-bottom:8px;"></div>
-    <button class="btn" style="font-size:18px;padding:18px;background:var(--verde);color:white;width:100%;" onclick="guardarTanda()">💾 GUARDAR TANDA</button>
+    <button id="btn-guardar-tanda" class="btn" style="font-size:18px;padding:18px;background:var(--verde);color:white;width:100%;" onclick="guardarTanda()">💾 GUARDAR TANDA</button>
   </div>
 </div>
 
@@ -376,6 +386,14 @@
     </div>
     <div id="cc-error" style="display:none;color:#DC2626;font-size:13px;margin-bottom:8px;"></div>
     <button class="btn" style="font-size:18px;padding:18px;background:var(--verde);color:white;width:100%;margin-top:8px;" onclick="guardarCierreDia()">✅ GUARDAR Y CERRAR DÍA</button>
+  </div>
+</div>
+
+<div id="screen-cuajador-exito" class="screen">
+  <div style="padding:20px;">
+    <div class="check-exito"><div class="ico">✅</div><h2>¡Tanda guardada!</h2><p id="cuajador-exito-detalle"></p></div>
+    <button class="btn" style="font-size:18px;padding:22px;margin-bottom:12px;background:var(--verde);color:white;width:100%;" onclick="irPantalla('screen-cuajador-proveedores')">🧀 NUEVA TANDA</button>
+    <button class="btn btn-gris" onclick="irPantalla('screen-cuajador-home')" style="margin-top:12px;">IR AL INICIO</button>
   </div>
 </div>
 
@@ -781,6 +799,16 @@
   </div>
 </div>
 
+<div class="mc-overlay" id="mc-overlay">
+  <div class="mc-box">
+    <div class="mc-msg" id="mc-msg"></div>
+    <input class="mc-input" id="mc-input" style="display:none;" autocomplete="off">
+    <div class="mc-btns" id="mc-btns"></div>
+  </div>
+</div>
+
+<button id="btn-volver-admin" style="display:none;position:fixed;top:12px;right:12px;z-index:9000;background:#0ea5e9;color:white;border:none;border-radius:12px;padding:10px 16px;font-size:14px;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,0.3);cursor:pointer;" onclick="volverAAdmin()">← Volver a Admin</button>
+
 <script type="module">
 import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import{getAuth,signInWithEmailAndPassword,signOut,createUserWithEmailAndPassword,onAuthStateChanged,sendPasswordResetEmail}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
@@ -795,6 +823,51 @@ let UA=null,rol=null,ganList=[],regHoyGan={},_porGan={},_porRec={},_porRecPlanta
 let recibSeleccionado=null,ganSel=null,listaRecogedores=[],modoHistorico=false,fechaReg=null,_costosRecFilter='todos';
 let _litrosPorGanadero={},_ordenGan='az';
 let _horarioInicio='04:00',_horarioFin='18:00',_horarioOrigInicio='04:00',_horarioOrigFin='18:00';
+
+// ── MODALES CUSTOM ──
+function _mcClose(){document.getElementById('mc-overlay').classList.remove('show');}
+function modalAlert(msg){
+  return new Promise(r=>{
+    document.getElementById('mc-msg').textContent=msg;
+    document.getElementById('mc-input').style.display='none';
+    document.getElementById('mc-btns').innerHTML='<button class="btn btn-verde" id="mc-ok">Aceptar</button>';
+    document.getElementById('mc-overlay').classList.add('show');
+    document.getElementById('mc-ok').onclick=()=>{_mcClose();r();};
+  });
+}
+function modalConfirm(msg){
+  return new Promise(r=>{
+    document.getElementById('mc-msg').textContent=msg;
+    document.getElementById('mc-input').style.display='none';
+    document.getElementById('mc-btns').innerHTML='<button class="btn btn-gris" id="mc-no">Cancelar</button><button class="btn btn-verde" id="mc-si">Aceptar</button>';
+    document.getElementById('mc-overlay').classList.add('show');
+    document.getElementById('mc-no').onclick=()=>{_mcClose();r(false);};
+    document.getElementById('mc-si').onclick=()=>{_mcClose();r(true);};
+  });
+}
+function modalPrompt(msg,defVal){
+  return new Promise(r=>{
+    document.getElementById('mc-msg').textContent=msg;
+    const inp=document.getElementById('mc-input');inp.style.display='block';inp.value=defVal||'';inp.removeAttribute('inputmode');inp.oninput=null;
+    document.getElementById('mc-btns').innerHTML='<button class="btn btn-gris" id="mc-no">Cancelar</button><button class="btn btn-verde" id="mc-si">Aceptar</button>';
+    document.getElementById('mc-overlay').classList.add('show');
+    setTimeout(()=>inp.focus(),100);
+    document.getElementById('mc-no').onclick=()=>{_mcClose();r(null);};
+    document.getElementById('mc-si').onclick=()=>{_mcClose();r(inp.value);};
+  });
+}
+function modalPromptPesos(msg,defVal){
+  return new Promise(r=>{
+    document.getElementById('mc-msg').textContent=msg;
+    const inp=document.getElementById('mc-input');inp.style.display='block';inp.value=defVal||'';inp.setAttribute('inputmode','numeric');
+    inp.oninput=function(){let v=this.value.replace(/\D/g,'');if(!v){this.value='';return;}this.value=parseInt(v).toLocaleString('es-CO');};
+    document.getElementById('mc-btns').innerHTML='<button class="btn btn-gris" id="mc-no">Cancelar</button><button class="btn btn-verde" id="mc-si">Aceptar</button>';
+    document.getElementById('mc-overlay').classList.add('show');
+    setTimeout(()=>inp.focus(),100);
+    document.getElementById('mc-no').onclick=()=>{_mcClose();r(null);};
+    document.getElementById('mc-si').onclick=()=>{const raw=inp.value.replace(/\./g,'').replace(/,/g,'');_mcClose();r(raw);};
+  });
+}
 
 // ── HELPERS ──
 async function iniciarSesionConRol(){
@@ -1007,15 +1080,17 @@ async function selGan(id){
   ir('screen-rec-registrar');
 }window.seleccionarGanadero=selGan;window.selGan=selGan;
 async function guardarRecoleccion(){
+  const _btn=document.querySelector('[onclick="guardarRecoleccion()"]');if(_btn){_btn.disabled=true;_btn.textContent='⏳ Guardando...';}
   const L=parseFloat(document.getElementById('reg-litros').value);const h=horaAhora();const n=document.getElementById('reg-novedad').value.trim();
-  if(!L||L<=0){alerta('reg-error','Ingresa los litros','rojo');return;}
-  if(!navigator.onLine){alerta('reg-error','⚠️ Sin internet. El registro no se guardó. Conéctate e intenta de nuevo.','rojo');return;}
+  if(!L||L<=0){alerta('reg-error','Ingresa los litros','rojo');if(_btn){_btn.disabled=false;_btn.textContent='✅ GUARDAR';}return;}
+  if(!navigator.onLine){alerta('reg-error','⚠️ Sin internet. El registro no se guardó. Conéctate e intenta de nuevo.','rojo');if(_btn){_btn.disabled=false;_btn.textContent='✅ GUARDAR';}return;}
   try{
     const docId=`${UA.uid}_${ganSel.id}_${getFechaReg()}`;
     await setDoc(doc(db,'recolecciones',docId),{ganaderoId:ganSel.id,ganaderoNombre:ganSel.nombre,litros:L,hora:h,novedad:n,fecha:getFechaReg(),precioPorLitro:precioActual,recogedorId:UA.uid,recogedorNombre:UA.nombre||UA.email,timestamp:serverTimestamp()});
     document.getElementById('exito-detalle').textContent=`${L} litros de ${ganSel.nombre} a las ${h}`;
+    if(_btn){_btn.disabled=false;_btn.textContent='✅ GUARDAR';}
     ir('screen-rec-exito');resumenRec();
-  }catch(e){alerta('reg-error','Error al guardar. Verifica tu conexión.','rojo');}
+  }catch(e){alerta('reg-error','Error al guardar. Verifica tu conexión.','rojo');if(_btn){_btn.disabled=false;_btn.textContent='✅ GUARDAR';}}
 }window.guardarRecoleccion=guardarRecoleccion;
 function abrirModalNuevoGanaderoRec(){
   document.getElementById('m-gan-rec-nombre').value='';
@@ -1032,7 +1107,7 @@ function seleccionarSugerencia(id){
   const g=ganList.find(x=>x.id===id);if(!g)return;
   // Cerrar modal y mostrar alerta
   cerrarModal('modal-ganadero-rec');
-  alert(`"${g.nombre}" ya está registrado. Si necesitas registrar leche de este ganadero, búscalo en la lista principal.`);
+  modalAlert(`"${g.nombre}" ya está registrado. Si necesitas registrar leche de este ganadero, búscalo en la lista principal.`);
 }window.seleccionarSugerencia=seleccionarSugerencia;
 
 function abrirModalCombustible(){document.getElementById('m-comb-valor').value='';document.getElementById('m-comb-galones').value='';document.getElementById('m-comb-error').textContent='';document.getElementById('m-comb-ok').textContent='';document.getElementById('modal-combustible').classList.add('show');}window.abrirModalCombustible=abrirModalCombustible;
@@ -1045,7 +1120,7 @@ async function guardarCombustible(){
   if(!galones||galones<=0){alerta('m-comb-error','Los galones son obligatorios','rojo');return;}
   if(valor<1000){alerta('m-comb-error','El valor mínimo es $1.000','rojo');return;}
   if(valor<10000){
-    const conf=confirm(`¿Seguro que son $${valor.toLocaleString('es-CO')}?\n¿O quisiste poner $${(valor*1000).toLocaleString('es-CO')} o $${(valor*100).toLocaleString('es-CO')}?`);
+    const conf=await modalConfirm(`¿Seguro que son $${valor.toLocaleString('es-CO')}?\n¿O quisiste poner $${(valor*1000).toLocaleString('es-CO')} o $${(valor*100).toLocaleString('es-CO')}?`);
     if(!conf)return;
   }
   if(!navigator.onLine){alerta('m-comb-error','Sin conexión a internet','rojo');return;}
@@ -1057,7 +1132,7 @@ async function guardarCombustible(){
   }catch(e){alerta('m-comb-error','Error al guardar','rojo');}
 }window.guardarCombustible=guardarCombustible;
 async function eliminarCombustible(docId){
-  const motivo=prompt('¿Por qué eliminas este registro de combustible? (obligatorio)');
+  const motivo=await modalPrompt('¿Por qué eliminas este registro de combustible? (obligatorio)');
   if(!motivo||!motivo.trim())return;
   try{
     const combDoc=await getDoc(doc(db,'combustible',docId));
@@ -1204,10 +1279,11 @@ async function seleccionarInter(id){
 }window.seleccionarInter=seleccionarInter;
 
 async function guardarRecepcionInter(){
+  const _btn=document.querySelector('[onclick="guardarRecepcionInter()"]');if(_btn){_btn.disabled=true;_btn.textContent='⏳ Guardando...';}
   const L=parseFloat(document.getElementById('recibi-inter-litros').value);
   const novedad=document.getElementById('recibi-inter-novedad').value.trim();
-  if(!L||L<=0){alerta('recibi-inter-error','Ingresa los litros','rojo');return;}
-  if(!navigator.onLine){alerta('recibi-inter-error','⚠️ Sin internet. El registro no se guardó. Conéctate e intenta de nuevo.','rojo');return;}
+  if(!L||L<=0){alerta('recibi-inter-error','Ingresa los litros','rojo');if(_btn){_btn.disabled=false;_btn.textContent='💾 GUARDAR';}return;}
+  if(!navigator.onLine){alerta('recibi-inter-error','⚠️ Sin internet. El registro no se guardó. Conéctate e intenta de nuevo.','rojo');if(_btn){_btn.disabled=false;_btn.textContent='💾 GUARDAR';}return;}
   try{
     const docId=`${interSeleccionado.id}_${hoy()}`;
     await setDoc(doc(db,'recepcionesInter',docId),{
@@ -1216,11 +1292,12 @@ async function guardarRecepcionInter(){
       recibidorId:UA.uid,recibidorNombre:UA.nombre||UA.email,
       timestamp:serverTimestamp()
     });
+    if(_btn){_btn.disabled=false;_btn.textContent='💾 GUARDAR';}
     ir('screen-recibi-exito');
     document.getElementById('recibi-exito-detalle').textContent=`${L}L de intermediario ${interSeleccionado.nombre}`;
     document.getElementById('recibi-exito-alerta').style.display='none';
     resumenRecibidor();
-  }catch(e){alerta('recibi-inter-error','Error al guardar. Verifica tu conexión.','rojo');}
+  }catch(e){if(_btn){_btn.disabled=false;_btn.textContent='💾 GUARDAR';}alerta('recibi-inter-error','Error al guardar. Verifica tu conexión.','rojo');}
 }window.guardarRecepcionInter=guardarRecepcionInter;
 
 function abrirModalNuevoIntermediarioRec(){
@@ -1321,9 +1398,10 @@ async function selRecibidor(id){
   }catch(e){console.error('selRecibidor error:',e);}
 }window.seleccionarRecogedorRecibidor=selRecibidor;window.selRecibidor=selRecibidor;
 async function guardarRecepcion(){
+  const _btn=document.querySelector('[onclick="guardarRecepcion()"]');if(_btn){_btn.disabled=true;_btn.textContent='⏳ Guardando...';}
   const L=parseFloat(document.getElementById('recibi-litros-input').value);const novedad=document.getElementById('recibi-novedad-input').value.trim();
-  if(!L||L<=0){alerta('recibi-form-error','Ingresa los litros recibidos','rojo');return;}
-  if(!navigator.onLine){alerta('recibi-form-error','⚠️ Sin internet. El registro no se guardó. Conéctate e intenta de nuevo.','rojo');return;}
+  if(!L||L<=0){alerta('recibi-form-error','Ingresa los litros recibidos','rojo');if(_btn){_btn.disabled=false;_btn.textContent='💾 GUARDAR';}return;}
+  if(!navigator.onLine){alerta('recibi-form-error','⚠️ Sin internet. El registro no se guardó. Conéctate e intenta de nuevo.','rojo');if(_btn){_btn.disabled=false;_btn.textContent='💾 GUARDAR';}return;}
   try{
     const sCol=await getDocs(query(collection(db,'recolecciones'),where('recogedorId','==',recibSeleccionado.id),where('fecha','==',hoy())));
     let rutaTotal=0;sCol.forEach(d=>{rutaTotal+=parseFloat(d.data().litros)||0;});
@@ -1333,8 +1411,9 @@ async function guardarRecepcion(){
     document.getElementById('recibi-exito-detalle').textContent=`${L}L de ${recibSeleccionado.nombre||recibSeleccionado.email}. Ruta: ${fmtL(rutaTotal)}L`;
     const ad=document.getElementById('recibi-exito-alerta');
     if(hayAlerta){ad.style.display='block';document.getElementById('recibi-exito-alerta-msg').textContent=`Recibiste ${L}L pero ruta reportó ${fmtL(rutaTotal)}L. Diferencia: +${fmtL(L-rutaTotal)}L`;}else{ad.style.display='none';}
+    if(_btn){_btn.disabled=false;_btn.textContent='💾 GUARDAR';}
     ir('screen-recibi-exito');resumenRecibidor();
-  }catch(e){alerta('recibi-form-error','Error al guardar. Verifica tu conexión.','rojo');}
+  }catch(e){if(_btn){_btn.disabled=false;_btn.textContent='💾 GUARDAR';}alerta('recibi-form-error','Error al guardar. Verifica tu conexión.','rojo');}
 }window.guardarRecepcion=guardarRecepcion;
 
 async function cargarResumenRecibiSemanal(){
@@ -1422,15 +1501,18 @@ async function cargarTandasHoy(){
 async function eliminarTanda(tandaId){
   try{
     const tandaDoc=await getDoc(doc(db,'tandas',tandaId));
-    if(!tandaDoc.exists()){alert('Tanda no encontrada');return;}
+    if(!tandaDoc.exists()){await modalAlert('Tanda no encontrada');return;}
     const data=tandaDoc.data();
-    const motivo=prompt(`¿Por qué eliminas la tanda #${data.numero} (${data.proveedorNombre})?\n\nEscribe el motivo:`);
+    const motivo=await modalPrompt(`¿Por qué eliminas la tanda #${data.numero} (${data.proveedorNombre})?\n\nEscribe el motivo:`);
     if(!motivo||!motivo.trim())return;
     await addDoc(collection(db,'eliminaciones'),{tipo:'tanda',registroId:tandaId,proveedorId:data.proveedorId||'',proveedorNombre:data.proveedorNombre||'',litros:data.litros||0,hora:data.hora||'',fecha:data.fecha||'',cuajadorId:UA.uid,cuajadorNombre:UA.nombre||UA.email,motivo:motivo.trim(),eliminadoEn:hoy(),eliminadoHora:horaAhora(),eliminadoPorId:UA.uid,eliminadoPorNombre:UA.nombre||UA.email,eliminadoPorRol:'cuajador'});
     await deleteDoc(doc(db,'tandas',tandaId));
     cargarTandasHoy();cargarResumenCuajadorSemanal();
-  }catch(e){console.error(e);alert('Error al eliminar');}
+  }catch(e){console.error(e);await modalAlert('Error al eliminar');}
 }window.eliminarTanda=eliminarTanda;
+async function actualizarContadorTandas(){
+  try{const el=document.getElementById('ct-tandas-num');if(!el)return;const fecha=getFechaRegCuajador();const snap=await getDocs(query(collection(db,'tandas'),where('fecha','==',fecha)));let count=0;snap.forEach(d=>{if(d.data().cuajadorId===UA.uid)count++;});el.textContent=count;}catch(e){}
+}window.actualizarContadorTandas=actualizarContadorTandas;
 
 async function cargarProveedoresCuajador(){
   try{
@@ -1558,6 +1640,7 @@ async function guardarTanda(){
   const fecha=getFechaRegCuajador();
   const novedad=(document.getElementById('ct-novedad').value||'').trim();
   const proveedores=_cuajadorProvsSeleccionados.length>0?_cuajadorProvsSeleccionados.map(s=>({id:s.id,nombre:s.nombre,tipo:s.tipo})):[{id:_cuajadorProvId,nombre:_cuajadorProvNombre,tipo:_cuajadorProvTipo}];
+  const btnG=document.getElementById('btn-guardar-tanda');btnG.disabled=true;btnG.textContent='⏳ Guardando...';
   try{
     let tandaId=_cuajadorEditandoId;
     let numero;
@@ -1570,8 +1653,10 @@ async function guardarTanda(){
       tandaId=`${UA.uid}_${fecha}_${String(numero).padStart(2,'0')}`;
     }
     await setDoc(doc(db,'tandas',tandaId),{cuajadorId:UA.uid,cuajadorNombre:UA.nombre||UA.email,fecha,hora:horaAhora(),numero,proveedorId:proveedores[0].id,proveedorNombre:proveedores.map(p=>p.nombre).join(' + '),proveedorTipo:proveedores[0].tipo,proveedores,litros,cuajo,acidez,citrato,acidoCitrico:parseFloat(document.getElementById('ct-acidoCitrico')?.value)||0,bloques2500,bloques1000,bloques500,reproceso:_cuajadorReproceso,reprocTipo,reprocBloques,reprocLitros,novedad,timestamp:serverTimestamp()});
-    ir('screen-cuajador-home');cargarTandasHoy();cargarResumenCuajadorSemanal();
-  }catch(e){console.error(e);document.getElementById('ct-error').textContent='❌ Error al guardar';document.getElementById('ct-error').style.display='block';}
+    document.getElementById('cuajador-exito-detalle').textContent=`Tanda #${numero} · ${proveedores.map(p=>p.nombre).join(' + ')} · ${litros}L`;
+    btnG.disabled=false;btnG.textContent='💾 GUARDAR TANDA';
+    ir('screen-cuajador-exito');cargarTandasHoy();cargarResumenCuajadorSemanal();
+  }catch(e){console.error(e);document.getElementById('ct-error').textContent='❌ Error al guardar';document.getElementById('ct-error').style.display='block';btnG.disabled=false;btnG.textContent='💾 GUARDAR TANDA';}
 }window.guardarTanda=guardarTanda;
 
 async function editarTanda(tandaId){
@@ -1724,7 +1809,7 @@ async function guardarCierreDia(){
       data.valoresOriginales=_cuajadorAutoCalc;
     }
     await setDoc(doc(db,'cierresDia',fecha),data);
-    alert('✅ Día cerrado correctamente');
+    await modalAlert('✅ Día cerrado correctamente');
     ir('screen-cuajador-home');cargarTandasHoy();
   }catch(e){console.error(e);document.getElementById('cc-error').textContent='❌ Error al guardar';document.getElementById('cc-error').style.display='block';}
 }window.guardarCierreDia=guardarCierreDia;
@@ -1732,7 +1817,7 @@ async function guardarCierreDia(){
 // Expose irPantalla hook for cuajador screens
 const _origIr=window.irPantalla||function(){};
 window.irPantalla=function(id){
-  if(id==='screen-cuajador-proveedores')cargarProveedoresCuajador();
+  if(id==='screen-cuajador-proveedores'){cargarProveedoresCuajador();actualizarContadorTandas();}
   if(typeof _origIr==='function')_origIr(id);else ir(id);
 };
 
@@ -2186,7 +2271,7 @@ async function exportarMatrizConFechas(de,ha,label){
   try{
     const snap=await getDocs(query(collection(db,'recolecciones'),where('fecha','>=',de),where('fecha','<=',ha),orderBy('fecha')));
     const datos=[];snap.forEach(d=>datos.push({id:d.id,...d.data()}));
-    if(datos.length===0){alert('No hay datos en este período');return;}
+    if(datos.length===0){await modalAlert('No hay datos en este período');return;}
     const fechas=[...new Set(datos.map(d=>d.fecha))].sort();
     const ganMap={};datos.forEach(d=>{if(!ganMap[d.ganaderoId])ganMap[d.ganaderoId]=d.ganaderoNombre;});
     const gans=Object.entries(ganMap).sort((a,b)=>a[1].localeCompare(b[1]));
@@ -2228,7 +2313,7 @@ async function abrirModalGanadero(id){editGanId=id;const g=id?ganList.find(x=>x.
   abrirModal('modal-ganadero');}window.abrirModalGanadero=abrirModalGanadero;
 
 function confirmarBorrado(){cerrarModal('modal-ganadero');abrirModal('modal-confirmar-borrado');}window.confirmarBorrado=confirmarBorrado;
-async function ejecutarBorrado(){if(!editGanId)return;try{const {deleteDoc,doc:docFn}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');await deleteDoc(docFn(db,'ganaderos',editGanId));cerrarModal('modal-confirmar-borrado');editGanId=null;await ganAdmin();await cargarGanaderos();}catch(e){alert('Error al eliminar. Intenta de nuevo.');}}window.ejecutarBorrado=ejecutarBorrado;
+async function ejecutarBorrado(){if(!editGanId)return;try{const {deleteDoc,doc:docFn}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');await deleteDoc(docFn(db,'ganaderos',editGanId));cerrarModal('modal-confirmar-borrado');editGanId=null;await ganAdmin();await cargarGanaderos();}catch(e){await modalAlert('Error al eliminar. Intenta de nuevo.');}}window.ejecutarBorrado=ejecutarBorrado;
 function normalizarNombre(n){return n.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();}
 function matchInicio(nombre,busqueda){if(!busqueda)return true;const palabras=normalizarNombre(nombre).split(/\s+/);const b=normalizarNombre(busqueda);return palabras.some(p=>p.startsWith(b));}
 function mostrarSugerenciasNombre(inputId,contId,lista,emoji){
@@ -2255,7 +2340,7 @@ async function guardarGanadero(){const n=document.getElementById('m-gan-nombre')
 async function eliminarGanadero(){
   if(!editGanId)return;
   const g=ganList.find(x=>x.id===editGanId);
-  if(!confirm(`¿Eliminar permanentemente a "${g?.nombre}"? Esta acción no se puede deshacer.`))return;
+  if(!await modalConfirm(`¿Eliminar permanentemente a "${g?.nombre}"? Esta acción no se puede deshacer.`))return;
   try{
     // Verificar de nuevo que no tiene registros
     const snap=await getDocs(query(collection(db,'recolecciones'),where('ganaderoId','==',editGanId),limit(1)));
@@ -2341,7 +2426,7 @@ async function guardarInter(){
 async function eliminarInter(){
   if(!editInterId)return;
   const snap=await getDoc(doc(db,'intermediarios',editInterId));
-  if(!confirm(`¿Eliminar permanentemente a "${snap.data()?.nombre}"?`))return;
+  if(!await modalConfirm(`¿Eliminar permanentemente a "${snap.data()?.nombre}"?`))return;
   try{
     const sRec=await getDocs(query(collection(db,'recepcionesInter'),where('intermediarioId','==',editInterId),limit(1)));
     if(!sRec.empty){alerta('m-inter-error','No se puede eliminar: tiene registros. Márcalo como Inactivo.','rojo');return;}
@@ -2352,7 +2437,7 @@ async function eliminarInter(){
 
 async function precioAdmin(){try{const s=await getDocs(query(collection(db,'configuracion'),limit(1)));if(!s.empty){const d=s.docs[0].data();precioActual=d.precioPorLitro||0;modoHistorico=d.modoHistorico||false;}actualizarUIHistorico();}catch(e){}}
 function actualizarUIHistorico(){const est=document.getElementById('modo-historico-estado');const btn=document.getElementById('btn-modo-historico');if(!est||!btn)return;if(modoHistorico){est.innerHTML='🟢 <span style="color:#15803d;">ACTIVO — Los recogedores pueden registrar días anteriores</span>';btn.textContent='🔴 Desactivar modo histórico';btn.style.background='#dc2626';}else{est.innerHTML='⚫ <span style="color:var(--gris2);">INACTIVO — Los recogedores solo ven el día de hoy</span>';btn.textContent='🟢 Activar modo histórico';btn.style.background='';}}
-async function toggleModoHistorico(){const nuevo=!modoHistorico;try{const s=await getDocs(query(collection(db,'configuracion'),limit(1)));if(!s.empty){await updateDoc(doc(db,'configuracion',s.docs[0].id),{modoHistorico:nuevo});}else{await addDoc(collection(db,'configuracion'),{modoHistorico:nuevo});}modoHistorico=nuevo;actualizarUIHistorico();}catch(e){alert('Error al cambiar modo');}}window.toggleModoHistorico=toggleModoHistorico;
+async function toggleModoHistorico(){const nuevo=!modoHistorico;try{const s=await getDocs(query(collection(db,'configuracion'),limit(1)));if(!s.empty){await updateDoc(doc(db,'configuracion',s.docs[0].id),{modoHistorico:nuevo});}else{await addDoc(collection(db,'configuracion'),{modoHistorico:nuevo});}modoHistorico=nuevo;actualizarUIHistorico();}catch(e){await modalAlert('Error al cambiar modo');}}window.toggleModoHistorico=toggleModoHistorico;
 // ── HORARIO DE FUNCIONAMIENTO ──
 async function cargarHorario(){
   try{
@@ -2779,6 +2864,7 @@ async function usuAdmin(){
           ${x.rol!=='admin'?`<button class="btn btn-sm" style="background:${x.nominaActual?'#15803d':'transparent'};color:${x.nominaActual?'white':'#15803d'};border:2px solid #15803d;" onclick="editarNomina('${x.id}','${(x.nombre||'').replace(/'/g,"\\'")}')">💰 ${x.nominaActual?fmtPeso(x.nominaActual):'Nómina'}</button>`:''}
           <button class="btn btn-sm" style="background:${x.nota?'#1D4ED8':'transparent'};color:${x.nota?'white':'#1D4ED8'};border:2px solid #1D4ED8;" onclick="editarNota('${x.id}','${(x.nota||'').replace(/'/g,"\\'")}')">🔑 ${x.nota?'Editar nota':'Agregar nota'}</button>
           <button class="btn btn-sm" style="background:transparent;color:#7c3aed;border:2px solid #7c3aed;" onclick="generarQR('${(x.nombre||'').replace(/'/g,"\\'")}','${(x.nota||'').replace(/'/g,"\\'")}')">📱 QR</button>
+          ${x.rol!=='admin'?`<button class="btn btn-sm" style="background:#0ea5e9;color:white;border:none;" onclick="abrirVistaRol('${x.id}','${(x.nombre||'').replace(/'/g,"\\'")}','${x.rol}')">👁️ Abrir</button>`:''}
         </div>
       </div>`).join('');
     // Event delegation para botones cambiar rol
@@ -2794,11 +2880,11 @@ async function cambiarRol(uid,rolActual,nombre){
   const roles=['recogedor','recibidor','cuajador','admin'];
   const nombres={'recogedor':'Recogedor','recibidor':'Recibidor (planta)','cuajador':'Cuajador','admin':'Administrador'};
   const opciones=roles.filter(r=>r!==rolActual).map(r=>nombres[r]).join(' / ');
-  const nuevoNombre=prompt(`¿A qué rol quieres cambiar a ${nombre}?\n\nRol actual: ${nombres[rolActual]}\nOpciones: ${opciones}\n\nEscribe exactamente: recogedor, recibidor, cuajador o admin`);
+  const nuevoNombre=await modalPrompt(`¿A qué rol quieres cambiar a ${nombre}?\n\nRol actual: ${nombres[rolActual]}\nOpciones: ${opciones}\n\nEscribe exactamente: recogedor, recibidor, cuajador o admin`);
   if(!nuevoNombre)return;
   const nuevo=nuevoNombre.trim().toLowerCase();
-  if(!roles.includes(nuevo)){alert('Rol no válido. Escribe: recogedor, recibidor, cuajador o admin');return;}
-  if(nuevo===rolActual){alert('Ya tiene ese rol.');return;}
+  if(!roles.includes(nuevo)){await modalAlert('Rol no válido. Escribe: recogedor, recibidor, cuajador o admin');return;}
+  if(nuevo===rolActual){await modalAlert('Ya tiene ese rol.');return;}
   try{
     await updateDoc(doc(db,'usuarios',uid),{rol:nuevo});
     // Limpiar caché del usuario afectado no es posible desde aquí,
@@ -2810,7 +2896,7 @@ async function cambiarRol(uid,rolActual,nombre){
 
 async function toggleBloqueo(uid,bloquear){try{await updateDoc(doc(db,'usuarios',uid),{bloqueado:bloquear});alerta('usr-ok',bloquear?'🔒 Usuario bloqueado':'🔓 Usuario desbloqueado','verde');await usuAdmin();}catch(e){alerta('usr-error','Error al actualizar','rojo');}}window.toggleBloqueo=toggleBloqueo;
 function normNombre(s){return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();}
-async function editarNombreUsuario(uid,nombreActual){const nuevo=prompt('Nuevo nombre (este será su usuario de login):',nombreActual);if(!nuevo||!nuevo.trim()||nuevo.trim()===nombreActual)return;
+async function editarNombreUsuario(uid,nombreActual){const nuevo=await modalPrompt('Nuevo nombre (este será su usuario de login):',nombreActual);if(!nuevo||!nuevo.trim()||nuevo.trim()===nombreActual)return;
   try{const snap=await getDocs(collection(db,'usuarios'));let dup=false;snap.forEach(d=>{if(d.id!==uid&&normNombre(d.data().nombre||'')===normNombre(nuevo))dup=true;});
   if(dup){alerta('usr-error','❌ Ya existe un usuario con ese nombre','rojo');return;}
   await updateDoc(doc(db,'usuarios',uid),{nombre:nuevo.trim()});alerta('usr-ok',`✅ Nombre actualizado a "${nuevo.trim()}"`,'verde');await usuAdmin();}catch(e){alerta('usr-error','Error al actualizar nombre','rojo');}}window.editarNombreUsuario=editarNombreUsuario;
@@ -2819,7 +2905,7 @@ async function toggleRutaCombinada(uid,actual){
   try{
     if(!actual){
       // Ask which UIDs this combines
-      const input=prompt('UIDs de los recogedores que combina esta ruta (separados por coma):');
+      const input=await modalPrompt('UIDs de los recogedores que combina esta ruta (separados por coma):');
       if(!input)return;
       const combinaUids=input.split(',').map(s=>s.trim()).filter(Boolean);
       await updateDoc(doc(db,'usuarios',uid),{esRutaCombinada:true,combinaUids});
@@ -2970,7 +3056,7 @@ function initCostos(){
 async function cargarSeccionCostos(){
   const desde=document.getElementById('costos-desde').value;
   const hasta=document.getElementById('costos-hasta').value;
-  if(!desde||!hasta){alert('Selecciona fechas');return;}
+  if(!desde||!hasta){await modalAlert('Selecciona fechas');return;}
   try{
   const snapC=await getDocs(query(collection(db,'combustible'),where('fecha','>=',desde),where('fecha','<=',hasta)));
   const combustibles=[];snapC.forEach(d=>combustibles.push({id:d.id,...d.data()}));
@@ -3084,7 +3170,7 @@ async function cambiarNominaCostos(uid){
     const uDoc=await getDoc(doc(db,'usuarios',uid));
     if(!uDoc.exists()){alerta('nomina-error','Usuario no encontrado','rojo');return;}
     const datos=uDoc.data();const nombreActual=datos.nombre||datos.email;
-    const valorStr=prompt(`💰 Nómina mensual de ${nombreActual} (en pesos):\n\nEste será el nuevo precio del colaborador.`);
+    const valorStr=await modalPromptPesos(`💰 Nómina mensual de ${nombreActual} (en pesos):\n\nEste será el nuevo precio del colaborador.`);
     if(!valorStr||!valorStr.trim())return;
     const precio=parseFloat(valorStr.trim());
     if(isNaN(precio)||precio<=0){alerta('nomina-error','Valor no válido','rojo');return;}
@@ -3104,23 +3190,42 @@ async function cargarHistorialNominas(){
   }catch(e){}
 }
 async function editarNomina(uid,nombre){
-  const actual=prompt(`Nómina mensual de ${nombre} (en pesos):`);
+  const actual=await modalPromptPesos(`Nómina mensual de ${nombre} (en pesos):`);
   if(!actual||!actual.trim())return;const precio=parseFloat(actual.trim());
-  if(isNaN(precio)||precio<=0){alert('Valor no válido');return;}
+  if(isNaN(precio)||precio<=0){await modalAlert('Valor no válido');return;}
   try{await addDoc(collection(db,'historialNomina'),{userId:uid,userName:nombre,precio,fechaDesde:hoy(),adminId:UA.uid,adminNombre:UA.nombre||UA.email,timestamp:serverTimestamp()});
   await updateDoc(doc(db,'usuarios',uid),{nominaActual:precio});
   alerta('usr-ok',`✅ Nómina de ${nombre}: ${fmtPeso(precio)}`,'verde');await usuAdmin();
   }catch(e){alerta('usr-error','Error al guardar nómina','rojo');}
 }window.editarNomina=editarNomina;
-async function editarNota(uid,notaActual){const nota=prompt('Nota (contraseña u observación):',notaActual);if(nota===null)return;try{await updateDoc(doc(db,'usuarios',uid),{nota:nota.trim()});alerta('usr-ok','✅ Nota actualizada','verde');await usuAdmin();}catch(e){alerta('usr-error','Error al guardar nota','rojo');}}window.editarNota=editarNota;
-function generarQR(nombre,nota){
-  if(!nombre){alert('El usuario no tiene nombre');return;}
-  if(!nota){alert('Primero agrega la contraseña en la nota');return;}
+async function editarNota(uid,notaActual){const nota=await modalPrompt('Nota (contraseña u observación):',notaActual);if(nota===null)return;try{await updateDoc(doc(db,'usuarios',uid),{nota:nota.trim()});alerta('usr-ok','✅ Nota actualizada','verde');await usuAdmin();}catch(e){alerta('usr-error','Error al guardar nota','rojo');}}window.editarNota=editarNota;
+async function generarQR(nombre,nota){
+  if(!nombre){await modalAlert('El usuario no tiene nombre');return;}
+  if(!nota){await modalAlert('Primero agrega la contraseña en la nota');return;}
   const url=window.location.origin+window.location.pathname+'?u='+btoa(unescape(encodeURIComponent(nombre)))+'&p='+btoa(unescape(encodeURIComponent(nota)));
   document.getElementById('qr-nombre-label').textContent=nombre;
   document.getElementById('modal-qr').classList.add('show');
   setTimeout(()=>{new QRious({element:document.getElementById('qr-canvas'),value:url,size:250,level:'M'});},100);
 }window.generarQR=generarQR;
+
+// ── ABRIR VISTA DE ROL (ADMIN) ──
+let _adminBackup=null;
+function abrirVistaRol(uid,nombre,rolVer){
+  _adminBackup={uid:UA.uid,nombre:UA.nombre,email:UA.email,rol:rol,displayName:UA.displayName};
+  UA.uid=uid;UA.nombre=nombre;UA.displayName=nombre;rol=rolVer;
+  document.getElementById('btn-volver-admin').style.display='block';
+  document.getElementById('bottom-nav').style.display='none';
+  if(rolVer==='recogedor')initRec();
+  else if(rolVer==='recibidor')initRecibidor();
+  else if(rolVer==='cuajador')initCuajador();
+}window.abrirVistaRol=abrirVistaRol;
+function volverAAdmin(){
+  if(!_adminBackup)return;
+  UA.uid=_adminBackup.uid;UA.nombre=_adminBackup.nombre;UA.email=_adminBackup.email;UA.displayName=_adminBackup.displayName||_adminBackup.nombre;rol=_adminBackup.rol;
+  _adminBackup=null;
+  document.getElementById('btn-volver-admin').style.display='none';
+  initAdmin();
+}window.volverAAdmin=volverAAdmin;
 
 function navAdmin(p,b){ir(p);document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('activo'));b.classList.add('activo');if(p==='screen-admin-dashboard')dashAdmin();if(p==='screen-admin-ganaderos')ganAdmin();if(p==='screen-admin-costos')initCostos();if(p==='screen-admin-usuarios'){usuAdmin();interAdmin2();actualizarUIHistorico();cargarHorario();}}window.navAdmin=navAdmin;
 document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')hacerLogin();});
