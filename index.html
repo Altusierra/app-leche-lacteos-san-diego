@@ -119,7 +119,7 @@
 <div id="screen-login" class="screen active">
   <div style="background:#1a1a1a;border-radius:14px;padding:12px 20px;margin-bottom:24px;text-align:center;"><span style="color:#ea580c;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;">Vereda Guan Cantería · Cumbal - Nariño</span></div><div class="login-logo"><div class="emoji">🐄</div><h1>Lácteos San Diego</h1><p>Sistema de recolección de leche</p></div>
   <div class="alerta alerta-rojo" id="login-error"></div>
-  <div class="campo"><label>Usuario</label><input type="text" id="login-email" placeholder="Tu nombre" inputmode="text" autocomplete="username"></div>
+  <div class="campo"><label>Usuario</label><input type="text" id="login-email" placeholder="Tu nombre (admin: correo)" inputmode="text" autocomplete="username"></div>
   <div class="campo"><label>Contraseña</label><input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password"></div>
   <button class="btn btn-verde" id="btn-entrar" style="margin-top:8px;cursor:pointer;">ENTRAR</button>
   <p style="text-align:center;color:var(--gris2);font-size:13px;margin-top:20px;">¿Problemas? Contacta al administrador</p>
@@ -511,6 +511,19 @@
     <button class="btn btn-verde btn-sm" onclick="abrirModalInter()" style="margin-bottom:12px;">+ Nuevo intermediario</button>
     <div class="alerta alerta-rojo" id="inter-error2"></div>
     <div id="lista-intermediarios2"><div class="loading">Cargando...</div></div>
+    <div style="margin-top:28px;font-size:16px;font-weight:700;color:var(--gris3);margin-bottom:12px;">🕐 Horario de funcionamiento</div>
+    <div class="card">
+      <div id="horario-estado" style="font-size:14px;margin-bottom:12px;">Cargando...</div>
+      <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;">
+        <div><label style="font-size:12px;font-weight:600;">Abre</label><input type="time" id="horario-inicio" value="04:00" style="padding:8px;border:1.5px solid var(--gris1);border-radius:8px;font-size:14px;width:100%;box-sizing:border-box;margin-top:4px;" onchange="mostrarMotivoHorario()"></div>
+        <div><label style="font-size:12px;font-weight:600;">Cierra</label><input type="time" id="horario-fin" value="18:00" style="padding:8px;border:1.5px solid var(--gris1);border-radius:8px;font-size:14px;width:100%;box-sizing:border-box;margin-top:4px;" onchange="mostrarMotivoHorario()"></div>
+      </div>
+      <div id="horario-motivo-wrap" style="display:none;margin-bottom:12px;"><label style="font-size:12px;font-weight:600;color:var(--rojo);">⚠️ Motivo del cambio (obligatorio)</label><textarea id="horario-motivo" placeholder="Ej: Temporada alta, recorrido especial..." rows="2" style="width:100%;padding:10px;border:1.5px solid var(--rojo);border-radius:10px;font-size:13px;box-sizing:border-box;margin-top:4px;resize:none;"></textarea></div>
+      <div class="alerta alerta-rojo" id="horario-error"></div>
+      <div class="alerta alerta-verde" id="horario-ok"></div>
+      <button class="btn btn-verde btn-sm" onclick="guardarHorario()">💾 Guardar horario</button>
+      <div id="horario-historial" style="margin-top:16px;"></div>
+    </div>
   </div>
 </div>
 
@@ -532,6 +545,19 @@
     <div class="card">
       <div class="card-titulo" style="color:#1D4ED8;">📊 Costo transporte por litro</div>
       <div id="costos-transporte"><div style="font-size:13px;color:var(--gris2);">Consulta combustible primero</div></div>
+    </div>
+    <div class="card">
+      <div class="card-titulo" style="color:#15803d;">📊 Resumen de gastos del período</div>
+      <div id="costos-resumen-gastos"><div style="font-size:13px;color:var(--gris2);">Consulta combustible primero para ver el resumen</div></div>
+    </div>
+    <div class="card">
+      <div class="card-titulo" style="color:#15803d;">💰 Nóminas</div>
+      <div class="alerta alerta-rojo" id="nomina-error"></div>
+      <div class="alerta alerta-verde" id="nomina-ok"></div>
+      <div id="costos-nominas-alertas"></div>
+      <div id="costos-nominas-lista"><div class="loading">Cargando...</div></div>
+      <div style="margin-top:16px;font-size:12px;font-weight:700;color:var(--gris2);margin-bottom:6px;">Historial de cambios</div>
+      <div id="costos-nominas-historial"><div style="font-size:13px;color:var(--gris2);">Sin cambios aún</div></div>
     </div>
   </div>
 </div>
@@ -768,8 +794,15 @@ const SUPER_ADMINS=new Set(['WLPvBEGv9xeurUkJxfgZ1aWWf982','aldWRG0sMebNMjboOWb3
 let UA=null,rol=null,ganList=[],regHoyGan={},_porGan={},_porRec={},_porRecPlanta={},_uidsCombinados=new Set(),precioActual=0,tabRep=0,editGanId=null,datosRep=[],datosInter=[],datosRecepciones=[],soloNovGlobal=false,modoElim=false;
 let recibSeleccionado=null,ganSel=null,listaRecogedores=[],modoHistorico=false,fechaReg=null,_costosRecFilter='todos';
 let _litrosPorGanadero={},_ordenGan='az';
+let _horarioInicio='04:00',_horarioFin='18:00',_horarioOrigInicio='04:00',_horarioOrigFin='18:00';
 
 // ── HELPERS ──
+async function iniciarSesionConRol(){
+  if(rol==='admin'){initAdmin();return;}
+  try{const sc=await getDocs(query(collection(db,'configuracion'),limit(1)));if(!sc.empty){const dc=sc.docs[0].data();_horarioInicio=dc.horarioInicio||'04:00';_horarioFin=dc.horarioFin||'18:00';}}catch(e){}
+  if(!verificarHorario()){await signOut(auth);localStorage.removeItem('lsd_perfil');alerta('login-error',`⏰ La app está disponible de ${_horarioInicio} a ${_horarioFin}. Fuera de horario.`,'rojo');return;}
+  if(rol==='recibidor')initRecibidor();else if(rol==='cuajador')initCuajador();else initRec();
+}
 function ir(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
@@ -813,7 +846,7 @@ onAuthStateChanged(auth,async u=>{
       const cached=JSON.parse(cache);
       if(cached.uid===u.uid){
         UA={uid:u.uid,email:u.email,...cached};rol=cached.rol;
-        if(rol==='admin')initAdmin();else if(rol==='recibidor')initRecibidor();else if(rol==='cuajador')initCuajador();else initRec();
+        await iniciarSesionConRol();
         // Verificar en background si el perfil cambió (bloqueado, etc)
         getDoc(doc(db,'usuarios',u.uid)).then(s=>{
           if(!s.exists()||s.data().bloqueado===true){signOut(auth);localStorage.removeItem('lsd_perfil');}
@@ -830,7 +863,7 @@ onAuthStateChanged(auth,async u=>{
     // Guardar en caché
     localStorage.setItem('lsd_perfil',JSON.stringify({uid:u.uid,...datos}));
     UA={uid:u.uid,email:u.email,...datos};rol=datos.rol;
-    if(rol==='admin')initAdmin();else if(rol==='recibidor')initRecibidor();else if(rol==='cuajador')initCuajador();else initRec();
+    await iniciarSesionConRol();
   }catch(e){
     // Si hay caché y falla la red, usar caché igual
     const cache=localStorage.getItem('lsd_perfil');
@@ -838,7 +871,7 @@ onAuthStateChanged(auth,async u=>{
       const cached=JSON.parse(cache);
       if(cached.uid===u.uid){
         UA={uid:u.uid,email:u.email,...cached};rol=cached.rol;
-        if(rol==='admin')initAdmin();else if(rol==='recibidor')initRecibidor();else if(rol==='cuajador')initCuajador();else initRec();
+        await iniciarSesionConRol();
         return;
       }
     }
@@ -848,17 +881,22 @@ onAuthStateChanged(auth,async u=>{
 });
 async function hacerLogin(){const u=document.getElementById('login-email').value.trim();const p=document.getElementById('login-pass').value;if(!u||!p){alerta('login-error','Completa todos los campos','rojo');return;}ocult('login-error');
   try{
-    let email=u;
-    // Si no parece email, buscar por nombre en Firestore
-    if(!u.includes('@')){
-      const snap=await getDocs(collection(db,'usuarios'));
-      const norm=normNombre(u);let found=null;
-      snap.forEach(d=>{const dat=d.data();if(normNombre(dat.nombre||'')===norm)found=dat.email;});
-      if(!found){alerta('login-error','Usuario no encontrado','rojo');return;}
-      email=found;
+    let email=u;const esEmail=u.includes('@');
+    const snap=await getDocs(collection(db,'usuarios'));
+    if(esEmail){
+      let foundRol=null;
+      snap.forEach(d=>{const dat=d.data();if((dat.email||'').toLowerCase()===u.toLowerCase())foundRol=dat.rol;});
+      if(foundRol===null){alerta('login-error','Usuario no encontrado','rojo');return;}
+      if(foundRol!=='admin'){alerta('login-error','Ingresa tu nombre de usuario, no el correo','rojo');return;}
+    }else{
+      const norm=normNombre(u);let foundEmail=null;let foundRol=null;
+      snap.forEach(d=>{const dat=d.data();if(normNombre(dat.nombre||'')===norm){foundEmail=dat.email;foundRol=dat.rol;}});
+      if(!foundEmail){alerta('login-error','Usuario no encontrado','rojo');return;}
+      if(foundRol==='admin'){alerta('login-error','Los administradores deben ingresar su correo','rojo');return;}
+      email=foundEmail;
     }
     await signInWithEmailAndPassword(auth,email,p);
-  }catch(err){const msg=err.code==='auth/network-request-failed'?'Sin conexión a internet':err.code==='auth/too-many-requests'?'Demasiados intentos fallidos. Espera unos minutos.':err.code==='auth/user-disabled'?'Cuenta bloqueada. Contacta al administrador.':'Usuario o contraseña incorrectos';alerta('login-error',msg,'rojo');}}window.hacerLogin=hacerLogin;
+  }catch(err){let msg='Contraseña incorrecta';if(err.code==='auth/network-request-failed')msg='Sin conexión a internet';else if(err.code==='auth/too-many-requests')msg='Demasiados intentos fallidos. Espera unos minutos.';else if(err.code==='auth/user-disabled')msg='Cuenta bloqueada. Contacta al administrador.';else if(err.code==='auth/user-not-found')msg='Usuario no encontrado';alerta('login-error',msg,'rojo');}}window.hacerLogin=hacerLogin;
 async function cerrarSesion(){await signOut(auth);}window.cerrarSesion=cerrarSesion;
 
 // ══════════════════════════════════════════
@@ -1005,6 +1043,7 @@ async function guardarCombustible(){
   const galones=parseFloat(document.getElementById('m-comb-galones').value);
   if(!valor||valor<=0){alerta('m-comb-error','El valor es obligatorio','rojo');return;}
   if(!galones||galones<=0){alerta('m-comb-error','Los galones son obligatorios','rojo');return;}
+  if(valor<1000){alerta('m-comb-error','El valor mínimo es $1.000','rojo');return;}
   if(valor<10000){
     const conf=confirm(`¿Seguro que son $${valor.toLocaleString('es-CO')}?\n¿O quisiste poner $${(valor*1000).toLocaleString('es-CO')} o $${(valor*100).toLocaleString('es-CO')}?`);
     if(!conf)return;
@@ -1026,10 +1065,9 @@ async function eliminarCombustible(docId){
       const c=combDoc.data();
       await addDoc(collection(db,'eliminaciones'),{tipo:'combustible',registroId:docId,proveedorId:c.recogedorId,proveedorNombre:c.recogedorNombre,valor:c.valor,galones:c.galones,fecha:c.fecha,hora:c.hora,motivo:motivo.trim(),eliminadoEn:hoy(),eliminadoHora:horaAhora(),eliminadoPorId:UA.uid,eliminadoPorNombre:UA.nombre||UA.email,eliminadoPorRol:'recogedor'});
       await deleteDoc(doc(db,'combustible',docId));
-      alert('✅ Combustible eliminado');
       await resumenRec();
     }
-  }catch(e){alert('Error al eliminar');}
+  }catch(e){console.error('Error al eliminar combustible:',e);}
 }window.eliminarCombustible=eliminarCombustible;
 
 async function guardarGanaderoRecogedor(){const n=document.getElementById('m-gan-rec-nombre').value.trim();const t=document.getElementById('m-gan-rec-tel').value.trim();const v=document.getElementById('m-gan-rec-vereda').value.trim();if(!n){alerta('m-gan-rec-error','El nombre es obligatorio','rojo');return;}
@@ -1706,7 +1744,7 @@ async function initAdmin(){
   document.getElementById('admin-rol-header').textContent='admin';
   document.getElementById('admin-fecha').textContent=fmtFecha(hoy());
   ir('screen-admin-dashboard');
-  dashAdmin();ganAdmin();usuAdmin();interAdmin();interAdmin2();actualizarUIHistorico();
+  dashAdmin();ganAdmin();usuAdmin();interAdmin();interAdmin2();actualizarUIHistorico();cargarHorario();
   document.getElementById('rep-desde').value=hoy();document.getElementById('rep-hasta').value=hoy();
 }
 function renderDesgloseAdmin(filtroId){
@@ -2315,6 +2353,66 @@ async function eliminarInter(){
 async function precioAdmin(){try{const s=await getDocs(query(collection(db,'configuracion'),limit(1)));if(!s.empty){const d=s.docs[0].data();precioActual=d.precioPorLitro||0;modoHistorico=d.modoHistorico||false;}actualizarUIHistorico();}catch(e){}}
 function actualizarUIHistorico(){const est=document.getElementById('modo-historico-estado');const btn=document.getElementById('btn-modo-historico');if(!est||!btn)return;if(modoHistorico){est.innerHTML='🟢 <span style="color:#15803d;">ACTIVO — Los recogedores pueden registrar días anteriores</span>';btn.textContent='🔴 Desactivar modo histórico';btn.style.background='#dc2626';}else{est.innerHTML='⚫ <span style="color:var(--gris2);">INACTIVO — Los recogedores solo ven el día de hoy</span>';btn.textContent='🟢 Activar modo histórico';btn.style.background='';}}
 async function toggleModoHistorico(){const nuevo=!modoHistorico;try{const s=await getDocs(query(collection(db,'configuracion'),limit(1)));if(!s.empty){await updateDoc(doc(db,'configuracion',s.docs[0].id),{modoHistorico:nuevo});}else{await addDoc(collection(db,'configuracion'),{modoHistorico:nuevo});}modoHistorico=nuevo;actualizarUIHistorico();}catch(e){alert('Error al cambiar modo');}}window.toggleModoHistorico=toggleModoHistorico;
+// ── HORARIO DE FUNCIONAMIENTO ──
+async function cargarHorario(){
+  try{
+    const s=await getDocs(query(collection(db,'configuracion'),limit(1)));
+    if(!s.empty){const d=s.docs[0].data();_horarioInicio=d.horarioInicio||'04:00';_horarioFin=d.horarioFin||'18:00';}
+    _horarioOrigInicio=_horarioInicio;_horarioOrigFin=_horarioFin;
+    const elI=document.getElementById('horario-inicio');const elF=document.getElementById('horario-fin');
+    if(elI)elI.value=_horarioInicio;if(elF)elF.value=_horarioFin;
+    const est=document.getElementById('horario-estado');
+    if(est)est.innerHTML=`🕐 La app funciona de <strong>${_horarioInicio}</strong> a <strong>${_horarioFin}</strong> para roles no admin`;
+    const mw=document.getElementById('horario-motivo-wrap');if(mw)mw.style.display='none';
+    await cargarHistorialHorario();
+  }catch(e){console.error('Error cargando horario:',e);}
+}
+async function cargarHistorialHorario(){
+  const el=document.getElementById('horario-historial');if(!el)return;
+  try{
+    const s=await getDocs(query(collection(db,'historialHorario'),orderBy('fechaCambio','desc')));
+    const lista=[];s.forEach(d=>lista.push(d.data()));
+    if(lista.length===0){el.innerHTML='<p style="font-size:13px;color:var(--gris2);">Sin cambios de horario</p>';return;}
+    el.innerHTML=`<div style="font-size:12px;font-weight:700;color:var(--gris2);margin-bottom:6px;">Historial de cambios</div>`+lista.slice(0,5).map(h=>`<div style="padding:6px 0;border-bottom:1px solid var(--gris1);font-size:12px;"><strong>${h.horaInicio} - ${h.horaFin}</strong> · ${h.fechaCambio} · ${h.adminNombre||''}<br><span style="color:var(--amarillo);">${h.motivo||''}</span></div>`).join('');
+  }catch(e){}
+}
+function mostrarMotivoHorario(){
+  const ini=document.getElementById('horario-inicio')?.value||'04:00';
+  const fin=document.getElementById('horario-fin')?.value||'18:00';
+  const cambio=ini!==_horarioOrigInicio||fin!==_horarioOrigFin;
+  const mw=document.getElementById('horario-motivo-wrap');if(mw)mw.style.display=cambio?'block':'none';
+}window.mostrarMotivoHorario=mostrarMotivoHorario;
+async function guardarHorario(){
+  const ini=document.getElementById('horario-inicio')?.value;
+  const fin=document.getElementById('horario-fin')?.value;
+  if(!ini||!fin){alerta('horario-error','Selecciona ambas horas','rojo');return;}
+  if(ini>=fin){alerta('horario-error','La hora de inicio debe ser menor que la de cierre','rojo');return;}
+  const cambio=ini!==_horarioOrigInicio||fin!==_horarioOrigFin;
+  if(cambio){
+    const motivo=(document.getElementById('horario-motivo')?.value||'').trim();
+    if(!motivo){alerta('horario-error','El motivo es obligatorio cuando cambias el horario','rojo');return;}
+    try{
+      await addDoc(collection(db,'historialHorario'),{horaInicio:ini,horaFin:fin,motivo,adminId:UA.uid,adminNombre:UA.nombre||UA.email,fechaCambio:hoy(),horaCambio:horaAhora(),timestamp:serverTimestamp()});
+    }catch(e){}
+  }
+  try{
+    const s=await getDocs(query(collection(db,'configuracion'),limit(1)));
+    const d={horarioInicio:ini,horarioFin:fin};
+    if(!s.empty){await updateDoc(doc(db,'configuracion',s.docs[0].id),d);}
+    else{await addDoc(collection(db,'configuracion'),d);}
+    _horarioInicio=ini;_horarioFin=fin;_horarioOrigInicio=ini;_horarioOrigFin=fin;
+    alerta('horario-ok',`✅ Horario actualizado: ${ini} a ${fin}`,'verde');
+    document.getElementById('horario-motivo').value='';
+    document.getElementById('horario-motivo-wrap').style.display='none';
+    const est=document.getElementById('horario-estado');
+    if(est)est.innerHTML=`🕐 La app funciona de <strong>${ini}</strong> a <strong>${fin}</strong> para roles no admin`;
+    await cargarHistorialHorario();
+  }catch(e){alerta('horario-error','Error al guardar','rojo');}
+}window.guardarHorario=guardarHorario;
+function verificarHorario(){
+  const ahora=new Date();const h=String(ahora.getHours()).padStart(2,'0')+':'+String(ahora.getMinutes()).padStart(2,'0');
+  return h>=_horarioInicio&&h<_horarioFin;
+}
 async function actualizarPrecio(){const p=parseFloat(document.getElementById('nuevo-precio-input').value);if(!p||p<=0){alerta('precio-error','Ingresa un precio válido','rojo');return;}ocult('precio-error');try{const s=await getDocs(query(collection(db,'configuracion'),limit(1)));const d={precioPorLitro:p,fechaActualizacion:hoy(),adminId:UA.uid,adminNombre:UA.nombre||UA.email};if(!s.empty){await updateDoc(doc(db,'configuracion',s.docs[0].id),d);}else{await addDoc(collection(db,'configuracion'),d);}await addDoc(collection(db,'historialPrecios'),{...d,timestamp:serverTimestamp()});precioActual=p;document.getElementById('precio-actual-display').textContent=fmtPeso(p);document.getElementById('precio-fecha-display').textContent=`Actualizado el ${hoy()} por ${UA.nombre||'admin'}`;document.getElementById('nuevo-precio-input').value='';alerta('precio-ok',`✅ Precio actualizado a ${fmtPeso(p)}/litro`,'verde');await histPrecios();}catch(e){alerta('precio-error','Error al actualizar','rojo');}}window.actualizarPrecio=actualizarPrecio;
 async function histPrecios(){try{const s=await getDocs(query(collection(db,'historialPrecios'),orderBy('fechaActualizacion','desc')));const it=[];s.forEach(d=>it.push(d.data()));document.getElementById('historial-precios').innerHTML=it.length===0?'<p style="color:var(--gris2);font-size:14px;">Sin cambios aún</p>':`<div class="card" style="padding:0;overflow:hidden;"><table class="tabla"><thead><tr><th>Precio/L</th><th>Fecha</th><th>Admin</th></tr></thead><tbody>${it.slice(0,20).map(i=>`<tr><td><strong>${fmtPeso(i.precioPorLitro)}</strong></td><td>${i.fechaActualizacion}</td><td>${i.adminNombre||'-'}</td></tr>`).join('')}</tbody></table></div>`;}catch(e){}}
 
@@ -2867,6 +2965,7 @@ function initCostos(){
   const desde=d<=15?h.slice(0,8)+'01':h.slice(0,8)+'16';
   document.getElementById('costos-desde').value=desde;
   document.getElementById('costos-hasta').value=h;
+  cargarNominas();
 }
 async function cargarSeccionCostos(){
   const desde=document.getElementById('costos-desde').value;
@@ -2929,6 +3028,19 @@ async function cargarSeccionCostos(){
     trH+='<div style="font-size:11px;color:var(--gris2);margin-top:6px;">Nómina/L = (salario÷30×días)÷litros · Comb/L = combustible÷litros · Gal/1000L = galones por cada 1000L · $/Ganadero = combustible÷ganaderos</div>';
     trEl.innerHTML=trH;
   }
+  // ── RESUMEN DE GASTOS DEL PERÍODO ──
+  const resEl=document.getElementById('costos-resumen-gastos');
+  if(resEl){
+    const totalComb=combustibles.reduce((s,c)=>s+(parseFloat(c.valor)||0),0);
+    let totalNomPeriodo=0;
+    Object.values(porRec).forEach(v=>{if(v.nomina>0)totalNomPeriodo+=(v.nomina/30)*diasRango;});
+    const gastoTotal=totalComb+totalNomPeriodo;
+    resEl.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;">
+      <div style="background:var(--crema);border-radius:12px;padding:10px;"><div style="font-size:10px;color:var(--gris2);font-weight:600;">NÓMINAS</div><div style="font-size:18px;font-weight:800;">${fmtPeso(Math.round(totalNomPeriodo))}</div><div style="font-size:10px;color:var(--gris2);">${diasRango} días</div></div>
+      <div style="background:var(--crema);border-radius:12px;padding:10px;"><div style="font-size:10px;color:var(--gris2);font-weight:600;">COMBUSTIBLE</div><div style="font-size:18px;font-weight:800;">${fmtPeso(totalComb)}</div></div>
+      <div style="background:#DCFCE7;border-radius:12px;padding:10px;"><div style="font-size:10px;color:#15803d;font-weight:600;">GASTO TOTAL</div><div style="font-size:18px;font-weight:800;color:#15803d;">${fmtPeso(Math.round(gastoTotal))}</div></div>
+    </div>`;
+  }
   }catch(e){console.error('Error costos:',e);}
 }window.cargarSeccionCostos=cargarSeccionCostos;
 function exportarCombustibleCSV(){
@@ -2938,6 +3050,59 @@ function exportarCombustibleCSV(){
   rows.forEach(r=>{const cells=[...r.querySelectorAll('td')].map(c=>c.textContent);csv+=cells.join(',')+'\n';});
   descargar(csv,`combustible_${desde}_${hasta}.csv`);
 }window.exportarCombustibleCSV=exportarCombustibleCSV;
+// ── NÓMINAS EN COSTOS ──
+async function cargarNominas(){
+  try{
+    const snap=await getDocs(query(collection(db,'usuarios'),orderBy('nombre')));
+    const usuarios=[];snap.forEach(d=>{const dat=d.data();if(dat.rol!=='admin')usuarios.push({id:d.id,...dat});});
+    const rolOrden={recogedor:0,recibidor:1,cuajador:2};
+    usuarios.sort((a,b)=>(rolOrden[a.rol]??99)-(rolOrden[b.rol]??99)||(a.nombre||'').localeCompare(b.nombre||''));
+    // Alertas de nómina pendiente
+    const alertEl=document.getElementById('costos-nominas-alertas');
+    const sinNomina=usuarios.filter(u=>!u.nominaActual);
+    if(alertEl){
+      if(sinNomina.length>0){alertEl.innerHTML=sinNomina.map(u=>`<div style="background:#FEE2E2;border:1px solid #DC2626;border-radius:10px;padding:10px;margin-bottom:8px;font-size:13px;color:#DC2626;font-weight:600;">⚠️ ${u.nombre||u.email} — Sin nómina asignada</div>`).join('');}
+      else{alertEl.innerHTML='';}
+    }
+    // Lista
+    const el=document.getElementById('costos-nominas-lista');if(!el)return;
+    const badgeRol=r=>r==='recogedor'?'badge-verde':r==='recibidor'?'badge-naranja':'badge-verde';
+    el.innerHTML=usuarios.length===0?'<p style="color:var(--gris2);font-size:14px;">Sin usuarios</p>':
+      usuarios.map(u=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--gris1);">
+        <div><div style="font-weight:700;font-size:14px;">${u.nombre||u.email} <span class="badge ${badgeRol(u.rol)}" style="font-size:10px;">${u.rol}</span></div>
+        <div style="font-size:13px;color:${u.nominaActual?'#15803d':'var(--rojo)'};">${u.nominaActual?fmtPeso(u.nominaActual)+'/mes':'Sin asignar'}</div></div>
+        <button class="btn btn-sm" style="background:${u.nominaActual?'#15803d':'var(--rojo)'};color:white;" data-nomuid="${u.id}" data-nomnombre="${(u.nombre||'').replace(/"/g,'&quot;')}">💰 ${u.nominaActual?'Cambiar':'Asignar'}</button>
+      </div>`).join('');
+    el.querySelectorAll('[data-nomuid]').forEach(btn=>{
+      btn.addEventListener('click',function(){cambiarNominaCostos(this.dataset.nomuid);});
+    });
+    await cargarHistorialNominas();
+  }catch(e){console.error('Error cargar nóminas:',e);}
+}
+async function cambiarNominaCostos(uid){
+  try{
+    const uDoc=await getDoc(doc(db,'usuarios',uid));
+    if(!uDoc.exists()){alerta('nomina-error','Usuario no encontrado','rojo');return;}
+    const datos=uDoc.data();const nombreActual=datos.nombre||datos.email;
+    const valorStr=prompt(`💰 Nómina mensual de ${nombreActual} (en pesos):\n\nEste será el nuevo precio del colaborador.`);
+    if(!valorStr||!valorStr.trim())return;
+    const precio=parseFloat(valorStr.trim());
+    if(isNaN(precio)||precio<=0){alerta('nomina-error','Valor no válido','rojo');return;}
+    await addDoc(collection(db,'historialNomina'),{userId:uid,userName:nombreActual,precio,fechaDesde:hoy(),adminId:UA.uid,adminNombre:UA.nombre||UA.email,timestamp:serverTimestamp()});
+    await updateDoc(doc(db,'usuarios',uid),{nominaActual:precio});
+    alerta('nomina-ok',`✅ Nómina de ${nombreActual}: ${fmtPeso(precio)}/mes`,'verde');
+    await cargarNominas();
+  }catch(e){alerta('nomina-error','Error al guardar nómina','rojo');}
+}window.cambiarNominaCostos=cambiarNominaCostos;
+async function cargarHistorialNominas(){
+  const el=document.getElementById('costos-nominas-historial');if(!el)return;
+  try{
+    const s=await getDocs(query(collection(db,'historialNomina'),orderBy('fechaDesde','desc')));
+    const lista=[];s.forEach(d=>lista.push(d.data()));
+    if(lista.length===0){el.innerHTML='<p style="font-size:13px;color:var(--gris2);">Sin cambios de nómina</p>';return;}
+    el.innerHTML=lista.slice(0,10).map(h=>`<div style="padding:6px 0;border-bottom:1px solid var(--gris1);font-size:12px;"><strong>${h.userName}</strong> → ${fmtPeso(h.precio)}/mes · ${h.fechaDesde} · por ${h.adminNombre||''}</div>`).join('');
+  }catch(e){}
+}
 async function editarNomina(uid,nombre){
   const actual=prompt(`Nómina mensual de ${nombre} (en pesos):`);
   if(!actual||!actual.trim())return;const precio=parseFloat(actual.trim());
@@ -2957,7 +3122,7 @@ function generarQR(nombre,nota){
   setTimeout(()=>{new QRious({element:document.getElementById('qr-canvas'),value:url,size:250,level:'M'});},100);
 }window.generarQR=generarQR;
 
-function navAdmin(p,b){ir(p);document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('activo'));b.classList.add('activo');if(p==='screen-admin-dashboard')dashAdmin();if(p==='screen-admin-ganaderos')ganAdmin();if(p==='screen-admin-costos')initCostos();if(p==='screen-admin-usuarios'){usuAdmin();interAdmin2();actualizarUIHistorico();}}window.navAdmin=navAdmin;
+function navAdmin(p,b){ir(p);document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('activo'));b.classList.add('activo');if(p==='screen-admin-dashboard')dashAdmin();if(p==='screen-admin-ganaderos')ganAdmin();if(p==='screen-admin-costos')initCostos();if(p==='screen-admin-usuarios'){usuAdmin();interAdmin2();actualizarUIHistorico();cargarHorario();}}window.navAdmin=navAdmin;
 document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')hacerLogin();});
 // iOS fix: usar tanto click como touchend
 const btnEntrar=document.getElementById('btn-entrar');
