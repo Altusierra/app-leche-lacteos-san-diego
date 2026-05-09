@@ -118,6 +118,7 @@
     .mc-input{width:100%;padding:14px;font-size:18px;font-weight:700;border:2px solid #d1d5db;border-radius:12px;box-sizing:border-box;margin-bottom:16px;text-align:center;color:var(--verde);}
     .mc-input:focus{outline:none;border-color:var(--verde2);}
     .mc-btns{display:flex;gap:10px;}.mc-btns .btn{flex:1;padding:14px;font-size:15px;}
+    #btn-entrar{touch-action:manipulation;-webkit-user-select:none;user-select:none;}
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
@@ -3233,6 +3234,17 @@ document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key===
 const btnEntrar=document.getElementById('btn-entrar');
 btnEntrar.addEventListener('click',function(e){e.preventDefault();hacerLogin();});
 btnEntrar.addEventListener('touchend',function(e){e.preventDefault();hacerLogin();});
+// Fix móvil: evitar doble ejecución por touchend+click simultáneo
+(function(){
+  let _busy=false;
+  const _orig=hacerLogin;
+  hacerLogin=async function(){
+    if(_busy)return;
+    _busy=true;
+    try{await _orig();}finally{setTimeout(()=>{_busy=false;},600);}
+  };
+  window.hacerLogin=hacerLogin;
+})();
 </script>
 </body>
 </html>
