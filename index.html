@@ -823,10 +823,11 @@
 <script type="module">
 import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import{getAuth,signInWithEmailAndPassword,signOut,createUserWithEmailAndPassword,onAuthStateChanged,sendPasswordResetEmail}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import{getFirestore,collection,doc,addDoc,getDocs,getDoc,setDoc,updateDoc,deleteDoc,query,where,orderBy,serverTimestamp,limit}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import{getFirestore,enableIndexedDbPersistence,collection,doc,addDoc,getDocs,getDoc,setDoc,updateDoc,deleteDoc,query,where,orderBy,serverTimestamp,limit}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const cfg={apiKey:"AIzaSyDBNDl2kokNqXdKwPEEwUX0MC5ziZVgXQ4",authDomain:"app-leche-d4ca0.firebaseapp.com",projectId:"app-leche-d4ca0",storageBucket:"app-leche-d4ca0.firebasestorage.app",messagingSenderId:"98393589536",appId:"1:98393589536:web:af757abb3b03545396f945"};
 const app=initializeApp(cfg);const auth=getAuth(app);const db=getFirestore(app);
+enableIndexedDbPersistence(db).catch(e=>{if(e.code==='failed-precondition')console.warn('Offline: múltiples tabs abiertos');else if(e.code==='unimplemented')console.warn('Offline: navegador no soportado');});
 const app2=initializeApp(cfg,'secondary');const auth2=getAuth(app2);
 
 const SUPER_ADMINS=new Set(['WLPvBEGv9xeurUkJxfgZ1aWWf982','aldWRG0sMebNMjboOWb3MpPKFvn2','iTOJ7AOgNgYRG4vMSGsvAZuEeR23']);
@@ -2807,6 +2808,13 @@ function repGan(datos,de,ha,recepciones){
   renderGan();
 }
 function repDia(datos){const ag={};datos.forEach(d=>{if(!ag[d.fecha])ag[d.fecha]={L:0,r:0,rec:new Set()};ag[d.fecha].L+=parseFloat(d.litros)||0;ag[d.fecha].r++;ag[d.fecha].rec.add(d.recogedorNombre);});const lista=Object.entries(ag).sort((a,b)=>b[0].localeCompare(a[0]));document.getElementById('rep-tab-3').innerHTML=lista.length===0?'<div class="vacio"><div class="ico">📅</div><p>Sin datos</p></div>':`<div style="display:flex;justify-content:flex-end;margin-bottom:12px;"><button class="btn btn-verde btn-sm" onclick="exportarCSV('dia')">⬇ Exportar</button></div><div class="card" style="padding:0;overflow:hidden;"><table class="tabla"><thead><tr><th>Fecha</th><th>Litros</th><th>Registros</th><th>Recogedores</th></tr></thead><tbody>${lista.map(([f,v])=>`<tr><td>${f}</td><td>${fmtL(v.L)}</td><td>${v.r}</td><td>${[...v.rec].join(', ')}</td></tr>`).join('')}</tbody></table></div>`;}
+// Helper: recogedor/recibidor con más días
+function _recMasDias(recDiaMap){
+  if(!recDiaMap)return'';
+  const count={};Object.values(recDiaMap).forEach(n=>{if(n)count[n]=(count[n]||0)+1;});
+  let max=0,best='';Object.entries(count).forEach(([n,c])=>{if(c>max){max=c;best=n;}});
+  return best;
+}
 function repLiqMatriz(datos,de,ha,precio){
   const tab=document.getElementById('rep-tab-0');
   if(datos.length===0){tab.innerHTML='<div class="vacio"><div class="ico">💰</div><p>Sin datos en este período</p></div>';return;}
@@ -2862,7 +2870,7 @@ function _renderLiqMatriz(){
   const TP=TL*precio;
   const thFechas=fechas.map(f=>`<th style="text-align:center;">${fmtFechaCorta(f)}</th>`).join('');
   const filas=gansF.map(([gid,gn])=>{
-    const recs=[...ganRecSet[gid]];const recLabel=recs.join(' / ');
+    const recLabel=_recMasDias(ganRecDia[gid]);
     const celdas=fechas.map(f=>{
       const L=celda[gid]?celda[gid][f]:null;
       if(!L)return'<td class="vacio" style="text-align:center;">—</td>';
@@ -3028,20 +3036,28 @@ async function exportarLiqMatriz(de,ha,precio){
   const s=window._liqState;
   const filtroRec=s?s.filtroRec:'todos';
   const fechas=[...new Set(datosRep.map(d=>d.fecha))].sort();
-  const ganMap={};const ganRec={};datosRep.forEach(d=>{if(!ganMap[d.ganaderoId])ganMap[d.ganaderoId]=d.ganaderoNombre;if(!ganRec[d.ganaderoId])ganRec[d.ganaderoId]=new Set();ganRec[d.ganaderoId].add(d.recogedorNombre);});
+  const ganMap={};const ganRec={};const ganRecDiaExp={};const ganNovsExp={};
+  datosRep.forEach(d=>{
+    if(!ganMap[d.ganaderoId])ganMap[d.ganaderoId]=d.ganaderoNombre;
+    if(!ganRec[d.ganaderoId])ganRec[d.ganaderoId]=new Set();
+    ganRec[d.ganaderoId].add(d.recogedorNombre);
+    if(!ganRecDiaExp[d.ganaderoId])ganRecDiaExp[d.ganaderoId]={};
+    ganRecDiaExp[d.ganaderoId][d.fecha]=d.recogedorNombre;
+    if(d.novedad&&d.novedad.trim()){
+      if(!ganNovsExp[d.ganaderoId])ganNovsExp[d.ganaderoId]=[];
+      ganNovsExp[d.ganaderoId].push(fmtFechaCorta(d.fecha)+' '+d.recogedorNombre+': '+d.novedad.trim());
+    }
+  });
   let gans=Object.entries(ganMap).sort((a,b)=>a[1].localeCompare(b[1]));
-  // Aplicar filtro de recogedor
-  if(filtroRec!=='todos'){
-    gans=gans.filter(([gid])=>ganRec[gid]&&ganRec[gid].has(filtroRec));
-  }
+  if(filtroRec!=='todos'){gans=gans.filter(([gid])=>ganRec[gid]&&ganRec[gid].has(filtroRec));}
   const celda={};const totalColL={};
   gans.forEach(([gid])=>{celda[gid]={};totalColL[gid]=0;});
   datosRep.forEach(d=>{const gid=d.ganaderoId;const f=d.fecha;const L=parseFloat(d.litros)||0;if(!celda[gid])celda[gid]={};celda[gid][f]=(celda[gid][f]||0)+L;totalColL[gid]=(totalColL[gid]||0)+L;});
   const TL=gans.reduce((ss,[gid])=>ss+totalColL[gid],0);
   const filtroLabel=filtroRec!=='todos'?` (Recogedor: ${filtroRec})`:'';
-  const headers=`Ganadero,Recogedor,${fechas.join(',')},Total L,A Pagar\n`;
-  const rows=gans.map(([gid,gn])=>{const dias=fechas.map(f=>celda[gid]&&celda[gid][f]?(celda[gid][f]):'0').join(',');const recs=[...(ganRec[gid]||[])].join(' / ');return`"${gn}","${recs}",${dias},${fmtL(totalColL[gid])},${(totalColL[gid]*precio).toFixed(0)}`;}).join('\n');
-  const totRow=`TOTAL DIA,,${fechas.map(f=>{let ss=0;gans.forEach(([gid])=>ss+=((celda[gid]&&celda[gid][f])||0));return fmtL(ss);}).join(',')},${fmtL(TL)},${(TL*precio).toFixed(0)}`;
+  const headers=`Ganadero,Recogedor,${fechas.join(',')},Total L,A Pagar,Novedades\n`;
+  const rows=gans.map(([gid,gn])=>{const dias=fechas.map(f=>celda[gid]&&celda[gid][f]?(celda[gid][f]):'0').join(',');const rec=_recMasDias(ganRecDiaExp[gid]);const novs=(ganNovsExp[gid]||[]).join(' | ');return`"${gn}","${rec}",${dias},${fmtL(totalColL[gid])},${(totalColL[gid]*precio).toFixed(0)},"${novs}"`;}).join('\n');
+  const totRow=`TOTAL DIA,,${fechas.map(f=>{let ss=0;gans.forEach(([gid])=>ss+=((celda[gid]&&celda[gid][f])||0));return fmtL(ss);}).join(',')},${fmtL(TL)},${(TL*precio).toFixed(0)},`;
   descargar(`LIQUIDACION QUINCENAL${filtroLabel} - ${de} al ${ha} - $${precio}/L\n${headers}${rows}\n${totRow}`,`liquidacion-${de}-${ha}${filtroRec!=='todos'?'-'+filtroRec:''}.csv`);
   try{
     const litrosPorDia={};datosRep.forEach(d=>{litrosPorDia[d.fecha]=(litrosPorDia[d.fecha]||0)+(parseFloat(d.litros)||0);});
@@ -3118,7 +3134,7 @@ function _renderInterMatriz(){
   const TP=TL*precio;
   const thFechas=fechas.map(f=>`<th style="text-align:center;">${fmtFechaCorta(f)}</th>`).join('');
   const filas=intersF.map(([id,nombre])=>{
-    const recs=intRecSet[id]?[...intRecSet[id]]:[];const recLabel=recs.join(' / ');
+    const recLabel=_recMasDias(intRecDia[id]);
     const celdas=fechas.map(f=>{
       const L=celda[id]?celda[id][f]:null;
       if(!L)return'<td class="vacio" style="text-align:center;">—</td>';
@@ -3205,7 +3221,18 @@ function exportarInterMatriz(de,ha,precio){
   const s=window._interState;
   const filtroRec=s?s.filtroRec:'todos';
   const fechas=[...new Set(datosInter.map(d=>d.fecha))].sort();
-  const intMap={};const intRec={};datosInter.forEach(d=>{if(!intMap[d.intermediarioId])intMap[d.intermediarioId]=d.intermediarioNombre;if(!intRec[d.intermediarioId])intRec[d.intermediarioId]=new Set();if(d.recibidorNombre)intRec[d.intermediarioId].add(d.recibidorNombre);});
+  const intMap={};const intRec={};const intRecDiaExp={};const intNovsExp={};
+  datosInter.forEach(d=>{
+    if(!intMap[d.intermediarioId])intMap[d.intermediarioId]=d.intermediarioNombre;
+    if(!intRec[d.intermediarioId])intRec[d.intermediarioId]=new Set();
+    if(d.recibidorNombre)intRec[d.intermediarioId].add(d.recibidorNombre);
+    if(!intRecDiaExp[d.intermediarioId])intRecDiaExp[d.intermediarioId]={};
+    intRecDiaExp[d.intermediarioId][d.fecha]=d.recibidorNombre||'';
+    if(d.novedad&&d.novedad.trim()){
+      if(!intNovsExp[d.intermediarioId])intNovsExp[d.intermediarioId]=[];
+      intNovsExp[d.intermediarioId].push(fmtFechaCorta(d.fecha)+' '+(d.recibidorNombre||'')+': '+d.novedad.trim());
+    }
+  });
   let inters=Object.entries(intMap).sort((a,b)=>a[1].localeCompare(b[1]));
   if(filtroRec!=='todos'){inters=inters.filter(([id])=>intRec[id]&&intRec[id].has(filtroRec));}
   const celda={};const totalColL={};
@@ -3213,9 +3240,9 @@ function exportarInterMatriz(de,ha,precio){
   datosInter.forEach(d=>{const id=d.intermediarioId;const f=d.fecha;const L=parseFloat(d.litros)||0;if(!celda[id])celda[id]={};celda[id][f]=(celda[id][f]||0)+L;totalColL[id]=(totalColL[id]||0)+L;});
   const TL=inters.reduce((ss,[id])=>ss+totalColL[id],0);
   const filtroLabel=filtroRec!=='todos'?` (Recibidor: ${filtroRec})`:'';
-  const headers=`Intermediario,Recibidor,${fechas.join(',')},Total L,A Pagar\n`;
-  const rows=inters.map(([id,nombre])=>{const dias=fechas.map(f=>celda[id]&&celda[id][f]?(celda[id][f]):'0').join(',');const recs=[...(intRec[id]||[])].join(' / ');return`"${nombre}","${recs}",${dias},${fmtL(totalColL[id])},${(totalColL[id]*precio).toFixed(0)}`;}).join('\n');
-  const totRow=`TOTAL DIA,,${fechas.map(f=>{let ss=0;inters.forEach(([id])=>ss+=((celda[id]&&celda[id][f])||0));return fmtL(ss);}).join(',')},${fmtL(TL)},${(TL*precio).toFixed(0)}`;
+  const headers=`Intermediario,Recibidor,${fechas.join(',')},Total L,A Pagar,Novedades\n`;
+  const rows=inters.map(([id,nombre])=>{const dias=fechas.map(f=>celda[id]&&celda[id][f]?(celda[id][f]):'0').join(',');const rec=_recMasDias(intRecDiaExp[id]);const novs=(intNovsExp[id]||[]).join(' | ');return`"${nombre}","${rec}",${dias},${fmtL(totalColL[id])},${(totalColL[id]*precio).toFixed(0)},"${novs}"`;}).join('\n');
+  const totRow=`TOTAL DIA,,${fechas.map(f=>{let ss=0;inters.forEach(([id])=>ss+=((celda[id]&&celda[id][f])||0));return fmtL(ss);}).join(',')},${fmtL(TL)},${(TL*precio).toFixed(0)},`;
   descargar(`INTERMEDIARIOS${filtroLabel} - ${de} al ${ha} - $${precio}/L\n${headers}${rows}\n${totRow}`,`intermediarios-${de}-${ha}${filtroRec!=='todos'?'-'+filtroRec:''}.csv`);
 }window.exportarInterMatriz=exportarInterMatriz;
 
