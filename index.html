@@ -368,6 +368,10 @@
       <div><label style="font-size:12px;font-weight:600;">Canastas reales</label><input type="number" id="cc-canastasReales" readonly style="width:100%;padding:10px;border:1.5px solid #15803d;border-radius:10px;font-size:14px;font-weight:700;color:#15803d;box-sizing:border-box;margin-top:4px;background:#DCFCE7;"></div>
       <div><label style="font-size:12px;font-weight:600;">Unidades reales</label><input type="number" id="cc-unidadesReales" readonly style="width:100%;padding:10px;border:1.5px solid #15803d;border-radius:10px;font-size:14px;font-weight:700;color:#15803d;box-sizing:border-box;margin-top:4px;background:#DCFCE7;"></div>
     </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px;">
+      <div><label style="font-size:12px;font-weight:600;">Dif. leche (auto)</label><input type="number" id="cc-difLeche" readonly style="width:100%;padding:10px;border:1.5px solid #9333EA;border-radius:10px;font-size:14px;font-weight:700;color:#9333EA;box-sizing:border-box;margin-top:4px;background:#F3E8FF;"></div>
+      <div><label style="font-size:12px;font-weight:600;color:var(--gris2);">Leche recibidor</label><input type="number" id="cc-lecheRecibidor" readonly style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;color:var(--gris2);box-sizing:border-box;margin-top:4px;background:#f5f5f5;"></div>
+    </div>
     <div id="cc-motivos-container" style="display:none;margin-bottom:12px;margin-top:4px;">
       <label style="font-size:12px;font-weight:600;color:#DC2626;">⚠️ ¿Por qué editaste los valores?</label>
       <textarea id="cc-motivo-edicion" placeholder="Obligatorio si editaste algún campo calculado..." rows="2" style="width:100%;padding:10px;border:1.5px solid #DC2626;border-radius:10px;font-size:13px;box-sizing:border-box;margin-top:4px;resize:none;"></textarea>
@@ -1104,7 +1108,8 @@ async function selGan(id){
 async function guardarRecoleccion(){
   const _btn=document.querySelector('[onclick="guardarRecoleccion()"]');if(_btn){_btn.disabled=true;_btn.textContent='⏳ Guardando...';}
   const L=parseFloat(document.getElementById('reg-litros').value);const h=horaAhora();const n=document.getElementById('reg-novedad').value.trim();
-  if(!L||L<=0){alerta('reg-error','Ingresa los litros','rojo');if(_btn){_btn.disabled=false;_btn.textContent='✅ GUARDAR';}return;}
+  if(isNaN(L)||L<0){alerta('reg-error','Ingresa los litros','rojo');if(_btn){_btn.disabled=false;_btn.textContent='✅ GUARDAR';}return;}
+  if(L===0&&!n){alerta('reg-error','Si los litros son 0, la novedad es obligatoria','rojo');if(_btn){_btn.disabled=false;_btn.textContent='✅ GUARDAR';}return;}
   if(!navigator.onLine){alerta('reg-error','⚠️ Sin internet. El registro no se guardó. Conéctate e intenta de nuevo.','rojo');if(_btn){_btn.disabled=false;_btn.textContent='✅ GUARDAR';}return;}
   try{
     const docId=`${UA.uid}_${ganSel.id}_${getFechaReg()}`;
@@ -1800,6 +1805,16 @@ async function abrirCierreDia(){
   }catch(e){}
   // Calcular bloques reales, canastas, unidades
   calcularBloquesReales();
+  // Fetch leche plataforma del recibidor para diferencia
+  try{
+    const sRecP=await getDocs(query(collection(db,'recepciones'),where('fecha','==',fecha)));
+    let lechePlatRecibidor=0;sRecP.forEach(d=>{lechePlatRecibidor+=parseFloat(d.data().litros)||0;});
+    const sInterP=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','==',fecha)));
+    sInterP.forEach(d=>{lechePlatRecibidor+=parseFloat(d.data().litros)||0;});
+    document.getElementById('cc-lecheRecibidor').value=lechePlatRecibidor||'';
+    const lp=parseFloat(document.getElementById('cc-lecheProc').value)||0;
+    document.getElementById('cc-difLeche').value=lechePlatRecibidor>0?(lp-lechePlatRecibidor):'';
+  }catch(e){document.getElementById('cc-lecheRecibidor').value='';document.getElementById('cc-difLeche').value='';}
   ir('screen-cuajador-cierre');
 }window.abrirCierreDia=abrirCierreDia;
 
@@ -1905,6 +1920,8 @@ async function guardarCierreDia(){
     const data={fecha,cuajadorId:UA.uid,cuajadorNombre:UA.nombre||UA.email,
       lecheProc:parseFloat(document.getElementById('cc-lecheProc').value)||0,
       totalBloques,reprocDia,bloquesReales,canastasReales,unidadesReales,
+      diferenciaLeche:parseFloat(document.getElementById('cc-difLeche').value)||0,
+      lecheRecibidor:parseFloat(document.getElementById('cc-lecheRecibidor').value)||0,
       lechePlataforma:parseFloat(document.getElementById('cc-lechePlat').value)||0,
       lecheSobra:parseFloat(document.getElementById('cc-lecheSobra').value)||0,
       reprocCuartoFrio:parseInt(document.getElementById('cc-reprocFrio').value)||0,
@@ -2230,20 +2247,22 @@ async function cargarSinRecolectar(){
     const snapGan=await getDocs(query(collection(db,'ganaderos'),where('activo','==',true)));
     const ganaderos=[];snapGan.forEach(d=>ganaderos.push({id:d.id,...d.data()}));
     const snap=await getDocs(query(collection(db,'recolecciones'),where('fecha','>=',ayerStr),where('fecha','<=',hoyStr)));
-    const recogidos=new Set();
-    snap.forEach(d=>{recogidos.add(d.data().ganaderoId);});
-    const sinRecolectar=ganaderos.filter(g=>!recogidos.has(g.id));
+    // Separar recogidos por día (excluir 0 litros SIN novedad, incluir 0 litros CON novedad como visitados)
+    const recogidosAyer=new Set();const recogidosHoy=new Set();
+    snap.forEach(d=>{const da=d.data();const litros=parseFloat(da.litros)||0;const tieneNovedad=(da.novedad||'').trim().length>0;if(litros>0||(litros===0&&tieneNovedad)){if(da.fecha===ayerStr)recogidosAyer.add(da.ganaderoId);if(da.fecha===hoyStr)recogidosHoy.add(da.ganaderoId);}});
+    const sinAyer=ganaderos.filter(g=>!recogidosAyer.has(g.id));
+    const sinHoy=ganaderos.filter(g=>!recogidosHoy.has(g.id));
     const cont=document.getElementById('admin-sin-recolectar');
-    if(sinRecolectar.length===0){cont.innerHTML='<p style="color:var(--gris2);font-size:14px;">✅ Todos los ganaderos recogidos recientemente</p>';return;}
+    if(sinAyer.length===0&&sinHoy.length===0){cont.innerHTML='<p style="color:var(--gris2);font-size:14px;">✅ Todos los ganaderos recogidos ayer y hoy</p>';return;}
     const LIMITE=3;
-    function renderSinRec(mostrarTodos){
-      const lista=mostrarTodos?sinRecolectar:sinRecolectar.slice(0,LIMITE);
-      const filas=lista.map(g=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--gris1);"><div><div style="font-weight:600;">${g.nombre}</div><div style="font-size:12px;color:var(--gris2);">Sin recoger ayer ni hoy</div></div><span class="badge badge-rojo">🔴</span></div>`).join('');
-      const verBtn=sinRecolectar.length>LIMITE?mostrarTodos?`<button onclick="renderSinRecAdmin(false)" style="margin-top:10px;background:none;border:none;color:var(--verde);font-weight:700;font-size:14px;cursor:pointer;width:100%;text-align:center;">Ver menos ▲</button>`:`<button onclick="renderSinRecAdmin(true)" style="margin-top:10px;background:none;border:none;color:var(--verde);font-weight:700;font-size:14px;cursor:pointer;width:100%;text-align:center;">Ver más (${sinRecolectar.length-LIMITE} más) ▼</button>`:'';
-      cont.innerHTML=filas+verBtn;
+    function renderBloque(titulo,lista,color,prefijo){
+      if(lista.length===0)return`<div style="margin-bottom:8px;"><div style="font-weight:700;font-size:13px;color:#15803d;margin-bottom:4px;">${titulo}</div><div style="font-size:13px;color:var(--gris2);">✅ Todos recogidos</div></div>`;
+      const visibles=lista.slice(0,LIMITE);
+      const filas=visibles.map(g=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--gris1);"><div style="font-weight:600;font-size:13px;">${g.nombre}</div><span class="badge badge-rojo">🔴</span></div>`).join('');
+      const extra=lista.length>LIMITE?`<div id="${prefijo}-extra" style="display:none;">${lista.slice(LIMITE).map(g=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--gris1);"><div style="font-weight:600;font-size:13px;">${g.nombre}</div><span class="badge badge-rojo">🔴</span></div>`).join('')}</div><div style="text-align:center;"><a id="${prefijo}-toggle" href="#" onclick="const x=document.getElementById('${prefijo}-extra');const t=document.getElementById('${prefijo}-toggle');if(x.style.display==='none'){x.style.display='block';t.textContent='Ver menos ▲';}else{x.style.display='none';t.textContent='Ver más (${lista.length-LIMITE} más) ▼';}return false;" style="font-size:12px;color:var(--verde);font-weight:700;">Ver más (${lista.length-LIMITE} más) ▼</a></div>`:'';
+      return`<div style="margin-bottom:12px;"><div style="font-weight:700;font-size:13px;color:${color};margin-bottom:4px;">${titulo} (${lista.length})</div>${filas}${extra}</div>`;
     }
-    window.renderSinRecAdmin=renderSinRec;
-    renderSinRec(false);
+    cont.innerHTML=renderBloque('🔴 Sin recolectar AYER',sinAyer,'#DC2626','sinrec-ayer')+renderBloque('⚠️ Sin recolectar HOY',sinHoy,'#D97706','sinrec-hoy');
   }catch(e){}
 }
 
@@ -2315,23 +2334,32 @@ async function cargarProduccionHoy(fechaParam){
       <div><div style="font-size:9px;color:#15803d;font-weight:600;">REPROC.</div><div style="font-size:20px;font-weight:800;color:#D97706;">${reprocBloquesDia}</div></div>
     </div>`;
     html+=`<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span>Cuajador: <strong>${cuajador}</strong></span><span style="color:${estadoColor};font-weight:700;">${estado}</span></div>`;
-    // Comparación leche plataforma recibidor vs cuajador
-    if(cierre&&cierre.lechePlataforma){
-      // Leche plataforma del recibidor (recepciones + intermediarios)
-      try{
-        const sRecP=await getDocs(query(collection(db,'recepciones'),where('fecha','==',fecha)));
-        let lechePlatRecibidor=0;sRecP.forEach(d=>{lechePlatRecibidor+=parseFloat(d.data().litros)||0;});
-        const sInterP=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','==',fecha)));
-        sInterP.forEach(d=>{lechePlatRecibidor+=parseFloat(d.data().litros)||0;});
-        const lechePlatCuajador=cierre.lechePlataforma;
-        const diffPlat=lechePlatRecibidor-lechePlatCuajador;
-        const coincide=Math.abs(diffPlat)<1;
-        html+=`<div style="background:${coincide?'#DCFCE7':'#FEF3C7'};padding:8px;border-radius:8px;font-size:12px;margin-top:6px;margin-bottom:6px;">
-          <div style="font-weight:700;color:${coincide?'#15803d':'#92400E'};margin-bottom:4px;">${coincide?'✅':'⚠️'} Leche plataforma</div>
-          <div style="color:${coincide?'#15803d':'#92400E'};">Recibidor: ${fmtL(lechePlatRecibidor)}L · Cuajador: ${fmtL(lechePlatCuajador)}L${coincide?'':` · Dif: ${diffPlat>0?'+':''}${fmtL(diffPlat)}L`}</div>
+    // Comparación leche plataforma recibidor vs cuajador + diferencia leche
+    try{
+      const sRecP=await getDocs(query(collection(db,'recepciones'),where('fecha','==',fecha)));
+      let lechePlatRecibidor=0;sRecP.forEach(d=>{lechePlatRecibidor+=parseFloat(d.data().litros)||0;});
+      const sInterP=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','==',fecha)));
+      sInterP.forEach(d=>{lechePlatRecibidor+=parseFloat(d.data().litros)||0;});
+      if(lechePlatRecibidor>0){
+        // Diferencia leche = leche procesada - leche recibidor
+        const difLeche=totalLitros-lechePlatRecibidor;
+        const difOk=Math.abs(difLeche)<1;
+        html+=`<div style="background:${difOk?'#F3E8FF':'#FEF3C7'};padding:8px;border-radius:8px;font-size:12px;margin-top:6px;margin-bottom:6px;">
+          <div style="font-weight:700;color:${difOk?'#9333EA':'#92400E'};margin-bottom:4px;">${difOk?'✅':'📊'} Diferencia leche</div>
+          <div style="color:${difOk?'#9333EA':'#92400E'};">Procesada: ${fmtL(totalLitros)}L · Recibidor: ${fmtL(lechePlatRecibidor)}L · <strong>Dif: ${difLeche>0?'+':''}${fmtL(difLeche)}L</strong></div>
         </div>`;
-      }catch(e){}
-    }
+        // Comparación leche plataforma recibidor vs cuajador (si hay cierre)
+        if(cierre&&cierre.lechePlataforma){
+          const lechePlatCuajador=cierre.lechePlataforma;
+          const diffPlat=lechePlatRecibidor-lechePlatCuajador;
+          const coincide=Math.abs(diffPlat)<1;
+          html+=`<div style="background:${coincide?'#DCFCE7':'#FEF3C7'};padding:8px;border-radius:8px;font-size:12px;margin-bottom:6px;">
+            <div style="font-weight:700;color:${coincide?'#15803d':'#92400E'};margin-bottom:4px;">${coincide?'✅':'⚠️'} Leche plataforma</div>
+            <div style="color:${coincide?'#15803d':'#92400E'};">Recibidor: ${fmtL(lechePlatRecibidor)}L · Cuajador: ${fmtL(lechePlatCuajador)}L${coincide?'':` · Dif: ${diffPlat>0?'+':''}${fmtL(diffPlat)}L`}</div>
+          </div>`;
+        }
+      }
+    }catch(e){}
     if(cierre&&cierre.camposEditados&&cierre.camposEditados.length>0){html+=`<div style="background:#FEF3C7;padding:8px;border-radius:8px;font-size:12px;color:#92400E;margin-top:6px;">⚠️ Campos editados: ${cierre.camposEditados.join(', ')} — Motivo: "${cierre.motivoEdicion||'—'}"</div>`;}
     // Ventas en planta
     if(cierre&&cierre.ventasPlanta&&cierre.ventasPlanta.length>0){
