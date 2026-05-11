@@ -502,7 +502,7 @@
         <button class="btn btn-gris btn-sm" onclick="setFiltroRapido('quincena2')">2da quincena</button>
         <button class="btn btn-gris btn-sm" onclick="setFiltroRapido('mes')">Mes</button>
       </div>
-      <div id="precio-liq-wrap" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid #e5e7eb;">
+      <div id="precio-liq-wrap" style="margin-top:14px;padding-top:14px;border-top:1px solid #e5e7eb;">
         <label style="font-size:12px;color:var(--gris2);font-weight:600;">PRECIO POR LITRO PARA ESTA QUINCENA ($)</label>
         <input type="number" id="rep-precio-liq" placeholder="Ej: 1100" inputmode="decimal" min="0"
           style="width:100%;padding:12px;font-size:22px;font-weight:700;border:2px solid var(--verde2);border-radius:12px;text-align:center;color:var(--verde);margin-top:6px;">
@@ -517,7 +517,9 @@
       <button class="btn btn-verde" style="margin-top:12px;" onclick="generarReporte()">🔍 GENERAR REPORTE</button>
     </div>
     <div id="rep-tab-0"><div class="vacio"><div class="ico">💰</div><p>Selecciona un período y el precio por litro</p></div></div>
+    <div id="rep-tab-0-historial"></div>
     <div id="rep-tab-1" style="display:none;"><div class="vacio"><div class="ico">🚚</div><p>Selecciona un período y el precio</p></div></div>
+    <div id="rep-tab-1-historial"></div>
     <div id="rep-tab-2" style="display:none;"><div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px;flex-wrap:wrap;"><button id="btn-filtro-nov-global" class="btn btn-sm" style="border:2px solid var(--amarillo);background:transparent;color:var(--amarillo);font-weight:700;" onclick="toggleSoloNov()">⚠️ Solo novedades</button><button id="btn-filtro-elim-global" class="btn btn-sm" style="border:2px solid var(--rojo);background:transparent;color:var(--rojo);font-weight:700;" onclick="toggleElim()">🗑️ Eliminaciones</button></div><div id="rep-tab-2-content"><div class="vacio"><div class="ico">📄</div><p>Selecciona un período y genera el reporte</p></div></div></div>
     <div id="rep-tab-3" style="display:none;"><div class="vacio"><div class="ico">📅</div><p>Selecciona un período</p></div></div>
     <div id="rep-tab-4" style="display:none;"><div class="vacio"><div class="ico">📊</div><p>Selecciona un período y genera el reporte</p></div></div>
@@ -2703,7 +2705,7 @@ function quincenaPendiente(){
   }
   return{de,ha};
 }
-function cambiarTabReporte(idx,btn){tabRep=idx;document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('activo',i===idx));for(let i=0;i<6;i++){const el=document.getElementById(`rep-tab-${i}`);if(el)el.style.display=i===idx?'block':'none';}const pw=document.getElementById('precio-liq-wrap');if(pw)pw.style.display=idx===0?'block':'none';const pi=document.getElementById('precio-inter-wrap');if(pi)pi.style.display=idx===1?'block':'none';if(idx===0){const q=quincenaPendiente();document.getElementById('rep-desde').value=q.de;document.getElementById('rep-hasta').value=q.ha;}}window.cambiarTabReporte=cambiarTabReporte;
+function cambiarTabReporte(idx,btn){tabRep=idx;document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('activo',i===idx));for(let i=0;i<6;i++){const el=document.getElementById(`rep-tab-${i}`);if(el)el.style.display=i===idx?'block':'none';}const h0=document.getElementById('rep-tab-0-historial');if(h0)h0.style.display=idx===0?'block':'none';const h1=document.getElementById('rep-tab-1-historial');if(h1)h1.style.display=idx===1?'block':'none';const pw=document.getElementById('precio-liq-wrap');if(pw)pw.style.display=idx===0?'block':'none';const pi=document.getElementById('precio-inter-wrap');if(pi)pi.style.display=idx===1?'block':'none';if(idx===0){const q=quincenaPendiente();document.getElementById('rep-desde').value=q.de;document.getElementById('rep-hasta').value=q.ha;_cargarHistorialReportes('liq');}if(idx===1){_cargarHistorialReportes('inter');}}window.cambiarTabReporte=cambiarTabReporte;
 function setFiltroRapido(t){const h=new Date();const y=h.getFullYear();const m=String(h.getMonth()+1).padStart(2,'0');const d=String(h.getDate()).padStart(2,'0');const D=i=>document.getElementById(i);if(t==='hoy'){D('rep-desde').value=`${y}-${m}-${d}`;D('rep-hasta').value=`${y}-${m}-${d}`;}else if(t==='semana'){const i=new Date(h);i.setDate(h.getDate()-h.getDay());D('rep-desde').value=i.toISOString().split('T')[0];D('rep-hasta').value=`${y}-${m}-${d}`;}else if(t==='quincena1'){D('rep-desde').value=`${y}-${m}-01`;D('rep-hasta').value=`${y}-${m}-15`;}else if(t==='quincena2'){const u=new Date(y,h.getMonth()+1,0).getDate();D('rep-desde').value=`${y}-${m}-16`;D('rep-hasta').value=`${y}-${m}-${u}`;}else if(t==='mes'){const u=new Date(y,h.getMonth()+1,0).getDate();D('rep-desde').value=`${y}-${m}-01`;D('rep-hasta').value=`${y}-${m}-${u}`;}}window.setFiltroRapido=setFiltroRapido;
 
 async function generarReporte(){
@@ -2809,12 +2811,12 @@ function repLiqMatriz(datos,de,ha,precio){
   const tab=document.getElementById('rep-tab-0');
   if(datos.length===0){tab.innerHTML='<div class="vacio"><div class="ico">💰</div><p>Sin datos en este período</p></div>';return;}
   const fechas=[...new Set(datos.map(d=>d.fecha))].sort();
+  const diasConDatos=fechas.length;
   const ganMap={};datos.forEach(d=>{if(!ganMap[d.ganaderoId])ganMap[d.ganaderoId]=d.ganaderoNombre;});
   const gans=Object.entries(ganMap).sort((a,b)=>a[1].localeCompare(b[1]));
-  // Track recogedor per ganadero per day
-  const ganRecDia={};// {gid: {fecha: recogedorNombre}}
-  const ganRecSet={};// {gid: Set(recogedorNombre)}
-  const recsUnicos=new Map();
+  const ganRecDia={};const ganRecSet={};const recsUnicos=new Map();
+  // Novedades por ganadero
+  const ganNovedades={};
   datos.forEach(d=>{
     const gid=d.ganaderoId;const f=d.fecha;
     if(!ganRecDia[gid])ganRecDia[gid]={};
@@ -2822,10 +2824,13 @@ function repLiqMatriz(datos,de,ha,precio){
     if(!ganRecSet[gid])ganRecSet[gid]=new Set();
     ganRecSet[gid].add(d.recogedorNombre);
     recsUnicos.set(d.recogedorId,d.recogedorNombre);
+    if(d.novedad&&d.novedad.trim()){
+      if(!ganNovedades[gid])ganNovedades[gid]=[];
+      ganNovedades[gid].push({fecha:d.fecha,hora:d.hora||'',recogedor:d.recogedorNombre,litros:parseFloat(d.litros)||0,novedad:d.novedad.trim()});
+    }
   });
-  // Assign colors to recogedores
-  const _recColores=['#DBEAFE','#FCE7F3','#D1FAE5','#FEF3C7','#EDE9FE','#FFEDD5'];
-  const _recBorde=['#1D4ED8','#DB2777','#059669','#D97706','#7C3AED','#EA580C'];
+  const _recColores=['#DBEAFE','#FCE7F3','#D1FAE5','#FEF3C7','#EDE9FE','#FFEDD5','#F1F5F9','#FECDD3','#CCFBF1','#FEE2E2','#E0E7FF','#D9F99D'];
+  const _recBorde=['#1D4ED8','#DB2777','#059669','#D97706','#7C3AED','#EA580C','#475569','#E11D48','#0D9488','#DC2626','#4338CA','#65A30D'];
   const recNombresArr=[...new Set(datos.map(d=>d.recogedorNombre))].sort();
   const colorMap={};recNombresArr.forEach((n,i)=>{colorMap[n]={bg:_recColores[i%_recColores.length],border:_recBorde[i%_recBorde.length]};});
   const celda={};const totalFila={};const totalColL={};
@@ -2838,30 +2843,26 @@ function repLiqMatriz(datos,de,ha,precio){
     totalFila[f]=(totalFila[f]||0)+L;
     totalColL[gid]=(totalColL[gid]||0)+L;
   });
-  // State
   const quincenaId=`${de}_${ha}`;
-  window._liqState={datos,de,ha,precio,fechas,gans,ganMap,celda,totalFila,totalColL,ganRecDia,ganRecSet,colorMap,recsUnicos,recNombresArr,quincenaId,filtroRec:'todos',pagados:{}};
-  // Load pagados from Firestore then render
+  const reportKey=`liq_${de}_${ha}_${precio}_${diasConDatos}`;
+  window._liqState={datos,de,ha,precio,fechas,gans,ganMap,celda,totalFila,totalColL,ganRecDia,ganRecSet,colorMap,recsUnicos,recNombresArr,quincenaId,reportKey,diasConDatos,filtroRec:'todos',pagados:{},ganNovedades,expandedNov:{}};
   getDoc(doc(db,'liquidaciones',quincenaId)).then(snap=>{
     if(snap.exists()&&snap.data().pagados)window._liqState.pagados=snap.data().pagados;
     _renderLiqMatriz();
+    _guardarReporteHistorial('liq',de,ha,precio,diasConDatos);
   }).catch(()=>_renderLiqMatriz());
 }
 function _renderLiqMatriz(){
   const s=window._liqState;if(!s)return;
   const tab=document.getElementById('rep-tab-0');if(!tab)return;
-  const {de,ha,precio,fechas,gans,celda,totalFila,totalColL,ganRecDia,ganRecSet,colorMap,recsUnicos,recNombresArr,quincenaId,filtroRec,pagados}=s;
-  // Filter gans by recogedor
+  const {de,ha,precio,fechas,gans,celda,totalFila,totalColL,ganRecDia,ganRecSet,colorMap,recsUnicos,recNombresArr,filtroRec,pagados,ganNovedades,expandedNov}=s;
   let gansF=gans;
-  if(filtroRec!=='todos'){
-    gansF=gans.filter(([gid])=>ganRecSet[gid]&&ganRecSet[gid].has(filtroRec));
-  }
+  if(filtroRec!=='todos'){gansF=gans.filter(([gid])=>ganRecSet[gid]&&ganRecSet[gid].has(filtroRec));}
   const TL=gansF.reduce((ss,[gid])=>ss+totalColL[gid],0);
   const TP=TL*precio;
   const thFechas=fechas.map(f=>`<th style="text-align:center;">${fmtFechaCorta(f)}</th>`).join('');
   const filas=gansF.map(([gid,gn])=>{
-    const recs=[...ganRecSet[gid]];
-    const recLabel=recs.join(' / ');
+    const recs=[...ganRecSet[gid]];const recLabel=recs.join(' / ');
     const celdas=fechas.map(f=>{
       const L=celda[gid]?celda[gid][f]:null;
       if(!L)return'<td class="vacio" style="text-align:center;">—</td>';
@@ -2869,14 +2870,19 @@ function _renderLiqMatriz(){
       const col=recDia&&colorMap[recDia]?colorMap[recDia]:{bg:'',border:''};
       return`<td style="text-align:center;background:${col.bg||''};border-left:3px solid ${col.border||'transparent'};">${fmtL(L)}</td>`;
     }).join('');
-    const totL=totalColL[gid];
-    const isPagado=pagados[gid]&&pagados[gid].pagado;
-    return`<tr><td class="col-gan">${gn}</td><td style="font-size:11px;white-space:normal;max-width:120px;">${recLabel}</td>${celdas}<td class="total-col" style="text-align:center;">${fmtL(totL)}</td><td class="total-pago" style="text-align:right;padding-right:10px;">${fmtPeso(totL*precio)}</td><td style="text-align:center;"><button onclick="window._togglePagado('${gid}','${gn.replace(/'/g,"\\'")}')" style="padding:6px 12px;border-radius:8px;border:2px solid ${isPagado?'#15803d':'#d1d5db'};background:${isPagado?'#DCFCE7':'white'};color:${isPagado?'#15803d':'var(--gris2)'};font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap;">${isPagado?'✅ Pagado':'💲 Pagar'}</button></td></tr>`;
+    const totL=totalColL[gid];const isPagado=pagados[gid]&&pagados[gid].pagado;
+    const novs=ganNovedades[gid]||[];const novCount=novs.length;
+    const isExp=expandedNov[gid];
+    const novBadge=novCount>0?`<span onclick="window._toggleNovLiq('${gid}')" style="cursor:pointer;background:#FEF3C7;color:#D97706;border:1.5px solid #D97706;border-radius:12px;padding:2px 8px;font-size:11px;font-weight:700;">⚠️ ${novCount}</span>`:'<span style="color:#15803d;font-size:11px;">✅</span>';
+    let row=`<tr><td class="col-gan">${gn}</td><td style="font-size:11px;white-space:normal;max-width:120px;">${recLabel}</td>${celdas}<td class="total-col" style="text-align:center;">${fmtL(totL)}</td><td class="total-pago" style="text-align:right;padding-right:10px;">${fmtPeso(totL*precio)}</td><td style="text-align:center;">${novBadge}</td><td style="text-align:center;"><button onclick="window._togglePagado('${gid}','${gn.replace(/'/g,"\\'")}')" style="padding:6px 12px;border-radius:8px;border:2px solid ${isPagado?'#15803d':'#d1d5db'};background:${isPagado?'#DCFCE7':'white'};color:${isPagado?'#15803d':'var(--gris2)'};font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap;">${isPagado?'✅ Pagado':'💲 Pagar'}</button></td></tr>`;
+    if(isExp&&novCount>0){
+      const nomDia=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+      row+=`<tr><td colspan="${fechas.length+6}" style="background:#FFFBEB;padding:12px;border-left:4px solid #D97706;">${novs.map(n=>{const dd=new Date(n.fecha+'T12:00:00');return`<div style="padding:4px 0;border-bottom:1px solid #FDE68A;font-size:12px;"><strong>📅 ${nomDia[dd.getDay()]} ${fmtFechaCorta(n.fecha)}</strong> · ${n.hora} · ${n.recogedor} · ${fmtL(n.litros)}L<br><span style="color:#92400E;margin-left:16px;">📝 ${n.novedad}</span></div>`;}).join('')}</td></tr>`;
+    }
+    return row;
   }).join('');
   const totDias=fechas.map(f=>`<td class="total-col" style="text-align:center;">${fmtL(totalFila[f])}</td>`).join('');
-  // Leyenda colores
   const leyenda=recNombresArr.map(n=>`<span style="display:inline-flex;align-items:center;gap:4px;margin-right:10px;font-size:12px;"><span style="width:14px;height:14px;border-radius:4px;background:${colorMap[n].bg};border:2px solid ${colorMap[n].border};display:inline-block;"></span>${n}</span>`).join('');
-  // Filtro recogedor
   const filtros=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
     <button class="btn btn-sm" onclick="window._filtrarLiqRec('todos')" style="border:2px solid var(--verde);background:${filtroRec==='todos'?'var(--verde)':'transparent'};color:${filtroRec==='todos'?'white':'var(--verde)'};font-weight:700;">Todos</button>
     ${[...recsUnicos.entries()].map(([id,nombre])=>`<button class="btn btn-sm" onclick="window._filtrarLiqRec('${nombre.replace(/'/g,"\\'")}')" style="border:2px solid var(--verde2);background:${filtroRec===nombre?'var(--verde2)':'transparent'};color:${filtroRec===nombre?'white':'var(--verde2)'};font-weight:700;">${nombre}</button>`).join('')}
@@ -2895,18 +2901,23 @@ function _renderLiqMatriz(){
     <div class="aviso-movil">📱 Desliza hacia los lados para ver todos los días</div>
     <div class="matriz-wrap">
       <table class="tabla-matriz">
-        <thead><tr><th class="col-gan">Ganadero</th><th style="min-width:80px;">Recogedor</th>${thFechas}<th class="total-col" style="text-align:center;">Total L</th><th class="total-col" style="text-align:right;padding-right:10px;">A pagar</th><th style="min-width:90px;">Estado</th></tr></thead>
+        <thead><tr><th class="col-gan">Ganadero</th><th style="min-width:80px;">Recogedor</th>${thFechas}<th class="total-col" style="text-align:center;">Total L</th><th class="total-col" style="text-align:right;padding-right:10px;">A pagar</th><th style="min-width:50px;">Nov.</th><th style="min-width:90px;">Estado</th></tr></thead>
         <tbody>
           ${filas}
           <tr class="fila-total">
             <td class="col-gan">TOTAL DÍA</td><td></td>${totDias}
             <td class="total-col" style="text-align:center;">${fmtL(TL)}</td>
-            <td class="total-col" style="text-align:right;padding-right:10px;">${fmtPeso(TP)}</td><td></td>
+            <td class="total-col" style="text-align:right;padding-right:10px;">${fmtPeso(TP)}</td><td></td><td></td>
           </tr>
         </tbody>
       </table>
     </div>`;
 }
+window._toggleNovLiq=function(gid){
+  if(!window._liqState)return;
+  window._liqState.expandedNov[gid]=!window._liqState.expandedNov[gid];
+  _renderLiqMatriz();
+};
 window._filtrarLiqRec=function(rec){
   if(!window._liqState)return;
   window._liqState.filtroRec=rec;
@@ -2917,7 +2928,9 @@ window._togglePagado=async function(gid,nombre){
   const s=window._liqState;
   const isPagado=s.pagados[gid]&&s.pagados[gid].pagado;
   if(isPagado){
-    delete s.pagados[gid];
+    const motivo=await modalPrompt('¿Por qué desmarcas el pago de '+nombre+'? (obligatorio)');
+    if(!motivo||!motivo.trim())return;
+    s.pagados[gid]={pagado:false,fecha:new Date().toISOString(),nombre,motivoDesmarcar:motivo.trim(),desmarcadoPor:UA.nombre||UA.email};
   }else{
     s.pagados[gid]={pagado:true,fecha:new Date().toISOString(),nombre};
   }
@@ -2929,6 +2942,40 @@ window._togglePagado=async function(gid,nombre){
     existData.pagados=s.pagados;
     await setDoc(liqRef,existData,{merge:true});
   }catch(e){console.error('Error guardando pagado:',e);}
+};
+// ── Reportes guardados (historial) ──
+async function _guardarReporteHistorial(tipo,de,ha,precio,diasConDatos){
+  try{
+    const key=`${tipo}_${de}_${ha}_${precio}_${diasConDatos}`;
+    const colName=tipo==='liq'?'reportesLiq':'reportesInter';
+    await setDoc(doc(db,colName,key),{tipo,de,ha,precio,diasConDatos,generadoPor:UA.nombre||UA.email,fechaGen:hoy(),horaGen:horaAhora(),timestamp:serverTimestamp()},{merge:true});
+    _cargarHistorialReportes(tipo);
+  }catch(e){console.error('Error guardando historial:',e);}
+}
+async function _cargarHistorialReportes(tipo){
+  const contId=tipo==='liq'?'rep-tab-0-historial':'rep-tab-1-historial';
+  const cont=document.getElementById(contId);if(!cont)return;
+  try{
+    const colName=tipo==='liq'?'reportesLiq':'reportesInter';
+    const snap=await getDocs(query(collection(db,colName),orderBy('timestamp','desc')));
+    const lista=[];snap.forEach(d=>lista.push({id:d.id,...d.data()}));
+    if(lista.length<=1){cont.innerHTML='';return;}
+    const color=tipo==='liq'?'var(--verde)':'var(--naranja)';
+    const emoji=tipo==='liq'?'💰':'🚚';
+    cont.innerHTML=`<div class="card" style="margin-top:12px;"><div class="card-titulo">${emoji} Reportes guardados (${lista.length})</div>${lista.map(r=>`<div onclick="window._abrirReporteGuardado('${tipo}','${r.de}','${r.ha}',${r.precio})" style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--gris1);cursor:pointer;"><div><div style="font-weight:700;font-size:13px;color:${color};">${r.de} al ${r.ha} · ${fmtPeso(r.precio)}/L</div><div style="font-size:11px;color:var(--gris2);">${r.diasConDatos} días con datos · ${r.generadoPor} · ${r.fechaGen} ${r.horaGen||''}</div></div><span style="color:${color};font-size:18px;">›</span></div>`).join('')}</div>`;
+  }catch(e){}
+}
+window._abrirReporteGuardado=async function(tipo,de,ha,precio){
+  document.getElementById('rep-desde').value=de;
+  document.getElementById('rep-hasta').value=ha;
+  if(tipo==='liq'){
+    document.getElementById('rep-precio-liq').value=precio;
+    cambiarTabReporte(0,document.querySelector('.tab'));
+  }else{
+    document.getElementById('rep-precio-inter').value=precio;
+    cambiarTabReporte(1,document.querySelectorAll('.tab')[1]);
+  }
+  await generarReporte();
 };
 function repDetalle(datos,de,ha){
   const lista=soloNovGlobal?datos.filter(d=>d.novedad&&d.novedad.trim()!==''):datos;
@@ -3020,9 +3067,29 @@ function exportarCSV(tipo){
 function repInter(datos,de,ha,precio){
   const tab=document.getElementById('rep-tab-1');if(!tab)return;
   if(datos.length===0){tab.innerHTML='<div class="vacio"><div class="ico">🚚</div><p>Sin registros de intermediarios en este período</p></div>';return;}
+  if(!precio||precio<=0){return;}
   const fechas=[...new Set(datos.map(d=>d.fecha))].sort();
+  const diasConDatos=fechas.length;
   const intMap={};datos.forEach(d=>{if(!intMap[d.intermediarioId])intMap[d.intermediarioId]=d.intermediarioNombre;});
   const inters=Object.entries(intMap).sort((a,b)=>a[1].localeCompare(b[1]));
+  const intRecDia={};const intRecSet={};const recsUnicos=new Map();
+  const intNovedades={};
+  datos.forEach(d=>{
+    const id=d.intermediarioId;const f=d.fecha;
+    if(!intRecDia[id])intRecDia[id]={};
+    intRecDia[id][f]=d.recibidorNombre||'';
+    if(!intRecSet[id])intRecSet[id]=new Set();
+    if(d.recibidorNombre)intRecSet[id].add(d.recibidorNombre);
+    if(d.recibidorNombre)recsUnicos.set(d.recibidorId||d.recibidorNombre,d.recibidorNombre);
+    if(d.novedad&&d.novedad.trim()){
+      if(!intNovedades[id])intNovedades[id]=[];
+      intNovedades[id].push({fecha:d.fecha,hora:d.hora||'',recibidor:d.recibidorNombre||'',litros:parseFloat(d.litros)||0,novedad:d.novedad.trim()});
+    }
+  });
+  const _recColores=['#DBEAFE','#FCE7F3','#D1FAE5','#FEF3C7','#EDE9FE','#FFEDD5','#F1F5F9','#FECDD3','#CCFBF1','#FEE2E2','#E0E7FF','#D9F99D'];
+  const _recBorde=['#1D4ED8','#DB2777','#059669','#D97706','#7C3AED','#EA580C','#475569','#E11D48','#0D9488','#DC2626','#4338CA','#65A30D'];
+  const recNombresArr=[...new Set(datos.map(d=>d.recibidorNombre).filter(Boolean))].sort();
+  const colorMap={};recNombresArr.forEach((n,i)=>{colorMap[n]={bg:_recColores[i%_recColores.length],border:_recBorde[i%_recBorde.length]};});
   const celda={};const totalFila={};const totalColL={};
   inters.forEach(([id])=>{celda[id]={};totalColL[id]=0;});
   fechas.forEach(f=>{totalFila[f]=0;});
@@ -3033,53 +3100,123 @@ function repInter(datos,de,ha,precio){
     totalFila[f]=(totalFila[f]||0)+L;
     totalColL[id]=(totalColL[id]||0)+L;
   });
-  const TL=inters.reduce((s,[id])=>s+totalColL[id],0);
+  const quincenaId=`inter_${de}_${ha}`;
+  window._interState={datos,de,ha,precio,fechas,inters,intMap,celda,totalFila,totalColL,intRecDia,intRecSet,colorMap,recsUnicos,recNombresArr,quincenaId,diasConDatos,filtroRec:'todos',pagados:{},intNovedades,expandedNov:{}};
+  getDoc(doc(db,'liquidacionesInter',quincenaId)).then(snap=>{
+    if(snap.exists()&&snap.data().pagados)window._interState.pagados=snap.data().pagados;
+    _renderInterMatriz();
+    _guardarReporteHistorial('inter',de,ha,precio,diasConDatos);
+  }).catch(()=>_renderInterMatriz());
+}
+function _renderInterMatriz(){
+  const s=window._interState;if(!s)return;
+  const tab=document.getElementById('rep-tab-1');if(!tab)return;
+  const {de,ha,precio,fechas,inters,celda,totalFila,totalColL,intRecDia,intRecSet,colorMap,recsUnicos,recNombresArr,filtroRec,pagados,intNovedades,expandedNov}=s;
+  let intersF=inters;
+  if(filtroRec!=='todos'){intersF=inters.filter(([id])=>intRecSet[id]&&intRecSet[id].has(filtroRec));}
+  const TL=intersF.reduce((ss,[id])=>ss+totalColL[id],0);
   const TP=TL*precio;
   const thFechas=fechas.map(f=>`<th style="text-align:center;">${fmtFechaCorta(f)}</th>`).join('');
-  const filas=inters.map(([id,nombre])=>{
-    const celdas=fechas.map(f=>{const L=celda[id][f];return L?`<td style="text-align:center;">${fmtL(L)}</td>`:'<td class="vacio" style="text-align:center;">—</td>';}).join('');
-    const totL=totalColL[id];
-    return`<tr><td class="col-gan">${nombre}</td>${celdas}<td class="total-col" style="text-align:center;">${fmtL(totL)}</td><td class="total-pago" style="text-align:right;padding-right:10px;">${fmtPeso(totL*precio)}</td></tr>`;
+  const filas=intersF.map(([id,nombre])=>{
+    const recs=intRecSet[id]?[...intRecSet[id]]:[];const recLabel=recs.join(' / ');
+    const celdas=fechas.map(f=>{
+      const L=celda[id]?celda[id][f]:null;
+      if(!L)return'<td class="vacio" style="text-align:center;">—</td>';
+      const recDia=intRecDia[id]?intRecDia[id][f]:'';
+      const col=recDia&&colorMap[recDia]?colorMap[recDia]:{bg:'',border:''};
+      return`<td style="text-align:center;background:${col.bg||''};border-left:3px solid ${col.border||'transparent'};">${fmtL(L)}</td>`;
+    }).join('');
+    const totL=totalColL[id];const isPagado=pagados[id]&&pagados[id].pagado;
+    const novs=intNovedades[id]||[];const novCount=novs.length;
+    const isExp=expandedNov[id];
+    const novBadge=novCount>0?`<span onclick="window._toggleNovInter('${id}')" style="cursor:pointer;background:#FEF3C7;color:#D97706;border:1.5px solid #D97706;border-radius:12px;padding:2px 8px;font-size:11px;font-weight:700;">⚠️ ${novCount}</span>`:'<span style="color:#15803d;font-size:11px;">✅</span>';
+    let row=`<tr><td class="col-gan">${nombre}</td><td style="font-size:11px;white-space:normal;max-width:120px;">${recLabel}</td>${celdas}<td class="total-col" style="text-align:center;">${fmtL(totL)}</td><td class="total-pago" style="text-align:right;padding-right:10px;">${fmtPeso(totL*precio)}</td><td style="text-align:center;">${novBadge}</td><td style="text-align:center;"><button onclick="window._togglePagadoInter('${id}','${nombre.replace(/'/g,"\\'")}')" style="padding:6px 12px;border-radius:8px;border:2px solid ${isPagado?'#15803d':'#d1d5db'};background:${isPagado?'#DCFCE7':'white'};color:${isPagado?'#15803d':'var(--gris2)'};font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap;">${isPagado?'✅ Pagado':'💲 Pagar'}</button></td></tr>`;
+    if(isExp&&novCount>0){
+      const nomDia=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+      row+=`<tr><td colspan="${fechas.length+6}" style="background:#FFFBEB;padding:12px;border-left:4px solid #D97706;">${novs.map(n=>{const dd=new Date(n.fecha+'T12:00:00');return`<div style="padding:4px 0;border-bottom:1px solid #FDE68A;font-size:12px;"><strong>📅 ${nomDia[dd.getDay()]} ${fmtFechaCorta(n.fecha)}</strong> · ${n.hora} · ${n.recibidor} · ${fmtL(n.litros)}L<br><span style="color:#92400E;margin-left:16px;">📝 ${n.novedad}</span></div>`;}).join('')}</td></tr>`;
+    }
+    return row;
   }).join('');
   const totDias=fechas.map(f=>`<td class="total-col" style="text-align:center;">${fmtL(totalFila[f])}</td>`).join('');
+  const leyenda=recNombresArr.length>0?recNombresArr.map(n=>`<span style="display:inline-flex;align-items:center;gap:4px;margin-right:10px;font-size:12px;"><span style="width:14px;height:14px;border-radius:4px;background:${colorMap[n].bg};border:2px solid ${colorMap[n].border};display:inline-block;"></span>${n}</span>`).join(''):'';
+  const filtros=recsUnicos.size>0?`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+    <button class="btn btn-sm" onclick="window._filtrarInterRec('todos')" style="border:2px solid var(--naranja);background:${filtroRec==='todos'?'var(--naranja)':'transparent'};color:${filtroRec==='todos'?'white':'var(--naranja)'};font-weight:700;">Todos</button>
+    ${[...recsUnicos.entries()].map(([id,nombre])=>`<button class="btn btn-sm" onclick="window._filtrarInterRec('${nombre.replace(/'/g,"\\'")}')" style="border:2px solid var(--naranja);background:${filtroRec===nombre?'var(--naranja)':'transparent'};color:${filtroRec===nombre?'white':'var(--naranja)'};font-weight:700;">${nombre}</button>`).join('')}
+  </div>`:'';
   tab.innerHTML=`
     <div class="card" style="background:#fff7ed;border:2px solid var(--naranja);margin-bottom:12px;">
-      <div style="font-size:13px;font-weight:700;color:var(--naranja);">INTERMEDIARIOS · ${de} al ${ha}</div>
+      <div style="font-size:13px;font-weight:700;color:var(--naranja);">INTERMEDIARIOS · ${de} al ${ha}${filtroRec!=='todos'?' · '+filtroRec:''}</div>
       <div style="font-size:36px;font-weight:800;color:var(--naranja);margin-top:4px;">${fmtPeso(TP)}</div>
-      <div style="font-size:14px;color:var(--naranja);margin-top:4px;">${fmtL(TL)} litros · ${inters.length} intermediarios · ${fmtPeso(precio)}/L</div>
+      <div style="font-size:14px;color:var(--naranja);margin-top:4px;">${fmtL(TL)} litros · ${intersF.length} intermediarios · ${fmtPeso(precio)}/L</div>
     </div>
+    ${filtros}
+    ${leyenda?'<div style="margin-bottom:8px;">'+leyenda+'</div>':''}
     <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
       <button class="btn btn-naranja btn-sm" onclick="exportarInterMatriz('${de}','${ha}',${precio})">⬇ Exportar Excel</button>
     </div>
     <div class="aviso-movil">📱 Desliza hacia los lados para ver todos los días</div>
     <div class="matriz-wrap">
       <table class="tabla-matriz">
-        <thead><tr><th class="col-gan">Intermediario</th>${thFechas}<th class="total-col" style="text-align:center;">Total L</th><th class="total-col" style="text-align:right;padding-right:10px;">A pagar</th></tr></thead>
+        <thead><tr><th class="col-gan">Intermediario</th><th style="min-width:80px;">Recibidor</th>${thFechas}<th class="total-col" style="text-align:center;">Total L</th><th class="total-col" style="text-align:right;padding-right:10px;">A pagar</th><th style="min-width:50px;">Nov.</th><th style="min-width:90px;">Estado</th></tr></thead>
         <tbody>
           ${filas}
           <tr class="fila-total">
-            <td class="col-gan">TOTAL DÍA</td>${totDias}
+            <td class="col-gan">TOTAL DÍA</td><td></td>${totDias}
             <td class="total-col" style="text-align:center;">${fmtL(TL)}</td>
-            <td class="total-col" style="text-align:right;padding-right:10px;">${fmtPeso(TP)}</td>
+            <td class="total-col" style="text-align:right;padding-right:10px;">${fmtPeso(TP)}</td><td></td><td></td>
           </tr>
         </tbody>
       </table>
     </div>`;
 }
+window._toggleNovInter=function(id){
+  if(!window._interState)return;
+  window._interState.expandedNov[id]=!window._interState.expandedNov[id];
+  _renderInterMatriz();
+};
+window._filtrarInterRec=function(rec){
+  if(!window._interState)return;
+  window._interState.filtroRec=rec;
+  _renderInterMatriz();
+};
+window._togglePagadoInter=async function(id,nombre){
+  if(!window._interState)return;
+  const s=window._interState;
+  const isPagado=s.pagados[id]&&s.pagados[id].pagado;
+  if(isPagado){
+    const motivo=await modalPrompt('¿Por qué desmarcas el pago de '+nombre+'? (obligatorio)');
+    if(!motivo||!motivo.trim())return;
+    s.pagados[id]={pagado:false,fecha:new Date().toISOString(),nombre,motivoDesmarcar:motivo.trim(),desmarcadoPor:UA.nombre||UA.email};
+  }else{
+    s.pagados[id]={pagado:true,fecha:new Date().toISOString(),nombre};
+  }
+  _renderInterMatriz();
+  try{
+    const ref=doc(db,'liquidacionesInter',s.quincenaId);
+    const snap=await getDoc(ref);
+    const existData=snap.exists()?snap.data():{};
+    existData.pagados=s.pagados;
+    await setDoc(ref,existData,{merge:true});
+  }catch(e){console.error('Error guardando pagado inter:',e);}
+};
 
 function exportarInterMatriz(de,ha,precio){
   if(!datosInter||!datosInter.length)return;
+  const s=window._interState;
+  const filtroRec=s?s.filtroRec:'todos';
   const fechas=[...new Set(datosInter.map(d=>d.fecha))].sort();
-  const intMap={};const intRec={};datosInter.forEach(d=>{if(!intMap[d.intermediarioId])intMap[d.intermediarioId]=d.intermediarioNombre;if(!intRec[d.intermediarioId])intRec[d.intermediarioId]=new Set();intRec[d.intermediarioId].add(d.recibidorNombre);});
-  const inters=Object.entries(intMap).sort((a,b)=>a[1].localeCompare(b[1]));
+  const intMap={};const intRec={};datosInter.forEach(d=>{if(!intMap[d.intermediarioId])intMap[d.intermediarioId]=d.intermediarioNombre;if(!intRec[d.intermediarioId])intRec[d.intermediarioId]=new Set();if(d.recibidorNombre)intRec[d.intermediarioId].add(d.recibidorNombre);});
+  let inters=Object.entries(intMap).sort((a,b)=>a[1].localeCompare(b[1]));
+  if(filtroRec!=='todos'){inters=inters.filter(([id])=>intRec[id]&&intRec[id].has(filtroRec));}
   const celda={};const totalColL={};
   inters.forEach(([id])=>{celda[id]={};totalColL[id]=0;});
   datosInter.forEach(d=>{const id=d.intermediarioId;const f=d.fecha;const L=parseFloat(d.litros)||0;if(!celda[id])celda[id]={};celda[id][f]=(celda[id][f]||0)+L;totalColL[id]=(totalColL[id]||0)+L;});
-  const TL=inters.reduce((s,[id])=>s+totalColL[id],0);
-  const headers=`Intermediario,${fechas.join(',')},Total L,A Pagar,Recibidor\n`;
-  const rows=inters.map(([id,nombre])=>{const dias=fechas.map(f=>celda[id][f]?(celda[id][f]):'0').join(',');const recs=[...intRec[id]].join(' / ');return`"${nombre}",${dias},${fmtL(totalColL[id])},${(totalColL[id]*precio).toFixed(0)},"${recs}"`;}).join('\n');
-  const totRow=`TOTAL DIA,${fechas.map(f=>{let s=0;inters.forEach(([id])=>s+=(celda[id][f]||0));return fmtL(s);}).join(',')},${fmtL(TL)},${(TL*precio).toFixed(0)},`;
-  descargar(`INTERMEDIARIOS - ${de} al ${ha} - $${precio}/L\n${headers}${rows}\n${totRow}`,`intermediarios-${de}-${ha}.csv`);
+  const TL=inters.reduce((ss,[id])=>ss+totalColL[id],0);
+  const filtroLabel=filtroRec!=='todos'?` (Recibidor: ${filtroRec})`:'';
+  const headers=`Intermediario,Recibidor,${fechas.join(',')},Total L,A Pagar\n`;
+  const rows=inters.map(([id,nombre])=>{const dias=fechas.map(f=>celda[id]&&celda[id][f]?(celda[id][f]):'0').join(',');const recs=[...(intRec[id]||[])].join(' / ');return`"${nombre}","${recs}",${dias},${fmtL(totalColL[id])},${(totalColL[id]*precio).toFixed(0)}`;}).join('\n');
+  const totRow=`TOTAL DIA,,${fechas.map(f=>{let ss=0;inters.forEach(([id])=>ss+=((celda[id]&&celda[id][f])||0));return fmtL(ss);}).join(',')},${fmtL(TL)},${(TL*precio).toFixed(0)}`;
+  descargar(`INTERMEDIARIOS${filtroLabel} - ${de} al ${ha} - $${precio}/L\n${headers}${rows}\n${totRow}`,`intermediarios-${de}-${ha}${filtroRec!=='todos'?'-'+filtroRec:''}.csv`);
 }window.exportarInterMatriz=exportarInterMatriz;
 
 async function repProduccion(de,ha){
