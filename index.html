@@ -368,9 +368,9 @@
       <div><label style="font-size:12px;font-weight:600;">Canastas reales</label><input type="number" id="cc-canastasReales" readonly style="width:100%;padding:10px;border:1.5px solid #15803d;border-radius:10px;font-size:14px;font-weight:700;color:#15803d;box-sizing:border-box;margin-top:4px;background:#DCFCE7;"></div>
       <div><label style="font-size:12px;font-weight:600;">Unidades reales</label><input type="number" id="cc-unidadesReales" readonly style="width:100%;padding:10px;border:1.5px solid #15803d;border-radius:10px;font-size:14px;font-weight:700;color:#15803d;box-sizing:border-box;margin-top:4px;background:#DCFCE7;"></div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px;">
+    <div style="margin-bottom:4px;">
       <div><label style="font-size:12px;font-weight:600;">Dif. leche (auto)</label><input type="number" id="cc-difLeche" readonly style="width:100%;padding:10px;border:1.5px solid #9333EA;border-radius:10px;font-size:14px;font-weight:700;color:#9333EA;box-sizing:border-box;margin-top:4px;background:#F3E8FF;"></div>
-      <div><label style="font-size:12px;font-weight:600;color:var(--gris2);">Leche recibidor</label><input type="number" id="cc-lecheRecibidor" readonly style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;color:var(--gris2);box-sizing:border-box;margin-top:4px;background:#f5f5f5;"></div>
+      <input type="hidden" id="cc-lecheRecibidor">
     </div>
     <div id="cc-motivos-container" style="display:none;margin-bottom:12px;margin-top:4px;">
       <label style="font-size:12px;font-weight:600;color:#DC2626;">⚠️ ¿Por qué editaste los valores?</label>
@@ -2355,7 +2355,7 @@ async function cargarProduccionHoy(fechaParam){
           const coincide=Math.abs(diffPlat)<1;
           html+=`<div style="background:${coincide?'#DCFCE7':'#FEF3C7'};padding:8px;border-radius:8px;font-size:12px;margin-bottom:6px;">
             <div style="font-weight:700;color:${coincide?'#15803d':'#92400E'};margin-bottom:4px;">${coincide?'✅':'⚠️'} Leche plataforma</div>
-            <div style="color:${coincide?'#15803d':'#92400E'};">Recibidor: ${fmtL(lechePlatRecibidor)}L · Cuajador: ${fmtL(lechePlatCuajador)}L${coincide?'':` · Dif: ${diffPlat>0?'+':''}${fmtL(diffPlat)}L`}</div>
+            <div style="color:${coincide?'#15803d':'#92400E'};">Cuajador: ${fmtL(lechePlatCuajador)}L · Recibidor: ${fmtL(lechePlatRecibidor)}L${coincide?'':` · Dif: ${diffPlat>0?'+':''}${fmtL(diffPlat)}L`}</div>
           </div>`;
         }
       }
