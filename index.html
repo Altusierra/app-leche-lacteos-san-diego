@@ -355,13 +355,13 @@
   </div>
   <div style="padding:20px;">
     <div id="cierre-alertas" style="margin-bottom:12px;"></div>
-    <div style="font-weight:700;font-size:14px;color:var(--verde);margin-bottom:8px;">CALCULADOS (editables con motivo)</div>
+    <div style="font-weight:700;font-size:14px;color:var(--verde);margin-bottom:8px;">CALCULADOS</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px;">
-      <div><label style="font-size:12px;font-weight:600;">Leche procesada</label><input type="number" id="cc-lecheProc" onchange="marcarEditado('lecheProc')" style="width:100%;padding:10px;border:1.5px solid var(--verde3);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;background:var(--crema);"></div>
-      <div><label style="font-size:12px;font-weight:600;">Total bloques</label><input type="number" id="cc-totalBloques" onchange="marcarEditado('totalBloques')" style="width:100%;padding:10px;border:1.5px solid var(--verde3);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;background:var(--crema);"></div>
+      <div><label style="font-size:12px;font-weight:600;">Leche procesada</label><input type="number" id="cc-lecheProc" readonly style="width:100%;padding:10px;border:1.5px solid var(--verde3);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;background:var(--crema);"></div>
+      <div><label style="font-size:12px;font-weight:600;">Total bloques</label><input type="number" id="cc-totalBloques" readonly style="width:100%;padding:10px;border:1.5px solid var(--verde3);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;background:var(--crema);"></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px;">
-      <div><label style="font-size:12px;font-weight:600;">Reprocesos día</label><input type="number" id="cc-reprocDia" onchange="marcarEditado('reprocDia')" style="width:100%;padding:10px;border:1.5px solid var(--verde3);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;background:var(--crema);"></div>
+      <div><label style="font-size:12px;font-weight:600;">Reprocesos día</label><input type="number" id="cc-reprocDia" readonly style="width:100%;padding:10px;border:1.5px solid var(--verde3);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;background:var(--crema);"></div>
       <div><label style="font-size:12px;font-weight:600;">Bloques reales</label><input type="number" id="cc-bloquesReales" readonly style="width:100%;padding:10px;border:1.5px solid #15803d;border-radius:10px;font-size:14px;font-weight:700;color:#15803d;box-sizing:border-box;margin-top:4px;background:#DCFCE7;"></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px;">
@@ -372,10 +372,6 @@
       <div><label style="font-size:12px;font-weight:600;">Dif. leche (auto)</label><input type="number" id="cc-difLeche" readonly style="width:100%;padding:10px;border:1.5px solid #9333EA;border-radius:10px;font-size:14px;font-weight:700;color:#9333EA;box-sizing:border-box;margin-top:4px;background:#F3E8FF;"></div>
       <input type="hidden" id="cc-lecheRecibidor">
     </div>
-    <div id="cc-motivos-container" style="display:none;margin-bottom:12px;margin-top:4px;">
-      <label style="font-size:12px;font-weight:600;color:#DC2626;">⚠️ ¿Por qué editaste los valores?</label>
-      <textarea id="cc-motivo-edicion" placeholder="Obligatorio si editaste algún campo calculado..." rows="2" style="width:100%;padding:10px;border:1.5px solid #DC2626;border-radius:10px;font-size:13px;box-sizing:border-box;margin-top:4px;resize:none;"></textarea>
-    </div>
     <div style="font-weight:700;font-size:14px;color:var(--verde);margin-bottom:8px;margin-top:16px;">RESUMEN DEL DÍA</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
       <div><label style="font-size:12px;font-weight:600;">Leche plataforma</label><input type="number" id="cc-lechePlat" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
@@ -383,7 +379,7 @@
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
       <div><label style="font-size:12px;font-weight:600;">Reproceso de cuarto frío</label><input type="number" id="cc-reprocFrio" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
-      <div><label style="font-size:12px;font-weight:600;">Diferencia</label><input type="number" id="cc-difResumen" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
+      <div></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
       <div><label style="font-size:12px;font-weight:600;">Reproceso del día (opcional)</label><input type="number" id="cc-reprocDiaResumen" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
@@ -1772,10 +1768,8 @@ async function abrirCierreDia(){
   document.getElementById('cc-lecheProc').value=lecheProc;
   document.getElementById('cc-totalBloques').value=totalBloques;
   document.getElementById('cc-reprocDia').value=reprocDia;
-  document.getElementById('cc-motivos-container').style.display='none';
-  document.getElementById('cc-motivo-edicion').value='';
   // Clear all manual fields
-  ['cc-lechePlat','cc-lecheSobra','cc-reprocFrio','cc-difResumen','cc-reprocDiaResumen','cc-canastasFC','cc-unidadesFC','cc-saldos'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  ['cc-lechePlat','cc-lecheSobra','cc-reprocFrio','cc-reprocDiaResumen','cc-canastasFC','cc-unidadesFC','cc-saldos'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   document.getElementById('cc-error').style.display='none';
   // Clear ventas
   document.getElementById('cc-ventas-container').innerHTML='';
@@ -1791,7 +1785,6 @@ async function abrirCierreDia(){
       document.getElementById('cc-lechePlat').value=c.lechePlataforma||'';
       document.getElementById('cc-lecheSobra').value=c.lecheSobra||'';
       document.getElementById('cc-reprocFrio').value=c.reprocCuartoFrio||'';
-      document.getElementById('cc-difResumen').value=c.difResumen||'';
       document.getElementById('cc-reprocDiaResumen').value=c.reprocDiaResumen||'';
       document.getElementById('cc-canastasFC').value=c.canastasFC||'';
       document.getElementById('cc-unidadesFC').value=c.unidadesFC||'';
@@ -1907,8 +1900,6 @@ function recogerVentasPlanta(){
 
 async function guardarCierreDia(){
   if(!navigator.onLine){document.getElementById('cc-error').textContent='❌ Sin conexión a internet';document.getElementById('cc-error').style.display='block';return;}
-  // Campos del resumen son opcionales
-  if(_cuajadorCamposEditados.size>0&&!(document.getElementById('cc-motivo-edicion').value||'').trim()){document.getElementById('cc-error').textContent='⚠️ Debes explicar por qué editaste los campos calculados';document.getElementById('cc-error').style.display='block';return;}
   const fecha=getFechaRegCuajador();
   try{
     const totalBloques=parseInt(document.getElementById('cc-totalBloques').value)||0;
@@ -1926,17 +1917,11 @@ async function guardarCierreDia(){
       lecheSobra:parseFloat(document.getElementById('cc-lecheSobra').value)||0,
       reprocCuartoFrio:parseInt(document.getElementById('cc-reprocFrio').value)||0,
       reprocDiaResumen:parseInt(document.getElementById('cc-reprocDiaResumen').value)||0,
-      difResumen:parseFloat(document.getElementById('cc-difResumen').value)||0,
       canastasFC:parseInt(document.getElementById('cc-canastasFC').value)||0,
       unidadesFC:parseInt(document.getElementById('cc-unidadesFC').value)||0,
       saldos:parseFloat(document.getElementById('cc-saldos').value)||0,
       ventasPlanta,
       horaCierre:horaAhora(),timestamp:serverTimestamp()};
-    if(_cuajadorCamposEditados.size>0){
-      data.camposEditados=[..._cuajadorCamposEditados];
-      data.motivoEdicion=(document.getElementById('cc-motivo-edicion').value||'').trim();
-      data.valoresOriginales=_cuajadorAutoCalc;
-    }
     await setDoc(doc(db,'cierresDia',fecha),data);
     await modalAlert('✅ Día cerrado correctamente');
     ir('screen-cuajador-home');cargarTandasHoy();
@@ -2253,7 +2238,10 @@ async function cargarSinRecolectar(){
     const sinAyer=ganaderos.filter(g=>!recogidosAyer.has(g.id));
     const sinHoy=ganaderos.filter(g=>!recogidosHoy.has(g.id));
     const cont=document.getElementById('admin-sin-recolectar');
-    if(sinAyer.length===0&&sinHoy.length===0){cont.innerHTML='<p style="color:var(--gris2);font-size:14px;">✅ Todos los ganaderos recogidos ayer y hoy</p>';return;}
+    // Recoger ganaderos con 0 litros CON novedad ayer y hoy
+    const ceroAyer=[];const ceroHoy=[];
+    snap.forEach(d=>{const da=d.data();const litros=parseFloat(da.litros)||0;const tieneNovedad=(da.novedad||'').trim().length>0;if(litros===0&&tieneNovedad){const gan=ganaderos.find(g=>g.id===da.ganaderoId);const nombre=gan?gan.nombre:da.ganaderoNombre;if(da.fecha===ayerStr)ceroAyer.push({nombre,novedad:da.novedad});if(da.fecha===hoyStr)ceroHoy.push({nombre,novedad:da.novedad});}});
+    if(sinAyer.length===0&&sinHoy.length===0&&ceroAyer.length===0&&ceroHoy.length===0){cont.innerHTML='<p style="color:var(--gris2);font-size:14px;">✅ Todos los ganaderos recogidos ayer y hoy</p>';return;}
     const LIMITE=3;
     function renderBloque(titulo,lista,color,prefijo){
       if(lista.length===0)return`<div style="margin-bottom:8px;"><div style="font-weight:700;font-size:13px;color:#15803d;margin-bottom:4px;">${titulo}</div><div style="font-size:13px;color:var(--gris2);">✅ Todos recogidos</div></div>`;
@@ -2262,7 +2250,14 @@ async function cargarSinRecolectar(){
       const extra=lista.length>LIMITE?`<div id="${prefijo}-extra" style="display:none;">${lista.slice(LIMITE).map(g=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--gris1);"><div style="font-weight:600;font-size:13px;">${g.nombre}</div><span class="badge badge-rojo">🔴</span></div>`).join('')}</div><div style="text-align:center;"><a id="${prefijo}-toggle" href="#" onclick="const x=document.getElementById('${prefijo}-extra');const t=document.getElementById('${prefijo}-toggle');if(x.style.display==='none'){x.style.display='block';t.textContent='Ver menos ▲';}else{x.style.display='none';t.textContent='Ver más (${lista.length-LIMITE} más) ▼';}return false;" style="font-size:12px;color:var(--verde);font-weight:700;">Ver más (${lista.length-LIMITE} más) ▼</a></div>`:'';
       return`<div style="margin-bottom:12px;"><div style="font-weight:700;font-size:13px;color:${color};margin-bottom:4px;">${titulo} (${lista.length})</div>${filas}${extra}</div>`;
     }
-    cont.innerHTML=renderBloque('🔴 Sin recolectar AYER',sinAyer,'#DC2626','sinrec-ayer')+renderBloque('⚠️ Sin recolectar HOY',sinHoy,'#D97706','sinrec-hoy');
+    function renderBloqueCero(titulo,lista,color,prefijo){
+      if(lista.length===0)return'';
+      const visibles=lista.slice(0,LIMITE);
+      const filas=visibles.map(g=>`<div style="padding:6px 0;border-bottom:1px solid var(--gris1);"><div style="font-weight:600;font-size:13px;">${g.nombre}</div><div style="font-size:12px;color:var(--gris2);margin-top:2px;">📝 ${g.novedad}</div></div>`).join('');
+      const extra=lista.length>LIMITE?`<div id="${prefijo}-extra" style="display:none;">${lista.slice(LIMITE).map(g=>`<div style="padding:6px 0;border-bottom:1px solid var(--gris1);"><div style="font-weight:600;font-size:13px;">${g.nombre}</div><div style="font-size:12px;color:var(--gris2);margin-top:2px;">📝 ${g.novedad}</div></div>`).join('')}</div><div style="text-align:center;"><a id="${prefijo}-toggle" href="#" onclick="const x=document.getElementById('${prefijo}-extra');const t=document.getElementById('${prefijo}-toggle');if(x.style.display==='none'){x.style.display='block';t.textContent='Ver menos ▲';}else{x.style.display='none';t.textContent='Ver más (${lista.length-LIMITE} más) ▼';}return false;" style="font-size:12px;color:var(--verde);font-weight:700;">Ver más (${lista.length-LIMITE} más) ▼</a></div>`:'';
+      return`<div style="margin-bottom:12px;"><div style="font-weight:700;font-size:13px;color:${color};margin-bottom:4px;">${titulo} (${lista.length})</div>${filas}${extra}</div>`;
+    }
+    cont.innerHTML=renderBloque('🔴 Sin recolectar AYER',sinAyer,'#DC2626','sinrec-ayer')+renderBloque('⚠️ Sin recolectar HOY',sinHoy,'#D97706','sinrec-hoy')+renderBloqueCero('📝 Con 0 litros AYER',ceroAyer,'#7c3aed','cero-ayer')+renderBloqueCero('📝 Con 0 litros HOY',ceroHoy,'#7c3aed','cero-hoy');
   }catch(e){}
 }
 
@@ -2327,7 +2322,14 @@ async function cargarProduccionHoy(fechaParam){
       <div><div style="font-size:8px;color:#15803d;font-weight:600;">BLQ. REALES</div><div style="font-size:18px;font-weight:800;color:#15803d;">${bloquesReales}</div></div>
       <div><div style="font-size:9px;color:var(--gris2);font-weight:600;">PROMEDIO</div><div style="font-size:18px;font-weight:800;">${promedioReal}</div></div>
     </div>`;
-    // Canastas, unidades, reprocesos
+    // Canastas diarias (sin cuarto frío)
+    const _canastasDiarias=Math.floor(bloquesReales/16);
+    const _unidadesDiarias=bloquesReales-((_canastasDiarias)*16);
+    html+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:center;margin-bottom:10px;background:#EFF6FF;border-radius:10px;padding:10px;">
+      <div><div style="font-size:9px;color:#1D4ED8;font-weight:600;">CANASTAS DIARIAS</div><div style="font-size:20px;font-weight:800;color:#1D4ED8;">${_canastasDiarias}</div><div style="font-size:9px;color:#1D4ED8;opacity:0.7;">sin cuarto frío</div></div>
+      <div><div style="font-size:9px;color:#1D4ED8;font-weight:600;">UNIDADES DIARIAS</div><div style="font-size:20px;font-weight:800;color:#1D4ED8;">${_unidadesDiarias}</div><div style="font-size:9px;color:#1D4ED8;opacity:0.7;">sin cuarto frío</div></div>
+    </div>`;
+    // Canastas, unidades, reprocesos (TOTAL con cuarto frío)
     html+=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;margin-bottom:10px;background:#DCFCE7;border-radius:10px;padding:10px;">
       <div><div style="font-size:9px;color:#15803d;font-weight:600;">CANASTAS</div><div style="font-size:20px;font-weight:800;color:#15803d;">${canastasReales}</div></div>
       <div><div style="font-size:9px;color:#15803d;font-weight:600;">UNIDADES</div><div style="font-size:20px;font-weight:800;color:#15803d;">${unidadesReales}</div></div>
@@ -2809,6 +2811,23 @@ function repLiqMatriz(datos,de,ha,precio){
   const fechas=[...new Set(datos.map(d=>d.fecha))].sort();
   const ganMap={};datos.forEach(d=>{if(!ganMap[d.ganaderoId])ganMap[d.ganaderoId]=d.ganaderoNombre;});
   const gans=Object.entries(ganMap).sort((a,b)=>a[1].localeCompare(b[1]));
+  // Track recogedor per ganadero per day
+  const ganRecDia={};// {gid: {fecha: recogedorNombre}}
+  const ganRecSet={};// {gid: Set(recogedorNombre)}
+  const recsUnicos=new Map();
+  datos.forEach(d=>{
+    const gid=d.ganaderoId;const f=d.fecha;
+    if(!ganRecDia[gid])ganRecDia[gid]={};
+    ganRecDia[gid][f]=d.recogedorNombre;
+    if(!ganRecSet[gid])ganRecSet[gid]=new Set();
+    ganRecSet[gid].add(d.recogedorNombre);
+    recsUnicos.set(d.recogedorId,d.recogedorNombre);
+  });
+  // Assign colors to recogedores
+  const _recColores=['#DBEAFE','#FCE7F3','#D1FAE5','#FEF3C7','#EDE9FE','#FFEDD5'];
+  const _recBorde=['#1D4ED8','#DB2777','#059669','#D97706','#7C3AED','#EA580C'];
+  const recNombresArr=[...new Set(datos.map(d=>d.recogedorNombre))].sort();
+  const colorMap={};recNombresArr.forEach((n,i)=>{colorMap[n]={bg:_recColores[i%_recColores.length],border:_recBorde[i%_recBorde.length]};});
   const celda={};const totalFila={};const totalColL={};
   gans.forEach(([gid])=>{celda[gid]={};totalColL[gid]=0;});
   fechas.forEach(f=>{totalFila[f]=0;});
@@ -2819,39 +2838,98 @@ function repLiqMatriz(datos,de,ha,precio){
     totalFila[f]=(totalFila[f]||0)+L;
     totalColL[gid]=(totalColL[gid]||0)+L;
   });
-  const TL=gans.reduce((s,[gid])=>s+totalColL[gid],0);
+  // State
+  const quincenaId=`${de}_${ha}`;
+  window._liqState={datos,de,ha,precio,fechas,gans,ganMap,celda,totalFila,totalColL,ganRecDia,ganRecSet,colorMap,recsUnicos,recNombresArr,quincenaId,filtroRec:'todos',pagados:{}};
+  // Load pagados from Firestore then render
+  getDoc(doc(db,'liquidaciones',quincenaId)).then(snap=>{
+    if(snap.exists()&&snap.data().pagados)window._liqState.pagados=snap.data().pagados;
+    _renderLiqMatriz();
+  }).catch(()=>_renderLiqMatriz());
+}
+function _renderLiqMatriz(){
+  const s=window._liqState;if(!s)return;
+  const tab=document.getElementById('rep-tab-0');if(!tab)return;
+  const {de,ha,precio,fechas,gans,celda,totalFila,totalColL,ganRecDia,ganRecSet,colorMap,recsUnicos,recNombresArr,quincenaId,filtroRec,pagados}=s;
+  // Filter gans by recogedor
+  let gansF=gans;
+  if(filtroRec!=='todos'){
+    gansF=gans.filter(([gid])=>ganRecSet[gid]&&ganRecSet[gid].has(filtroRec));
+  }
+  const TL=gansF.reduce((ss,[gid])=>ss+totalColL[gid],0);
   const TP=TL*precio;
   const thFechas=fechas.map(f=>`<th style="text-align:center;">${fmtFechaCorta(f)}</th>`).join('');
-  const filas=gans.map(([gid,gn])=>{
-    const celdas=fechas.map(f=>{const L=celda[gid][f];return L?`<td style="text-align:center;">${fmtL(L)}</td>`:'<td class="vacio" style="text-align:center;">—</td>';}).join('');
+  const filas=gansF.map(([gid,gn])=>{
+    const recs=[...ganRecSet[gid]];
+    const recLabel=recs.join(' / ');
+    const celdas=fechas.map(f=>{
+      const L=celda[gid]?celda[gid][f]:null;
+      if(!L)return'<td class="vacio" style="text-align:center;">—</td>';
+      const recDia=ganRecDia[gid]?ganRecDia[gid][f]:'';
+      const col=recDia&&colorMap[recDia]?colorMap[recDia]:{bg:'',border:''};
+      return`<td style="text-align:center;background:${col.bg||''};border-left:3px solid ${col.border||'transparent'};">${fmtL(L)}</td>`;
+    }).join('');
     const totL=totalColL[gid];
-    return`<tr><td class="col-gan">${gn}</td>${celdas}<td class="total-col" style="text-align:center;">${fmtL(totL)}</td><td class="total-pago" style="text-align:right;padding-right:10px;">${fmtPeso(totL*precio)}</td></tr>`;
+    const isPagado=pagados[gid]&&pagados[gid].pagado;
+    return`<tr><td class="col-gan">${gn}</td><td style="font-size:11px;white-space:normal;max-width:120px;">${recLabel}</td>${celdas}<td class="total-col" style="text-align:center;">${fmtL(totL)}</td><td class="total-pago" style="text-align:right;padding-right:10px;">${fmtPeso(totL*precio)}</td><td style="text-align:center;"><button onclick="window._togglePagado('${gid}','${gn.replace(/'/g,"\\'")}')" style="padding:6px 12px;border-radius:8px;border:2px solid ${isPagado?'#15803d':'#d1d5db'};background:${isPagado?'#DCFCE7':'white'};color:${isPagado?'#15803d':'var(--gris2)'};font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap;">${isPagado?'✅ Pagado':'💲 Pagar'}</button></td></tr>`;
   }).join('');
   const totDias=fechas.map(f=>`<td class="total-col" style="text-align:center;">${fmtL(totalFila[f])}</td>`).join('');
+  // Leyenda colores
+  const leyenda=recNombresArr.map(n=>`<span style="display:inline-flex;align-items:center;gap:4px;margin-right:10px;font-size:12px;"><span style="width:14px;height:14px;border-radius:4px;background:${colorMap[n].bg};border:2px solid ${colorMap[n].border};display:inline-block;"></span>${n}</span>`).join('');
+  // Filtro recogedor
+  const filtros=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+    <button class="btn btn-sm" onclick="window._filtrarLiqRec('todos')" style="border:2px solid var(--verde);background:${filtroRec==='todos'?'var(--verde)':'transparent'};color:${filtroRec==='todos'?'white':'var(--verde)'};font-weight:700;">Todos</button>
+    ${[...recsUnicos.entries()].map(([id,nombre])=>`<button class="btn btn-sm" onclick="window._filtrarLiqRec('${nombre.replace(/'/g,"\\'")}')" style="border:2px solid var(--verde2);background:${filtroRec===nombre?'var(--verde2)':'transparent'};color:${filtroRec===nombre?'white':'var(--verde2)'};font-weight:700;">${nombre}</button>`).join('')}
+  </div>`;
   tab.innerHTML=`
     <div class="card" style="background:var(--verde3);border:2px solid var(--verde2);margin-bottom:12px;">
-      <div style="font-size:13px;font-weight:700;color:var(--verde);">TOTAL A PAGAR · ${de} al ${ha}</div>
+      <div style="font-size:13px;font-weight:700;color:var(--verde);">TOTAL A PAGAR · ${de} al ${ha}${filtroRec!=='todos'?' · '+filtroRec:''}</div>
       <div style="font-size:36px;font-weight:800;color:var(--verde);margin-top:4px;">${fmtPeso(TP)}</div>
-      <div style="font-size:14px;color:var(--verde);margin-top:4px;">${fmtL(TL)} litros · ${gans.length} ganaderos · ${fmtPeso(precio)}/L</div>
+      <div style="font-size:14px;color:var(--verde);margin-top:4px;">${fmtL(TL)} litros · ${gansF.length} ganaderos · ${fmtPeso(precio)}/L</div>
     </div>
+    ${filtros}
+    <div style="margin-bottom:8px;">${leyenda}</div>
     <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
       <button class="btn btn-verde btn-sm" onclick="exportarLiqMatriz('${de}','${ha}',${precio})">⬇ Exportar Excel</button>
     </div>
     <div class="aviso-movil">📱 Desliza hacia los lados para ver todos los días</div>
     <div class="matriz-wrap">
       <table class="tabla-matriz">
-        <thead><tr><th class="col-gan">Ganadero</th>${thFechas}<th class="total-col" style="text-align:center;">Total L</th><th class="total-col" style="text-align:right;padding-right:10px;">A pagar</th></tr></thead>
+        <thead><tr><th class="col-gan">Ganadero</th><th style="min-width:80px;">Recogedor</th>${thFechas}<th class="total-col" style="text-align:center;">Total L</th><th class="total-col" style="text-align:right;padding-right:10px;">A pagar</th><th style="min-width:90px;">Estado</th></tr></thead>
         <tbody>
           ${filas}
           <tr class="fila-total">
-            <td class="col-gan">TOTAL DÍA</td>${totDias}
+            <td class="col-gan">TOTAL DÍA</td><td></td>${totDias}
             <td class="total-col" style="text-align:center;">${fmtL(TL)}</td>
-            <td class="total-col" style="text-align:right;padding-right:10px;">${fmtPeso(TP)}</td>
+            <td class="total-col" style="text-align:right;padding-right:10px;">${fmtPeso(TP)}</td><td></td>
           </tr>
         </tbody>
       </table>
     </div>`;
 }
+window._filtrarLiqRec=function(rec){
+  if(!window._liqState)return;
+  window._liqState.filtroRec=rec;
+  _renderLiqMatriz();
+};
+window._togglePagado=async function(gid,nombre){
+  if(!window._liqState)return;
+  const s=window._liqState;
+  const isPagado=s.pagados[gid]&&s.pagados[gid].pagado;
+  if(isPagado){
+    delete s.pagados[gid];
+  }else{
+    s.pagados[gid]={pagado:true,fecha:new Date().toISOString(),nombre};
+  }
+  _renderLiqMatriz();
+  try{
+    const liqRef=doc(db,'liquidaciones',s.quincenaId);
+    const snap=await getDoc(liqRef);
+    const existData=snap.exists()?snap.data():{};
+    existData.pagados=s.pagados;
+    await setDoc(liqRef,existData,{merge:true});
+  }catch(e){console.error('Error guardando pagado:',e);}
+};
 function repDetalle(datos,de,ha){
   const lista=soloNovGlobal?datos.filter(d=>d.novedad&&d.novedad.trim()!==''):datos;
   const cont=document.getElementById('rep-tab-2-content');if(!cont)return;
@@ -2900,21 +2978,31 @@ async function cargarEliminaciones(){
 
 async function exportarLiqMatriz(de,ha,precio){
   if(!datosRep.length)return;
+  const s=window._liqState;
+  const filtroRec=s?s.filtroRec:'todos';
   const fechas=[...new Set(datosRep.map(d=>d.fecha))].sort();
   const ganMap={};const ganRec={};datosRep.forEach(d=>{if(!ganMap[d.ganaderoId])ganMap[d.ganaderoId]=d.ganaderoNombre;if(!ganRec[d.ganaderoId])ganRec[d.ganaderoId]=new Set();ganRec[d.ganaderoId].add(d.recogedorNombre);});
-  const gans=Object.entries(ganMap).sort((a,b)=>a[1].localeCompare(b[1]));
+  let gans=Object.entries(ganMap).sort((a,b)=>a[1].localeCompare(b[1]));
+  // Aplicar filtro de recogedor
+  if(filtroRec!=='todos'){
+    gans=gans.filter(([gid])=>ganRec[gid]&&ganRec[gid].has(filtroRec));
+  }
   const celda={};const totalColL={};
   gans.forEach(([gid])=>{celda[gid]={};totalColL[gid]=0;});
   datosRep.forEach(d=>{const gid=d.ganaderoId;const f=d.fecha;const L=parseFloat(d.litros)||0;if(!celda[gid])celda[gid]={};celda[gid][f]=(celda[gid][f]||0)+L;totalColL[gid]=(totalColL[gid]||0)+L;});
-  const TL=gans.reduce((s,[gid])=>s+totalColL[gid],0);
-  const headers=`Ganadero,${fechas.join(',')},Total L,A Pagar,Recogedor\n`;
-  const rows=gans.map(([gid,gn])=>{const dias=fechas.map(f=>celda[gid][f]?(celda[gid][f]):'0').join(',');const recs=[...ganRec[gid]].join(' / ');return`"${gn}",${dias},${fmtL(totalColL[gid])},${(totalColL[gid]*precio).toFixed(0)},"${recs}"`;}).join('\n');
-  const totRow=`TOTAL DIA,${fechas.map(f=>{let s=0;gans.forEach(([gid])=>s+=(celda[gid][f]||0));return fmtL(s);}).join(',')},${fmtL(TL)},${(TL*precio).toFixed(0)},`;
-  descargar(`LIQUIDACION QUINCENAL - ${de} al ${ha} - $${precio}/L\n${headers}${rows}\n${totRow}`,`liquidacion-${de}-${ha}.csv`);
+  const TL=gans.reduce((ss,[gid])=>ss+totalColL[gid],0);
+  const filtroLabel=filtroRec!=='todos'?` (Recogedor: ${filtroRec})`:'';
+  const headers=`Ganadero,Recogedor,${fechas.join(',')},Total L,A Pagar\n`;
+  const rows=gans.map(([gid,gn])=>{const dias=fechas.map(f=>celda[gid]&&celda[gid][f]?(celda[gid][f]):'0').join(',');const recs=[...(ganRec[gid]||[])].join(' / ');return`"${gn}","${recs}",${dias},${fmtL(totalColL[gid])},${(totalColL[gid]*precio).toFixed(0)}`;}).join('\n');
+  const totRow=`TOTAL DIA,,${fechas.map(f=>{let ss=0;gans.forEach(([gid])=>ss+=((celda[gid]&&celda[gid][f])||0));return fmtL(ss);}).join(',')},${fmtL(TL)},${(TL*precio).toFixed(0)}`;
+  descargar(`LIQUIDACION QUINCENAL${filtroLabel} - ${de} al ${ha} - $${precio}/L\n${headers}${rows}\n${totRow}`,`liquidacion-${de}-${ha}${filtroRec!=='todos'?'-'+filtroRec:''}.csv`);
   try{
     const litrosPorDia={};datosRep.forEach(d=>{litrosPorDia[d.fecha]=(litrosPorDia[d.fecha]||0)+(parseFloat(d.litros)||0);});
     const novedades=datosRep.filter(d=>d.novedad&&d.novedad.trim()).map(d=>({fecha:d.fecha,ganadero:d.ganaderoNombre,recogedor:d.recogedorNombre,litros:parseFloat(d.litros)||0,novedad:d.novedad}));
-    await setDoc(doc(db,'liquidaciones',`${de}_${ha}`),{de,ha,precioPorLitro:precio,totalLitros:TL,totalPesos:TL*precio,totalGanaderos:gans.length,litrosPorDia,novedades,generadoPorId:UA.uid,generadoPorNombre:UA.nombre||UA.email,fechaGeneracion:hoy(),horaGeneracion:horaAhora(),timestamp:serverTimestamp()});
+    const liqRef=doc(db,'liquidaciones',`${de}_${ha}`);
+    const existSnap=await getDoc(liqRef);
+    const existData=existSnap.exists()?existSnap.data():{};
+    await setDoc(liqRef,{...existData,de,ha,precioPorLitro:precio,totalLitros:TL,totalPesos:TL*precio,totalGanaderos:gans.length,litrosPorDia,novedades,generadoPorId:UA.uid,generadoPorNombre:UA.nombre||UA.email,fechaGeneracion:hoy(),horaGeneracion:horaAhora(),timestamp:serverTimestamp()},{merge:true});
   }catch(e){console.error('Error guardando liquidación:',e);}
 }window.exportarLiqMatriz=exportarLiqMatriz;
 // ── DETALLE COMPLETO ──
