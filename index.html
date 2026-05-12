@@ -2243,7 +2243,7 @@ async function cargarSinRecolectar(){
     const cont=document.getElementById('admin-sin-recolectar');
     // Recoger ganaderos con 0 litros CON novedad ayer y hoy
     const ceroAyer=[];const ceroHoy=[];
-    snap.forEach(d=>{const da=d.data();const litros=parseFloat(da.litros)||0;const tieneNovedad=(da.novedad||'').trim().length>0;if(litros===0&&tieneNovedad){const gan=ganaderos.find(g=>g.id===da.ganaderoId);const nombre=gan?gan.nombre:da.ganaderoNombre;if(da.fecha===ayerStr)ceroAyer.push({nombre,novedad:da.novedad});if(da.fecha===hoyStr)ceroHoy.push({nombre,novedad:da.novedad});}});
+    snap.forEach(d=>{const da=d.data();const litros=parseFloat(da.litros)||0;const tieneNovedad=(da.novedad||'').trim().length>0;if(litros===0&&tieneNovedad){const gan=ganaderos.find(g=>g.id===da.ganaderoId);const nombre=gan?gan.nombre:da.ganaderoNombre;if(da.fecha===ayerStr)ceroAyer.push({nombre,novedad:da.novedad,recogedor:da.recogedorNombre||'',hora:da.hora||''});if(da.fecha===hoyStr)ceroHoy.push({nombre,novedad:da.novedad,recogedor:da.recogedorNombre||'',hora:da.hora||''});}});
     if(sinAyer.length===0&&sinHoy.length===0&&ceroAyer.length===0&&ceroHoy.length===0){cont.innerHTML='<p style="color:var(--gris2);font-size:14px;">✅ Todos los ganaderos recogidos ayer y hoy</p>';return;}
     const LIMITE=3;
     function renderBloque(titulo,lista,color,prefijo){
@@ -2256,8 +2256,8 @@ async function cargarSinRecolectar(){
     function renderBloqueCero(titulo,lista,color,prefijo){
       if(lista.length===0)return'';
       const visibles=lista.slice(0,LIMITE);
-      const filas=visibles.map(g=>`<div style="padding:6px 0;border-bottom:1px solid var(--gris1);"><div style="font-weight:600;font-size:13px;">${g.nombre}</div><div style="font-size:12px;color:var(--gris2);margin-top:2px;">📝 ${g.novedad}</div></div>`).join('');
-      const extra=lista.length>LIMITE?`<div id="${prefijo}-extra" style="display:none;">${lista.slice(LIMITE).map(g=>`<div style="padding:6px 0;border-bottom:1px solid var(--gris1);"><div style="font-weight:600;font-size:13px;">${g.nombre}</div><div style="font-size:12px;color:var(--gris2);margin-top:2px;">📝 ${g.novedad}</div></div>`).join('')}</div><div style="text-align:center;"><a id="${prefijo}-toggle" href="#" onclick="const x=document.getElementById('${prefijo}-extra');const t=document.getElementById('${prefijo}-toggle');if(x.style.display==='none'){x.style.display='block';t.textContent='Ver menos ▲';}else{x.style.display='none';t.textContent='Ver más (${lista.length-LIMITE} más) ▼';}return false;" style="font-size:12px;color:var(--verde);font-weight:700;">Ver más (${lista.length-LIMITE} más) ▼</a></div>`:'';
+      const filas=visibles.map(g=>`<div style="padding:6px 0;border-bottom:1px solid var(--gris1);"><div style="font-weight:600;font-size:13px;">${g.nombre}</div><div style="font-size:12px;color:var(--gris2);margin-top:2px;">📝 ${g.novedad}${g.recogedor?' — '+g.recogedor:''}${g.hora?', '+g.hora:''}</div></div>`).join('');
+      const extra=lista.length>LIMITE?`<div id="${prefijo}-extra" style="display:none;">${lista.slice(LIMITE).map(g=>`<div style="padding:6px 0;border-bottom:1px solid var(--gris1);"><div style="font-weight:600;font-size:13px;">${g.nombre}</div><div style="font-size:12px;color:var(--gris2);margin-top:2px;">📝 ${g.novedad}${g.recogedor?' — '+g.recogedor:''}${g.hora?', '+g.hora:''}</div></div>`).join('')}</div><div style="text-align:center;"><a id="${prefijo}-toggle" href="#" onclick="const x=document.getElementById('${prefijo}-extra');const t=document.getElementById('${prefijo}-toggle');if(x.style.display==='none'){x.style.display='block';t.textContent='Ver menos ▲';}else{x.style.display='none';t.textContent='Ver más (${lista.length-LIMITE} más) ▼';}return false;" style="font-size:12px;color:var(--verde);font-weight:700;">Ver más (${lista.length-LIMITE} más) ▼</a></div>`:'';
       return`<div style="margin-bottom:12px;"><div style="font-weight:700;font-size:13px;color:${color};margin-bottom:4px;">${titulo} (${lista.length})</div>${filas}${extra}</div>`;
     }
     cont.innerHTML=renderBloque('🔴 Sin recolectar AYER',sinAyer,'#DC2626','sinrec-ayer')+renderBloque('⚠️ Sin recolectar HOY',sinHoy,'#D97706','sinrec-hoy')+renderBloqueCero('📝 Con 0 litros AYER',ceroAyer,'#7c3aed','cero-ayer')+renderBloqueCero('📝 Con 0 litros HOY',ceroHoy,'#7c3aed','cero-hoy');
@@ -2883,7 +2883,20 @@ async function repLiqMatriz(datos,de,ha,precio,recepciones){
   });
   const quincenaId=`${de}_${ha}`;
   const reportKey=`liq_${de}_${ha}_${precio}_${diasConDatos}`;
-  window._liqState={datos,de,ha,precio,fechas,gans,ganMap,celda,totalFila,totalColL,ganRecDia,ganRecSet,colorMap,recsUnicos,filtroButtons,quincenaId,reportKey,diasConDatos,filtroRec:'todos',searchText:'',pagados:{},ganNovedades,expandedNov:{},recogidoPorIdDia,recibidoPorIdDia,rutasCombinadas,uidsCombinados};
+  // Calcular recogedor principal por ganadero (el que más días lo recogió)
+  const ganPrimary={};
+  gans.forEach(([gid])=>{
+    const recDias={};
+    if(ganRecDia[gid]){Object.values(ganRecDia[gid]).forEach(recId=>{
+      const rutaParent=rutasCombinadas.find(([,u])=>u.combinaUids&&u.combinaUids.includes(recId));
+      const filterId=rutaParent?rutaParent[0]:recId;
+      recDias[filterId]=(recDias[filterId]||0)+1;
+    });}
+    let maxId=null,maxDays=0;
+    Object.entries(recDias).forEach(([id,days])=>{if(days>maxDays){maxDays=days;maxId=id;}});
+    ganPrimary[gid]=maxId;
+  });
+  window._liqState={datos,de,ha,precio,fechas,gans,ganMap,celda,totalFila,totalColL,ganRecDia,ganRecSet,colorMap,recsUnicos,filtroButtons,quincenaId,reportKey,diasConDatos,filtroRec:'todos',searchText:'',pagados:{},ganNovedades,expandedNov:{},recogidoPorIdDia,recibidoPorIdDia,rutasCombinadas,uidsCombinados,ganPrimary};
   getDoc(doc(db,'liquidaciones',quincenaId)).then(snap=>{
     if(snap.exists()&&snap.data().pagados)window._liqState.pagados=snap.data().pagados;
     _renderLiqMatriz();
@@ -2893,17 +2906,19 @@ async function repLiqMatriz(datos,de,ha,precio,recepciones){
 function _renderLiqMatriz(){
   const s=window._liqState;if(!s)return;
   const tab=document.getElementById('rep-tab-0');if(!tab)return;
-  const {de,ha,precio,fechas,gans,celda,totalFila,totalColL,ganRecDia,ganRecSet,colorMap,recsUnicos,filtroButtons,filtroRec,searchText,pagados,ganNovedades,expandedNov,recogidoPorIdDia,recibidoPorIdDia,rutasCombinadas,uidsCombinados}=s;
-  // Determinar si filtro es ruta combinada
+  const {de,ha,precio,fechas,gans,celda,totalFila,totalColL,ganRecDia,ganRecSet,colorMap,recsUnicos,filtroButtons,filtroRec,searchText,pagados,ganNovedades,expandedNov,recogidoPorIdDia,recibidoPorIdDia,rutasCombinadas,uidsCombinados,ganPrimary}=s;
+  // Determinar si filtro es ruta combinada o sub-filtro (hijo individual de ruta combinada)
   const esFiltroCombi=filtroRec!=='todos'&&rutasCombinadas.some(([cid])=>cid===filtroRec);
+  const esSubFiltro=filtroRec!=='todos'&&uidsCombinados.has(filtroRec);
   const hijosUids=esFiltroCombi?(rutasCombinadas.find(([cid])=>cid===filtroRec)||[])[1]?.combinaUids||[]:[];
   let gansF=gans;
   if(filtroRec!=='todos'){
-    if(esFiltroCombi){
-      // Ruta combinada: ganaderos recogidos por cualquier hijo
-      gansF=gans.filter(([gid])=>ganRecSet[gid]&&hijosUids.some(uid=>ganRecSet[gid].has(uid)));
-    }else{
+    if(esSubFiltro){
+      // Sub-filtro: mostrar ganaderos recogidos por este hijo específico
       gansF=gans.filter(([gid])=>ganRecSet[gid]&&ganRecSet[gid].has(filtroRec));
+    }else{
+      // Filtro normal: solo ganaderos cuyo recogedor principal es este
+      gansF=gans.filter(([gid])=>ganPrimary[gid]===filtroRec);
     }
   }
   if(searchText){gansF=gansF.filter(([gid,gn])=>gn.toLowerCase().includes(searchText.toLowerCase()));}
@@ -2979,9 +2994,22 @@ function _renderLiqMatriz(){
   // Leyenda colores (solo los visibles, no los de ruta combinada hijos)
   const leyenda=filtroButtons.map(fb=>{const c=colorMap[fb.id];return c?`<span style="display:inline-flex;align-items:center;gap:4px;margin-right:10px;font-size:12px;"><span style="width:14px;height:14px;border-radius:4px;background:${c.bg};border:2px solid ${c.border};display:inline-block;"></span>${fb.nombre}</span>`:''}).join('');
   const filtroNombre=filtroRec!=='todos'?(recsUnicos.get(filtroRec)||filtroRec):'';
+  // Sub-botones para ruta combinada
+  let subFiltros='';
+  const activeCombiId=esFiltroCombi?filtroRec:(esSubFiltro?(rutasCombinadas.find(([,u])=>u.combinaUids&&u.combinaUids.includes(filtroRec))||[])[0]:null);
+  if(activeCombiId){
+    const combiEntry=rutasCombinadas.find(([cid])=>cid===activeCombiId);
+    if(combiEntry){
+      const hijos=combiEntry[1].combinaUids||[];
+      subFiltros=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;padding-left:12px;border-left:3px solid #7c3aed;">
+        <button class="btn btn-sm" onclick="window._filtrarLiqRec('${activeCombiId}')" style="border:2px solid #7c3aed;background:${filtroRec===activeCombiId?'#7c3aed':'transparent'};color:${filtroRec===activeCombiId?'white':'#7c3aed'};font-weight:700;">Todos</button>
+        ${hijos.map(uid=>{const nm=recsUnicos.get(uid)||uid;return`<button class="btn btn-sm" onclick="window._filtrarLiqRec('${uid}')" style="border:2px solid #7c3aed;background:${filtroRec===uid?'#7c3aed':'transparent'};color:${filtroRec===uid?'white':'#7c3aed'};font-weight:700;">Solo ${nm}</button>`;}).join('')}
+      </div>`;
+    }
+  }
   const filtros=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
     <button class="btn btn-sm" onclick="window._filtrarLiqRec('todos')" style="border:2px solid var(--verde);background:${filtroRec==='todos'?'var(--verde)':'transparent'};color:${filtroRec==='todos'?'white':'var(--verde)'};font-weight:700;">Todos</button>
-    ${filtroButtons.map(fb=>`<button class="btn btn-sm" onclick="window._filtrarLiqRec('${fb.id}')" style="border:2px solid var(--verde2);background:${filtroRec===fb.id?'var(--verde2)':'transparent'};color:${filtroRec===fb.id?'white':'var(--verde2)'};font-weight:700;">${fb.nombre}</button>`).join('')}
+    ${filtroButtons.map(fb=>{const isActive=filtroRec===fb.id||activeCombiId===fb.id;return`<button class="btn btn-sm" onclick="window._filtrarLiqRec('${fb.id}')" style="border:2px solid var(--verde2);background:${isActive?'var(--verde2)':'transparent'};color:${isActive?'white':'var(--verde2)'};font-weight:700;">${fb.nombre}</button>`;}).join('')}
   </div>`;
   tab.innerHTML=`
     <div class="card" style="background:var(--verde3);border:2px solid var(--verde2);margin-bottom:12px;">
@@ -2990,6 +3018,7 @@ function _renderLiqMatriz(){
       <div style="font-size:14px;color:var(--verde);margin-top:4px;">${fmtL(TL)} litros · ${gansF.length} ganaderos · ${fmtPeso(precio)}/L</div>
     </div>
     ${filtros}
+    ${subFiltros}
     <div style="margin-bottom:8px;">${leyenda}</div>
     <div style="margin-bottom:12px;"><input id="liq-search-input" type="text" placeholder="🔍 Buscar ganadero..." value="${searchText||''}" oninput="window._buscarLiq(this.value)" style="width:100%;padding:10px 14px;border:2px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;"></div>
     <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
@@ -3159,7 +3188,10 @@ async function exportarLiqMatriz(de,ha,precio){
   });
   let gans=Object.entries(ganMap).sort((a,b)=>a[1].localeCompare(b[1]));
   if(filtroRec!=='todos'){
-    if(esFiltroCombi){gans=gans.filter(([gid])=>ganRecIdSet[gid]&&hijosUids.some(uid=>ganRecIdSet[gid].has(uid)));}
+    const esSubFiltro=uidsComb.has(filtroRec);
+    if(esSubFiltro){gans=gans.filter(([gid])=>ganRecIdSet[gid]&&ganRecIdSet[gid].has(filtroRec));}
+    else if(s&&s.ganPrimary){gans=gans.filter(([gid])=>s.ganPrimary[gid]===filtroRec);}
+    else if(esFiltroCombi){gans=gans.filter(([gid])=>ganRecIdSet[gid]&&hijosUids.some(uid=>ganRecIdSet[gid].has(uid)));}
     else{gans=gans.filter(([gid])=>ganRecIdSet[gid]&&ganRecIdSet[gid].has(filtroRec));}
   }
   const celda={};const totalColL={};
