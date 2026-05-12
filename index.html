@@ -2868,7 +2868,7 @@ function repLiqMatriz(datos,de,ha,precio,recepciones){
   });
   const quincenaId=`${de}_${ha}`;
   const reportKey=`liq_${de}_${ha}_${precio}_${diasConDatos}`;
-  window._liqState={datos,de,ha,precio,fechas,gans,ganMap,celda,totalFila,totalColL,ganRecDia,ganRecSet,ganRecPrincipal,colorMap,recsUnicos,recNombresArr,quincenaId,reportKey,diasConDatos,filtroRec:'todos',pagados:{},ganNovedades,expandedNov:{},recogidoPorRecDia,recibidoPorRecDia};
+  window._liqState={datos,de,ha,precio,fechas,gans,ganMap,celda,totalFila,totalColL,ganRecDia,ganRecSet,ganRecPrincipal,colorMap,recsUnicos,recNombresArr,quincenaId,reportKey,diasConDatos,filtroRec:'todos',searchText:'',pagados:{},ganNovedades,expandedNov:{},recogidoPorRecDia,recibidoPorRecDia};
   getDoc(doc(db,'liquidaciones',quincenaId)).then(snap=>{
     if(snap.exists()&&snap.data().pagados)window._liqState.pagados=snap.data().pagados;
     _renderLiqMatriz();
@@ -2878,10 +2878,12 @@ function repLiqMatriz(datos,de,ha,precio,recepciones){
 function _renderLiqMatriz(){
   const s=window._liqState;if(!s)return;
   const tab=document.getElementById('rep-tab-0');if(!tab)return;
-  const {de,ha,precio,fechas,gans,celda,totalFila,totalColL,ganRecDia,ganRecSet,ganRecPrincipal,colorMap,recsUnicos,recNombresArr,filtroRec,pagados,ganNovedades,expandedNov,recogidoPorRecDia,recibidoPorRecDia}=s;
+  const {de,ha,precio,fechas,gans,celda,totalFila,totalColL,ganRecDia,ganRecSet,ganRecPrincipal,colorMap,recsUnicos,recNombresArr,filtroRec,searchText,pagados,ganNovedades,expandedNov,recogidoPorRecDia,recibidoPorRecDia}=s;
   let gansF=gans;
-  // Filtro por recogedor PRINCIPAL (ganadero solo aparece en el filtro del recogedor que más días lo recogió)
-  if(filtroRec!=='todos'){gansF=gans.filter(([gid])=>ganRecPrincipal[gid]===filtroRec);}
+  // Filtro por recogedor (ganadero aparece en cada recogedor que lo recogió al menos una vez)
+  if(filtroRec!=='todos'){gansF=gans.filter(([gid])=>ganRecSet[gid]&&ganRecSet[gid].has(filtroRec));}
+  // Filtro por búsqueda de nombre
+  if(searchText){gansF=gansF.filter(([gid,gn])=>gn.toLowerCase().includes(searchText.toLowerCase()));}
   const TL=gansF.reduce((ss,[gid])=>ss+totalColL[gid],0);
   const TP=TL*precio;
   const thFechas=fechas.map(f=>`<th style="text-align:center;">${fmtFechaCorta(f)}</th>`).join('');
@@ -2936,6 +2938,7 @@ function _renderLiqMatriz(){
     </div>
     ${filtros}
     <div style="margin-bottom:8px;">${leyenda}</div>
+    <div style="margin-bottom:12px;"><input type="text" placeholder="🔍 Buscar ganadero..." value="${searchText||''}" oninput="window._buscarLiq(this.value)" style="width:100%;padding:10px 14px;border:2px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;"></div>
     <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
       <button class="btn btn-verde btn-sm" onclick="exportarLiqMatriz('${de}','${ha}',${precio})">⬇ Exportar Excel</button>
     </div>
@@ -2967,6 +2970,12 @@ window._toggleNovLiq=function(gid){
 window._filtrarLiqRec=function(rec){
   if(!window._liqState)return;
   window._liqState.filtroRec=rec;
+  window._liqState.searchText='';
+  _renderLiqMatriz();
+};
+window._buscarLiq=function(txt){
+  if(!window._liqState)return;
+  window._liqState.searchText=txt;
   _renderLiqMatriz();
 };
 window._togglePagado=async function(gid,nombre){
@@ -3005,7 +3014,7 @@ async function _cargarHistorialReportes(tipo){
     const colName=tipo==='liq'?'reportesLiq':'reportesInter';
     const snap=await getDocs(query(collection(db,colName),orderBy('timestamp','desc')));
     const lista=[];snap.forEach(d=>lista.push({id:d.id,...d.data()}));
-    if(lista.length<=1){cont.innerHTML='';return;}
+    if(lista.length===0){cont.innerHTML='';return;}
     const color=tipo==='liq'?'var(--verde)':'var(--naranja)';
     const emoji=tipo==='liq'?'💰':'🚚';
     cont.innerHTML=`<div class="card" style="margin-top:12px;"><div class="card-titulo">${emoji} Reportes guardados (${lista.length})</div>${lista.map(r=>`<div onclick="window._abrirReporteGuardado('${tipo}','${r.de}','${r.ha}',${r.precio})" style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--gris1);cursor:pointer;"><div><div style="font-weight:700;font-size:13px;color:${color};">${r.de} al ${r.ha} · ${fmtPeso(r.precio)}/L</div><div style="font-size:11px;color:var(--gris2);">${r.diasConDatos} días con datos · ${r.generadoPor} · ${r.fechaGen} ${r.horaGen||''}</div></div><span style="color:${color};font-size:18px;">›</span></div>`).join('')}</div>`;
@@ -3090,7 +3099,7 @@ async function exportarLiqMatriz(de,ha,precio){
     }
   });
   let gans=Object.entries(ganMap).sort((a,b)=>a[1].localeCompare(b[1]));
-  if(filtroRec!=='todos'){gans=gans.filter(([gid])=>_recMasDias(ganRecDiaExp[gid])===filtroRec);}
+  if(filtroRec!=='todos'){gans=gans.filter(([gid])=>ganRec[gid]&&ganRec[gid].has(filtroRec));}
   const celda={};const totalColL={};
   gans.forEach(([gid])=>{celda[gid]={};totalColL[gid]=0;});
   datosRep.forEach(d=>{const gid=d.ganaderoId;const f=d.fecha;const L=parseFloat(d.litros)||0;if(!celda[gid])celda[gid]={};celda[gid][f]=(celda[gid][f]||0)+L;totalColL[gid]=(totalColL[gid]||0)+L;});
@@ -3158,7 +3167,7 @@ function repInter(datos,de,ha,precio){
     totalColL[id]=(totalColL[id]||0)+L;
   });
   const quincenaId=`inter_${de}_${ha}`;
-  window._interState={datos,de,ha,precio,fechas,inters,intMap,celda,totalFila,totalColL,intRecDia,intRecSet,colorMap,recsUnicos,recNombresArr,quincenaId,diasConDatos,filtroRec:'todos',pagados:{},intNovedades,expandedNov:{}};
+  window._interState={datos,de,ha,precio,fechas,inters,intMap,celda,totalFila,totalColL,intRecDia,intRecSet,colorMap,recsUnicos,recNombresArr,quincenaId,diasConDatos,filtroRec:'todos',searchText:'',pagados:{},intNovedades,expandedNov:{}};
   getDoc(doc(db,'liquidacionesInter',quincenaId)).then(snap=>{
     if(snap.exists()&&snap.data().pagados)window._interState.pagados=snap.data().pagados;
     _renderInterMatriz();
@@ -3168,14 +3177,15 @@ function repInter(datos,de,ha,precio){
 function _renderInterMatriz(){
   const s=window._interState;if(!s)return;
   const tab=document.getElementById('rep-tab-1');if(!tab)return;
-  const {de,ha,precio,fechas,inters,celda,totalFila,totalColL,intRecDia,intRecSet,colorMap,recsUnicos,recNombresArr,filtroRec,pagados,intNovedades,expandedNov}=s;
+  const {de,ha,precio,fechas,inters,celda,totalFila,totalColL,intRecDia,intRecSet,colorMap,recsUnicos,recNombresArr,filtroRec,searchText,pagados,intNovedades,expandedNov}=s;
   let intersF=inters;
   if(filtroRec!=='todos'){intersF=inters.filter(([id])=>intRecSet[id]&&intRecSet[id].has(filtroRec));}
+  if(searchText){intersF=intersF.filter(([id,nombre])=>nombre.toLowerCase().includes(searchText.toLowerCase()));}
   const TL=intersF.reduce((ss,[id])=>ss+totalColL[id],0);
   const TP=TL*precio;
   const thFechas=fechas.map(f=>`<th style="text-align:center;">${fmtFechaCorta(f)}</th>`).join('');
   const filas=intersF.map(([id,nombre])=>{
-    const recLabel=_recMasDias(intRecDia[id]);
+    const recs=intRecSet[id]?[...intRecSet[id]]:[];const recLabel=recs.join(' / ');
     const celdas=fechas.map(f=>{
       const L=celda[id]?celda[id][f]:null;
       if(!L)return'<td class="vacio" style="text-align:center;">—</td>';
@@ -3208,6 +3218,7 @@ function _renderInterMatriz(){
     </div>
     ${filtros}
     ${leyenda?'<div style="margin-bottom:8px;">'+leyenda+'</div>':''}
+    <div style="margin-bottom:12px;"><input type="text" placeholder="🔍 Buscar intermediario..." value="${searchText||''}" oninput="window._buscarInter(this.value)" style="width:100%;padding:10px 14px;border:2px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;"></div>
     <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
       <button class="btn btn-naranja btn-sm" onclick="exportarInterMatriz('${de}','${ha}',${precio})">⬇ Exportar Excel</button>
     </div>
@@ -3234,6 +3245,12 @@ window._toggleNovInter=function(id){
 window._filtrarInterRec=function(rec){
   if(!window._interState)return;
   window._interState.filtroRec=rec;
+  window._interState.searchText='';
+  _renderInterMatriz();
+};
+window._buscarInter=function(txt){
+  if(!window._interState)return;
+  window._interState.searchText=txt;
   _renderInterMatriz();
 };
 window._togglePagadoInter=async function(id,nombre){
@@ -3282,7 +3299,7 @@ function exportarInterMatriz(de,ha,precio){
   const TL=inters.reduce((ss,[id])=>ss+totalColL[id],0);
   const filtroLabel=filtroRec!=='todos'?` (Recibidor: ${filtroRec})`:'';
   const headers=`Intermediario,Recibidor,${fechas.join(',')},Total L,A Pagar,Novedades\n`;
-  const rows=inters.map(([id,nombre])=>{const dias=fechas.map(f=>celda[id]&&celda[id][f]?(celda[id][f]):'0').join(',');const rec=_recMasDias(intRecDiaExp[id]);const novs=(intNovsExp[id]||[]).join(' | ');return`"${nombre}","${rec}",${dias},${fmtL(totalColL[id])},${(totalColL[id]*precio).toFixed(0)},"${novs}"`;}).join('\n');
+  const rows=inters.map(([id,nombre])=>{const dias=fechas.map(f=>celda[id]&&celda[id][f]?(celda[id][f]):'0').join(',');const recs=[...(intRec[id]||[])].join(' / ');const novs=(intNovsExp[id]||[]).join(' | ');return`"${nombre}","${recs}",${dias},${fmtL(totalColL[id])},${(totalColL[id]*precio).toFixed(0)},"${novs}"`;}).join('\n');
   const totRow=`TOTAL DIA,,${fechas.map(f=>{let ss=0;inters.forEach(([id])=>ss+=((celda[id]&&celda[id][f])||0));return fmtL(ss);}).join(',')},${fmtL(TL)},${(TL*precio).toFixed(0)},`;
   descargar(`INTERMEDIARIOS${filtroLabel} - ${de} al ${ha} - $${precio}/L\n${headers}${rows}\n${totRow}`,`intermediarios-${de}-${ha}${filtroRec!=='todos'?'-'+filtroRec:''}.csv`);
 }window.exportarInterMatriz=exportarInterMatriz;
