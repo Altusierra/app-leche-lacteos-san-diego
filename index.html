@@ -2723,10 +2723,11 @@ async function generarReporte(){
     datosRep.sort((a,b)=>a.fecha.localeCompare(b.fecha)||(a.hora||'').localeCompare(b.hora||''));
     const sRec=await getDocs(query(collection(db,'recepciones'),where('fecha','>=',de),where('fecha','<=',ha)));
     datosRecepciones=[];sRec.forEach(d=>datosRecepciones.push({id:d.id,...d.data()}));
-    repGan(datosRep,de,ha,datosRecepciones);repDia(datosRep);repDetalle(datosRep,de,ha);
-    if(tabRep===0){const precio=parseFloat(document.getElementById('rep-precio-liq').value);repLiqMatriz(datosRep,de,ha,precio);}
+    repGan(datosRep,de,ha,datosRecepciones);repDia(datosRep);
     const sInter=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','>=',de),where('fecha','<=',ha),orderBy('fecha')));
     datosInter=[];sInter.forEach(d=>datosInter.push({id:d.id,...d.data()}));
+    repDetalle(datosRep,de,ha,datosInter);
+    if(tabRep===0){const precio=parseFloat(document.getElementById('rep-precio-liq').value);repLiqMatriz(datosRep,de,ha,precio,datosRecepciones);}
     if(tabRep===1){
       const piv=parseFloat(document.getElementById('rep-precio-inter').value);
       const pie=document.getElementById('rep-precio-inter-error');
@@ -2815,7 +2816,7 @@ function _recMasDias(recDiaMap){
   let max=0,best='';Object.entries(count).forEach(([n,c])=>{if(c>max){max=c;best=n;}});
   return best;
 }
-function repLiqMatriz(datos,de,ha,precio){
+function repLiqMatriz(datos,de,ha,precio,recepciones){
   const tab=document.getElementById('rep-tab-0');
   if(datos.length===0){tab.innerHTML='<div class="vacio"><div class="ico">💰</div><p>Sin datos en este período</p></div>';return;}
   const fechas=[...new Set(datos.map(d=>d.fecha))].sort();
@@ -2825,6 +2826,8 @@ function repLiqMatriz(datos,de,ha,precio){
   const ganRecDia={};const ganRecSet={};const recsUnicos=new Map();
   // Novedades por ganadero
   const ganNovedades={};
+  // Litros recogidos por recogedor por día
+  const recogidoPorRecDia={};
   datos.forEach(d=>{
     const gid=d.ganaderoId;const f=d.fecha;
     if(!ganRecDia[gid])ganRecDia[gid]={};
@@ -2832,11 +2835,23 @@ function repLiqMatriz(datos,de,ha,precio){
     if(!ganRecSet[gid])ganRecSet[gid]=new Set();
     ganRecSet[gid].add(d.recogedorNombre);
     recsUnicos.set(d.recogedorId,d.recogedorNombre);
+    if(!recogidoPorRecDia[d.recogedorNombre])recogidoPorRecDia[d.recogedorNombre]={};
+    recogidoPorRecDia[d.recogedorNombre][f]=(recogidoPorRecDia[d.recogedorNombre][f]||0)+(parseFloat(d.litros)||0);
     if(d.novedad&&d.novedad.trim()){
       if(!ganNovedades[gid])ganNovedades[gid]=[];
       ganNovedades[gid].push({fecha:d.fecha,hora:d.hora||'',recogedor:d.recogedorNombre,litros:parseFloat(d.litros)||0,novedad:d.novedad.trim()});
     }
   });
+  // Litros recibidos en planta por recogedor por día
+  const recibidoPorRecDia={};
+  (recepciones||[]).forEach(d=>{
+    const n=d.recogedorNombre;const f=d.fecha;
+    if(!recibidoPorRecDia[n])recibidoPorRecDia[n]={};
+    recibidoPorRecDia[n][f]=(recibidoPorRecDia[n][f]||0)+(parseFloat(d.litros)||0);
+  });
+  // Recogedor principal por ganadero
+  const ganRecPrincipal={};
+  gans.forEach(([gid])=>{ganRecPrincipal[gid]=_recMasDias(ganRecDia[gid]);});
   const _recColores=['#DBEAFE','#FCE7F3','#D1FAE5','#FEF3C7','#EDE9FE','#FFEDD5','#F1F5F9','#FECDD3','#CCFBF1','#FEE2E2','#E0E7FF','#D9F99D'];
   const _recBorde=['#1D4ED8','#DB2777','#059669','#D97706','#7C3AED','#EA580C','#475569','#E11D48','#0D9488','#DC2626','#4338CA','#65A30D'];
   const recNombresArr=[...new Set(datos.map(d=>d.recogedorNombre))].sort();
@@ -2853,7 +2868,7 @@ function repLiqMatriz(datos,de,ha,precio){
   });
   const quincenaId=`${de}_${ha}`;
   const reportKey=`liq_${de}_${ha}_${precio}_${diasConDatos}`;
-  window._liqState={datos,de,ha,precio,fechas,gans,ganMap,celda,totalFila,totalColL,ganRecDia,ganRecSet,colorMap,recsUnicos,recNombresArr,quincenaId,reportKey,diasConDatos,filtroRec:'todos',pagados:{},ganNovedades,expandedNov:{}};
+  window._liqState={datos,de,ha,precio,fechas,gans,ganMap,celda,totalFila,totalColL,ganRecDia,ganRecSet,ganRecPrincipal,colorMap,recsUnicos,recNombresArr,quincenaId,reportKey,diasConDatos,filtroRec:'todos',pagados:{},ganNovedades,expandedNov:{},recogidoPorRecDia,recibidoPorRecDia};
   getDoc(doc(db,'liquidaciones',quincenaId)).then(snap=>{
     if(snap.exists()&&snap.data().pagados)window._liqState.pagados=snap.data().pagados;
     _renderLiqMatriz();
@@ -2863,14 +2878,15 @@ function repLiqMatriz(datos,de,ha,precio){
 function _renderLiqMatriz(){
   const s=window._liqState;if(!s)return;
   const tab=document.getElementById('rep-tab-0');if(!tab)return;
-  const {de,ha,precio,fechas,gans,celda,totalFila,totalColL,ganRecDia,ganRecSet,colorMap,recsUnicos,recNombresArr,filtroRec,pagados,ganNovedades,expandedNov}=s;
+  const {de,ha,precio,fechas,gans,celda,totalFila,totalColL,ganRecDia,ganRecSet,ganRecPrincipal,colorMap,recsUnicos,recNombresArr,filtroRec,pagados,ganNovedades,expandedNov,recogidoPorRecDia,recibidoPorRecDia}=s;
   let gansF=gans;
-  if(filtroRec!=='todos'){gansF=gans.filter(([gid])=>ganRecSet[gid]&&ganRecSet[gid].has(filtroRec));}
+  // Filtro por recogedor PRINCIPAL (ganadero solo aparece en el filtro del recogedor que más días lo recogió)
+  if(filtroRec!=='todos'){gansF=gans.filter(([gid])=>ganRecPrincipal[gid]===filtroRec);}
   const TL=gansF.reduce((ss,[gid])=>ss+totalColL[gid],0);
   const TP=TL*precio;
   const thFechas=fechas.map(f=>`<th style="text-align:center;">${fmtFechaCorta(f)}</th>`).join('');
   const filas=gansF.map(([gid,gn])=>{
-    const recLabel=_recMasDias(ganRecDia[gid]);
+    const recs=[...ganRecSet[gid]];const recLabel=recs.join(' / ');
     const celdas=fechas.map(f=>{
       const L=celda[gid]?celda[gid][f]:null;
       if(!L)return'<td class="vacio" style="text-align:center;">—</td>';
@@ -2890,6 +2906,23 @@ function _renderLiqMatriz(){
     return row;
   }).join('');
   const totDias=fechas.map(f=>`<td class="total-col" style="text-align:center;">${fmtL(totalFila[f])}</td>`).join('');
+  // ⚖️ DIFF row: recogido - recibido por día
+  const diffDias=fechas.map(f=>{
+    let recogido=0,recibido=0;
+    if(filtroRec!=='todos'){
+      recogido=(recogidoPorRecDia[filtroRec]&&recogidoPorRecDia[filtroRec][f])||0;
+      recibido=(recibidoPorRecDia[filtroRec]&&recibidoPorRecDia[filtroRec][f])||0;
+    }else{
+      recNombresArr.forEach(n=>{recogido+=((recogidoPorRecDia[n]&&recogidoPorRecDia[n][f])||0);recibido+=((recibidoPorRecDia[n]&&recibidoPorRecDia[n][f])||0);});
+    }
+    const diff=recibido-recogido;
+    const color=diff>0?'#DC2626':diff<0?'#D97706':'#15803d';
+    return`<td style="text-align:center;font-weight:700;font-size:12px;color:${color};background:#FEF9C3;">${diff>=0?'+':''}${fmtL(diff)}</td>`;
+  }).join('');
+  const totalRecogido=fechas.reduce((ss,f)=>{if(filtroRec!=='todos')return ss+((recogidoPorRecDia[filtroRec]&&recogidoPorRecDia[filtroRec][f])||0);let t=0;recNombresArr.forEach(n=>{t+=((recogidoPorRecDia[n]&&recogidoPorRecDia[n][f])||0);});return ss+t;},0);
+  const totalRecibido=fechas.reduce((ss,f)=>{if(filtroRec!=='todos')return ss+((recibidoPorRecDia[filtroRec]&&recibidoPorRecDia[filtroRec][f])||0);let t=0;recNombresArr.forEach(n=>{t+=((recibidoPorRecDia[n]&&recibidoPorRecDia[n][f])||0);});return ss+t;},0);
+  const totalDiff=totalRecibido-totalRecogido;
+  const totalDiffColor=totalDiff>0?'#DC2626':totalDiff<0?'#D97706':'#15803d';
   const leyenda=recNombresArr.map(n=>`<span style="display:inline-flex;align-items:center;gap:4px;margin-right:10px;font-size:12px;"><span style="width:14px;height:14px;border-radius:4px;background:${colorMap[n].bg};border:2px solid ${colorMap[n].border};display:inline-block;"></span>${n}</span>`).join('');
   const filtros=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
     <button class="btn btn-sm" onclick="window._filtrarLiqRec('todos')" style="border:2px solid var(--verde);background:${filtroRec==='todos'?'var(--verde)':'transparent'};color:${filtroRec==='todos'?'white':'var(--verde)'};font-weight:700;">Todos</button>
@@ -2916,6 +2949,11 @@ function _renderLiqMatriz(){
             <td class="col-gan">TOTAL DÍA</td><td></td>${totDias}
             <td class="total-col" style="text-align:center;">${fmtL(TL)}</td>
             <td class="total-col" style="text-align:right;padding-right:10px;">${fmtPeso(TP)}</td><td></td><td></td>
+          </tr>
+          <tr style="background:#FEF9C3;">
+            <td class="col-gan" style="background:#EAB308;color:white;font-weight:700;">⚖️ DIFF</td><td></td>${diffDias}
+            <td style="text-align:center;font-weight:700;font-size:12px;color:${totalDiffColor};">${totalDiff>=0?'+':''}${fmtL(totalDiff)}</td>
+            <td></td><td></td><td></td>
           </tr>
         </tbody>
       </table>
@@ -2985,8 +3023,11 @@ window._abrirReporteGuardado=async function(tipo,de,ha,precio){
   }
   await generarReporte();
 };
-function repDetalle(datos,de,ha){
-  const lista=soloNovGlobal?datos.filter(d=>d.novedad&&d.novedad.trim()!==''):datos;
+function repDetalle(datos,de,ha,interDatos){
+  // Combinar ganaderos + intermediarios en una sola lista
+  const combinados=[...datos.map(d=>({fecha:d.fecha,nombre:d.ganaderoNombre,litros:parseFloat(d.litros)||0,hora:d.hora||'',responsable:d.recogedorNombre,novedad:d.novedad||'',tipo:'🚛'})),...(interDatos||[]).map(d=>({fecha:d.fecha,nombre:d.intermediarioNombre,litros:parseFloat(d.litros)||0,hora:d.hora||'',responsable:d.recibidorNombre||'',novedad:d.novedad||'',tipo:'🚚'}))];
+  combinados.sort((a,b)=>a.fecha.localeCompare(b.fecha)||(a.hora||'').localeCompare(b.hora||''));
+  const lista=soloNovGlobal?combinados.filter(d=>d.novedad&&d.novedad.trim()!==''):combinados;
   const cont=document.getElementById('rep-tab-2-content');if(!cont)return;
   actualizarBtnNov();
   cont.innerHTML=lista.length===0?`<div class="vacio"><div class="ico">${soloNovGlobal?'✅':'📄'}</div><p>${soloNovGlobal?'Sin novedades en este período':'Sin datos'}</p></div>`:`
@@ -2995,9 +3036,9 @@ function repDetalle(datos,de,ha){
       <button class="btn btn-verde btn-sm" onclick="exportarCSV('detalle')">⬇ Exportar</button>
     </div>
     <div class="card" style="padding:0;overflow:hidden;overflow-x:auto;">
-      <table class="tabla" style="min-width:600px;">
-        <thead><tr><th>Fecha</th><th>Ganadero</th><th>Litros</th><th>Hora</th><th>Recogedor</th><th>Novedad</th></tr></thead>
-        <tbody>${lista.map(d=>`<tr ${d.novedad&&d.novedad.trim()?'style="background:#fffbeb;"':''}><td>${d.fecha}</td><td><strong>${d.ganaderoNombre}</strong></td><td>${fmtL(parseFloat(d.litros)||0)}</td><td>${d.hora||'-'}</td><td>${d.recogedorNombre}</td><td style="font-size:12px;color:${d.novedad&&d.novedad.trim()?'var(--amarillo)':'var(--gris2)'};">${d.novedad||'-'}</td></tr>`).join('')}</tbody>
+      <table class="tabla" style="min-width:650px;">
+        <thead><tr><th></th><th>Fecha</th><th>Nombre</th><th>Litros</th><th>Hora</th><th>Recogedor/Recibidor</th><th>Novedad</th></tr></thead>
+        <tbody>${lista.map(d=>`<tr ${d.novedad&&d.novedad.trim()?'style="background:#fffbeb;"':''}><td>${d.tipo}</td><td>${d.fecha}</td><td><strong>${d.nombre}</strong></td><td>${fmtL(d.litros)}</td><td>${d.hora||'-'}</td><td>${d.responsable}</td><td style="font-size:12px;color:${d.novedad&&d.novedad.trim()?'var(--amarillo)':'var(--gris2)'};">${d.novedad||'-'}</td></tr>`).join('')}</tbody>
       </table>
     </div>`;
 }
@@ -3005,8 +3046,8 @@ function actualizarBtnNov(){
   const b=document.getElementById('btn-filtro-nov-global');if(b){b.style.background=soloNovGlobal?'var(--amarillo)':'transparent';b.style.color=soloNovGlobal?'white':'var(--amarillo)';b.textContent=soloNovGlobal?'⚠️ Ver todo':'⚠️ Solo novedades';}
   const e=document.getElementById('btn-filtro-elim-global');if(e){e.style.background=modoElim?'var(--rojo)':'transparent';e.style.color=modoElim?'white':'var(--rojo)';}
 }
-function toggleSoloNov(){soloNovGlobal=!soloNovGlobal;if(soloNovGlobal)modoElim=false;actualizarBtnNov();if(datosRep.length>0){const de=document.getElementById('rep-desde').value;const ha=document.getElementById('rep-hasta').value;repDetalle(datosRep,de,ha);}else{generarReporte();}}window.toggleSoloNov=toggleSoloNov;
-async function toggleElim(){modoElim=!modoElim;if(modoElim)soloNovGlobal=false;actualizarBtnNov();if(modoElim){await cargarEliminaciones();}else{const de=document.getElementById('rep-desde').value;const ha=document.getElementById('rep-hasta').value;if(datosRep.length>0)repDetalle(datosRep,de,ha);else{const cont=document.getElementById('rep-tab-2-content');if(cont)cont.innerHTML='<div class="vacio"><div class="ico">📄</div><p>Selecciona un período y genera el reporte</p></div>';}}}window.toggleElim=toggleElim;
+function toggleSoloNov(){soloNovGlobal=!soloNovGlobal;if(soloNovGlobal)modoElim=false;actualizarBtnNov();if(datosRep.length>0){const de=document.getElementById('rep-desde').value;const ha=document.getElementById('rep-hasta').value;repDetalle(datosRep,de,ha,datosInter);}else{generarReporte();}}window.toggleSoloNov=toggleSoloNov;
+async function toggleElim(){modoElim=!modoElim;if(modoElim)soloNovGlobal=false;actualizarBtnNov();if(modoElim){await cargarEliminaciones();}else{const de=document.getElementById('rep-desde').value;const ha=document.getElementById('rep-hasta').value;if(datosRep.length>0)repDetalle(datosRep,de,ha,datosInter);else{const cont=document.getElementById('rep-tab-2-content');if(cont)cont.innerHTML='<div class="vacio"><div class="ico">📄</div><p>Selecciona un período y genera el reporte</p></div>';}}}window.toggleElim=toggleElim;
 async function cargarEliminaciones(){
   const cont=document.getElementById('rep-tab-2-content');if(!cont)return;
   cont.innerHTML='<div class="loading">Cargando...</div>';
@@ -3049,14 +3090,14 @@ async function exportarLiqMatriz(de,ha,precio){
     }
   });
   let gans=Object.entries(ganMap).sort((a,b)=>a[1].localeCompare(b[1]));
-  if(filtroRec!=='todos'){gans=gans.filter(([gid])=>ganRec[gid]&&ganRec[gid].has(filtroRec));}
+  if(filtroRec!=='todos'){gans=gans.filter(([gid])=>_recMasDias(ganRecDiaExp[gid])===filtroRec);}
   const celda={};const totalColL={};
   gans.forEach(([gid])=>{celda[gid]={};totalColL[gid]=0;});
   datosRep.forEach(d=>{const gid=d.ganaderoId;const f=d.fecha;const L=parseFloat(d.litros)||0;if(!celda[gid])celda[gid]={};celda[gid][f]=(celda[gid][f]||0)+L;totalColL[gid]=(totalColL[gid]||0)+L;});
   const TL=gans.reduce((ss,[gid])=>ss+totalColL[gid],0);
   const filtroLabel=filtroRec!=='todos'?` (Recogedor: ${filtroRec})`:'';
   const headers=`Ganadero,Recogedor,${fechas.join(',')},Total L,A Pagar,Novedades\n`;
-  const rows=gans.map(([gid,gn])=>{const dias=fechas.map(f=>celda[gid]&&celda[gid][f]?(celda[gid][f]):'0').join(',');const rec=_recMasDias(ganRecDiaExp[gid]);const novs=(ganNovsExp[gid]||[]).join(' | ');return`"${gn}","${rec}",${dias},${fmtL(totalColL[gid])},${(totalColL[gid]*precio).toFixed(0)},"${novs}"`;}).join('\n');
+  const rows=gans.map(([gid,gn])=>{const dias=fechas.map(f=>celda[gid]&&celda[gid][f]?(celda[gid][f]):'0').join(',');const recs=[...(ganRec[gid]||[])].join(' / ');const novs=(ganNovsExp[gid]||[]).join(' | ');return`"${gn}","${recs}",${dias},${fmtL(totalColL[gid])},${(totalColL[gid]*precio).toFixed(0)},"${novs}"`;}).join('\n');
   const totRow=`TOTAL DIA,,${fechas.map(f=>{let ss=0;gans.forEach(([gid])=>ss+=((celda[gid]&&celda[gid][f])||0));return fmtL(ss);}).join(',')},${fmtL(TL)},${(TL*precio).toFixed(0)},`;
   descargar(`LIQUIDACION QUINCENAL${filtroLabel} - ${de} al ${ha} - $${precio}/L\n${headers}${rows}\n${totRow}`,`liquidacion-${de}-${ha}${filtroRec!=='todos'?'-'+filtroRec:''}.csv`);
   try{
@@ -3662,7 +3703,7 @@ function volverAAdmin(){
   initAdmin();
 }window.volverAAdmin=volverAAdmin;
 
-function navAdmin(p,b){ir(p);document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('activo'));b.classList.add('activo');if(p==='screen-admin-dashboard')dashAdmin();if(p==='screen-admin-ganaderos')ganAdmin();if(p==='screen-admin-costos')initCostos();if(p==='screen-admin-usuarios'){usuAdmin();interAdmin2();actualizarUIHistorico();cargarHorario();}}window.navAdmin=navAdmin;
+function navAdmin(p,b){ir(p);document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('activo'));b.classList.add('activo');if(p==='screen-admin-dashboard')dashAdmin();if(p==='screen-admin-ganaderos')ganAdmin();if(p==='screen-admin-costos')initCostos();if(p==='screen-admin-reportes'){_cargarHistorialReportes('liq');_cargarHistorialReportes('inter');}if(p==='screen-admin-usuarios'){usuAdmin();interAdmin2();actualizarUIHistorico();cargarHorario();}}window.navAdmin=navAdmin;
 document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')hacerLogin();});
 // iOS fix: usar tanto click como touchend
 const btnEntrar=document.getElementById('btn-entrar');
