@@ -2727,7 +2727,7 @@ async function generarReporte(){
     const sInter=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','>=',de),where('fecha','<=',ha),orderBy('fecha')));
     datosInter=[];sInter.forEach(d=>datosInter.push({id:d.id,...d.data()}));
     repDetalle(datosRep,de,ha,datosInter);
-    if(tabRep===0){const precio=parseFloat(document.getElementById('rep-precio-liq').value);repLiqMatriz(datosRep,de,ha,precio,datosRecepciones);}
+    if(tabRep===0){const precio=parseFloat(document.getElementById('rep-precio-liq').value);await repLiqMatriz(datosRep,de,ha,precio,datosRecepciones);}
     if(tabRep===1){
       const piv=parseFloat(document.getElementById('rep-precio-inter').value);
       const pie=document.getElementById('rep-precio-inter-error');
@@ -2816,46 +2816,61 @@ function _recMasDias(recDiaMap){
   let max=0,best='';Object.entries(count).forEach(([n,c])=>{if(c>max){max=c;best=n;}});
   return best;
 }
-function repLiqMatriz(datos,de,ha,precio,recepciones){
+async function repLiqMatriz(datos,de,ha,precio,recepciones){
   const tab=document.getElementById('rep-tab-0');
   if(datos.length===0){tab.innerHTML='<div class="vacio"><div class="ico">💰</div><p>Sin datos en este período</p></div>';return;}
   const fechas=[...new Set(datos.map(d=>d.fecha))].sort();
   const diasConDatos=fechas.length;
   const ganMap={};datos.forEach(d=>{if(!ganMap[d.ganaderoId])ganMap[d.ganaderoId]=d.ganaderoNombre;});
   const gans=Object.entries(ganMap).sort((a,b)=>a[1].localeCompare(b[1]));
-  const ganRecDia={};const ganRecSet={};const recsUnicos=new Map();
-  // Novedades por ganadero
+  // Todo por recogedorId
+  const ganRecDia={};// {ganaderoId: {fecha: recogedorId}}
+  const ganRecSet={};// {ganaderoId: Set(recogedorId)}
+  const recsUnicos=new Map();// recogedorId -> último nombre
   const ganNovedades={};
-  // Litros recogidos por recogedor por día
-  const recogidoPorRecDia={};
+  const recogidoPorIdDia={};// {recogedorId: {fecha: litros}}
   datos.forEach(d=>{
     const gid=d.ganaderoId;const f=d.fecha;
     if(!ganRecDia[gid])ganRecDia[gid]={};
-    ganRecDia[gid][f]=d.recogedorNombre;
+    ganRecDia[gid][f]=d.recogedorId;
     if(!ganRecSet[gid])ganRecSet[gid]=new Set();
-    ganRecSet[gid].add(d.recogedorNombre);
+    ganRecSet[gid].add(d.recogedorId);
     recsUnicos.set(d.recogedorId,d.recogedorNombre);
-    if(!recogidoPorRecDia[d.recogedorNombre])recogidoPorRecDia[d.recogedorNombre]={};
-    recogidoPorRecDia[d.recogedorNombre][f]=(recogidoPorRecDia[d.recogedorNombre][f]||0)+(parseFloat(d.litros)||0);
+    if(!recogidoPorIdDia[d.recogedorId])recogidoPorIdDia[d.recogedorId]={};
+    recogidoPorIdDia[d.recogedorId][f]=(recogidoPorIdDia[d.recogedorId][f]||0)+(parseFloat(d.litros)||0);
     if(d.novedad&&d.novedad.trim()){
       if(!ganNovedades[gid])ganNovedades[gid]=[];
       ganNovedades[gid].push({fecha:d.fecha,hora:d.hora||'',recogedor:d.recogedorNombre,litros:parseFloat(d.litros)||0,novedad:d.novedad.trim()});
     }
   });
-  // Litros recibidos en planta por recogedor por día
-  const recibidoPorRecDia={};
+  // Recepciones por recogedorId por día
+  const recibidoPorIdDia={};
   (recepciones||[]).forEach(d=>{
-    const n=d.recogedorNombre;const f=d.fecha;
-    if(!recibidoPorRecDia[n])recibidoPorRecDia[n]={};
-    recibidoPorRecDia[n][f]=(recibidoPorRecDia[n][f]||0)+(parseFloat(d.litros)||0);
+    if(!recibidoPorIdDia[d.recogedorId])recibidoPorIdDia[d.recogedorId]={};
+    recibidoPorIdDia[d.recogedorId][d.fecha]=(recibidoPorIdDia[d.recogedorId][d.fecha]||0)+(parseFloat(d.litros)||0);
   });
-  // Recogedor principal por ganadero
-  const ganRecPrincipal={};
-  gans.forEach(([gid])=>{ganRecPrincipal[gid]=_recMasDias(ganRecDia[gid]);});
+  // Cargar usuarios para rutas combinadas
+  let rutasCombinadas=[];let uidsCombinados=new Set();
+  try{
+    const sUsu=await getDocs(query(collection(db,'usuarios'),where('rol','==','recogedor')));
+    const usuMap={};sUsu.forEach(d=>usuMap[d.id]=d.data());
+    rutasCombinadas=Object.entries(usuMap).filter(([id,u])=>u.esRutaCombinada&&u.combinaUids?.length);
+    uidsCombinados=new Set(rutasCombinadas.flatMap(([,u])=>u.combinaUids||[]));
+    // Agregar rutas combinadas a recsUnicos
+    rutasCombinadas.forEach(([id,u])=>{recsUnicos.set(id,u.nombre||u.email||'Ruta combinada');});
+  }catch(e){console.error('Error cargando usuarios:',e);}
+  // Colores por ID
   const _recColores=['#DBEAFE','#FCE7F3','#D1FAE5','#FEF3C7','#EDE9FE','#FFEDD5','#F1F5F9','#FECDD3','#CCFBF1','#FEE2E2','#E0E7FF','#D9F99D'];
   const _recBorde=['#1D4ED8','#DB2777','#059669','#D97706','#7C3AED','#EA580C','#475569','#E11D48','#0D9488','#DC2626','#4338CA','#65A30D'];
-  const recNombresArr=[...new Set(datos.map(d=>d.recogedorNombre))].sort();
-  const colorMap={};recNombresArr.forEach((n,i)=>{colorMap[n]={bg:_recColores[i%_recColores.length],border:_recBorde[i%_recBorde.length]};});
+  const recIdsArr=[...recsUnicos.keys()].filter(id=>!uidsCombinados.has(id));
+  const colorMap={};[...recsUnicos.keys()].forEach((id,i)=>{colorMap[id]={bg:_recColores[i%_recColores.length],border:_recBorde[i%_recBorde.length]};});
+  // Filtro botones: recogedores individuales (no en ruta combinada) + rutas combinadas
+  const filtroButtons=[];
+  [...recsUnicos.entries()].forEach(([id,nombre])=>{
+    if(uidsCombinados.has(id))return;// skip individuales que son parte de ruta combinada
+    const esComb=rutasCombinadas.some(([cid])=>cid===id);
+    filtroButtons.push({id,nombre,esComb});
+  });
   const celda={};const totalFila={};const totalColL={};
   gans.forEach(([gid])=>{celda[gid]={};totalColL[gid]=0;});
   fechas.forEach(f=>{totalFila[f]=0;});
@@ -2868,7 +2883,7 @@ function repLiqMatriz(datos,de,ha,precio,recepciones){
   });
   const quincenaId=`${de}_${ha}`;
   const reportKey=`liq_${de}_${ha}_${precio}_${diasConDatos}`;
-  window._liqState={datos,de,ha,precio,fechas,gans,ganMap,celda,totalFila,totalColL,ganRecDia,ganRecSet,ganRecPrincipal,colorMap,recsUnicos,recNombresArr,quincenaId,reportKey,diasConDatos,filtroRec:'todos',searchText:'',pagados:{},ganNovedades,expandedNov:{},recogidoPorRecDia,recibidoPorRecDia};
+  window._liqState={datos,de,ha,precio,fechas,gans,ganMap,celda,totalFila,totalColL,ganRecDia,ganRecSet,colorMap,recsUnicos,filtroButtons,quincenaId,reportKey,diasConDatos,filtroRec:'todos',searchText:'',pagados:{},ganNovedades,expandedNov:{},recogidoPorIdDia,recibidoPorIdDia,rutasCombinadas,uidsCombinados};
   getDoc(doc(db,'liquidaciones',quincenaId)).then(snap=>{
     if(snap.exists()&&snap.data().pagados)window._liqState.pagados=snap.data().pagados;
     _renderLiqMatriz();
@@ -2878,22 +2893,33 @@ function repLiqMatriz(datos,de,ha,precio,recepciones){
 function _renderLiqMatriz(){
   const s=window._liqState;if(!s)return;
   const tab=document.getElementById('rep-tab-0');if(!tab)return;
-  const {de,ha,precio,fechas,gans,celda,totalFila,totalColL,ganRecDia,ganRecSet,ganRecPrincipal,colorMap,recsUnicos,recNombresArr,filtroRec,searchText,pagados,ganNovedades,expandedNov,recogidoPorRecDia,recibidoPorRecDia}=s;
+  const {de,ha,precio,fechas,gans,celda,totalFila,totalColL,ganRecDia,ganRecSet,colorMap,recsUnicos,filtroButtons,filtroRec,searchText,pagados,ganNovedades,expandedNov,recogidoPorIdDia,recibidoPorIdDia,rutasCombinadas,uidsCombinados}=s;
+  // Determinar si filtro es ruta combinada
+  const esFiltroCombi=filtroRec!=='todos'&&rutasCombinadas.some(([cid])=>cid===filtroRec);
+  const hijosUids=esFiltroCombi?(rutasCombinadas.find(([cid])=>cid===filtroRec)||[])[1]?.combinaUids||[]:[];
   let gansF=gans;
-  // Filtro por recogedor (ganadero aparece en cada recogedor que lo recogió al menos una vez)
-  if(filtroRec!=='todos'){gansF=gans.filter(([gid])=>ganRecSet[gid]&&ganRecSet[gid].has(filtroRec));}
-  // Filtro por búsqueda de nombre
+  if(filtroRec!=='todos'){
+    if(esFiltroCombi){
+      // Ruta combinada: ganaderos recogidos por cualquier hijo
+      gansF=gans.filter(([gid])=>ganRecSet[gid]&&hijosUids.some(uid=>ganRecSet[gid].has(uid)));
+    }else{
+      gansF=gans.filter(([gid])=>ganRecSet[gid]&&ganRecSet[gid].has(filtroRec));
+    }
+  }
   if(searchText){gansF=gansF.filter(([gid,gn])=>gn.toLowerCase().includes(searchText.toLowerCase()));}
   const TL=gansF.reduce((ss,[gid])=>ss+totalColL[gid],0);
   const TP=TL*precio;
   const thFechas=fechas.map(f=>`<th style="text-align:center;">${fmtFechaCorta(f)}</th>`).join('');
   const filas=gansF.map(([gid,gn])=>{
-    const recs=[...ganRecSet[gid]];const recLabel=recs.join(' / ');
+    // Columna Recogedor: mostrar todos los nombres (mapeados desde IDs)
+    const recIds=[...ganRecSet[gid]];
+    const recNames=[...new Set(recIds.map(id=>recsUnicos.get(id)||id))];
+    const recLabel=recNames.join(' / ');
     const celdas=fechas.map(f=>{
       const L=celda[gid]?celda[gid][f]:null;
       if(!L)return'<td class="vacio" style="text-align:center;">—</td>';
-      const recDia=ganRecDia[gid]?ganRecDia[gid][f]:'';
-      const col=recDia&&colorMap[recDia]?colorMap[recDia]:{bg:'',border:''};
+      const recId=ganRecDia[gid]?ganRecDia[gid][f]:'';
+      const col=recId&&colorMap[recId]?colorMap[recId]:{bg:'',border:''};
       return`<td style="text-align:center;background:${col.bg||''};border-left:3px solid ${col.border||'transparent'};">${fmtL(L)}</td>`;
     }).join('');
     const totL=totalColL[gid];const isPagado=pagados[gid]&&pagados[gid].pagado;
@@ -2908,37 +2934,64 @@ function _renderLiqMatriz(){
     return row;
   }).join('');
   const totDias=fechas.map(f=>`<td class="total-col" style="text-align:center;">${fmtL(totalFila[f])}</td>`).join('');
-  // ⚖️ DIFF row: recogido - recibido por día
-  const diffDias=fechas.map(f=>{
-    let recogido=0,recibido=0;
-    if(filtroRec!=='todos'){
-      recogido=(recogidoPorRecDia[filtroRec]&&recogidoPorRecDia[filtroRec][f])||0;
-      recibido=(recibidoPorRecDia[filtroRec]&&recibidoPorRecDia[filtroRec][f])||0;
-    }else{
-      recNombresArr.forEach(n=>{recogido+=((recogidoPorRecDia[n]&&recogidoPorRecDia[n][f])||0);recibido+=((recibidoPorRecDia[n]&&recibidoPorRecDia[n][f])||0);});
+  // ⚖️ DIFF row — por recogedorId con soporte rutas combinadas
+  function calcDiffDia(f){
+    if(filtroRec==='todos'){
+      // Sumar por filtroButtons (sin duplicar)
+      let recogido=0,recibido=0;
+      filtroButtons.forEach(fb=>{
+        const comb=rutasCombinadas.find(([cid])=>cid===fb.id);
+        if(comb){
+          (comb[1].combinaUids||[]).forEach(uid=>{recogido+=((recogidoPorIdDia[uid]&&recogidoPorIdDia[uid][f])||0);});
+          recibido+=((recibidoPorIdDia[fb.id]&&recibidoPorIdDia[fb.id][f])||0);
+        }else{
+          recogido+=((recogidoPorIdDia[fb.id]&&recogidoPorIdDia[fb.id][f])||0);
+          recibido+=((recibidoPorIdDia[fb.id]&&recibidoPorIdDia[fb.id][f])||0);
+        }
+      });
+      return recibido-recogido;
     }
-    const diff=recibido-recogido;
+    if(esFiltroCombi){
+      let recogido=0;hijosUids.forEach(uid=>{recogido+=((recogidoPorIdDia[uid]&&recogidoPorIdDia[uid][f])||0);});
+      const recibido=(recibidoPorIdDia[filtroRec]&&recibidoPorIdDia[filtroRec][f])||0;
+      return recibido-recogido;
+    }
+    // Recogedor individual: buscar si pertenece a ruta combinada
+    let recogido=(recogidoPorIdDia[filtroRec]&&recogidoPorIdDia[filtroRec][f])||0;
+    let recibido=(recibidoPorIdDia[filtroRec]&&recibidoPorIdDia[filtroRec][f])||0;
+    // Si es parte de una ruta combinada, usar la DIFF de la ruta combinada
+    const miRutaCombi=rutasCombinadas.find(([,u])=>u.combinaUids&&u.combinaUids.includes(filtroRec));
+    if(miRutaCombi){
+      const [combId,combData]=miRutaCombi;
+      let recogidoCombi=0;(combData.combinaUids||[]).forEach(uid=>{recogidoCombi+=((recogidoPorIdDia[uid]&&recogidoPorIdDia[uid][f])||0);});
+      const recibidoCombi=(recibidoPorIdDia[combId]&&recibidoPorIdDia[combId][f])||0;
+      return recibidoCombi-recogidoCombi;
+    }
+    return recibido-recogido;
+  }
+  const diffDias=fechas.map(f=>{
+    const diff=calcDiffDia(f);
     const color=diff>0?'#DC2626':diff<0?'#D97706':'#15803d';
     return`<td style="text-align:center;font-weight:700;font-size:12px;color:${color};background:#FEF9C3;">${diff>=0?'+':''}${fmtL(diff)}</td>`;
   }).join('');
-  const totalRecogido=fechas.reduce((ss,f)=>{if(filtroRec!=='todos')return ss+((recogidoPorRecDia[filtroRec]&&recogidoPorRecDia[filtroRec][f])||0);let t=0;recNombresArr.forEach(n=>{t+=((recogidoPorRecDia[n]&&recogidoPorRecDia[n][f])||0);});return ss+t;},0);
-  const totalRecibido=fechas.reduce((ss,f)=>{if(filtroRec!=='todos')return ss+((recibidoPorRecDia[filtroRec]&&recibidoPorRecDia[filtroRec][f])||0);let t=0;recNombresArr.forEach(n=>{t+=((recibidoPorRecDia[n]&&recibidoPorRecDia[n][f])||0);});return ss+t;},0);
-  const totalDiff=totalRecibido-totalRecogido;
+  const totalDiff=fechas.reduce((ss,f)=>ss+calcDiffDia(f),0);
   const totalDiffColor=totalDiff>0?'#DC2626':totalDiff<0?'#D97706':'#15803d';
-  const leyenda=recNombresArr.map(n=>`<span style="display:inline-flex;align-items:center;gap:4px;margin-right:10px;font-size:12px;"><span style="width:14px;height:14px;border-radius:4px;background:${colorMap[n].bg};border:2px solid ${colorMap[n].border};display:inline-block;"></span>${n}</span>`).join('');
+  // Leyenda colores (solo los visibles, no los de ruta combinada hijos)
+  const leyenda=filtroButtons.map(fb=>{const c=colorMap[fb.id];return c?`<span style="display:inline-flex;align-items:center;gap:4px;margin-right:10px;font-size:12px;"><span style="width:14px;height:14px;border-radius:4px;background:${c.bg};border:2px solid ${c.border};display:inline-block;"></span>${fb.nombre}</span>`:''}).join('');
+  const filtroNombre=filtroRec!=='todos'?(recsUnicos.get(filtroRec)||filtroRec):'';
   const filtros=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
     <button class="btn btn-sm" onclick="window._filtrarLiqRec('todos')" style="border:2px solid var(--verde);background:${filtroRec==='todos'?'var(--verde)':'transparent'};color:${filtroRec==='todos'?'white':'var(--verde)'};font-weight:700;">Todos</button>
-    ${[...recsUnicos.entries()].map(([id,nombre])=>`<button class="btn btn-sm" onclick="window._filtrarLiqRec('${nombre.replace(/'/g,"\\'")}')" style="border:2px solid var(--verde2);background:${filtroRec===nombre?'var(--verde2)':'transparent'};color:${filtroRec===nombre?'white':'var(--verde2)'};font-weight:700;">${nombre}</button>`).join('')}
+    ${filtroButtons.map(fb=>`<button class="btn btn-sm" onclick="window._filtrarLiqRec('${fb.id}')" style="border:2px solid var(--verde2);background:${filtroRec===fb.id?'var(--verde2)':'transparent'};color:${filtroRec===fb.id?'white':'var(--verde2)'};font-weight:700;">${fb.nombre}</button>`).join('')}
   </div>`;
   tab.innerHTML=`
     <div class="card" style="background:var(--verde3);border:2px solid var(--verde2);margin-bottom:12px;">
-      <div style="font-size:13px;font-weight:700;color:var(--verde);">TOTAL A PAGAR · ${de} al ${ha}${filtroRec!=='todos'?' · '+filtroRec:''}</div>
+      <div style="font-size:13px;font-weight:700;color:var(--verde);">TOTAL A PAGAR · ${de} al ${ha}${filtroRec!=='todos'?' · '+filtroNombre:''}</div>
       <div style="font-size:36px;font-weight:800;color:var(--verde);margin-top:4px;">${fmtPeso(TP)}</div>
       <div style="font-size:14px;color:var(--verde);margin-top:4px;">${fmtL(TL)} litros · ${gansF.length} ganaderos · ${fmtPeso(precio)}/L</div>
     </div>
     ${filtros}
     <div style="margin-bottom:8px;">${leyenda}</div>
-    <div style="margin-bottom:12px;"><input type="text" placeholder="🔍 Buscar ganadero..." value="${searchText||''}" oninput="window._buscarLiq(this.value)" style="width:100%;padding:10px 14px;border:2px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;"></div>
+    <div style="margin-bottom:12px;"><input id="liq-search-input" type="text" placeholder="🔍 Buscar ganadero..." value="${searchText||''}" oninput="window._buscarLiq(this.value)" style="width:100%;padding:10px 14px;border:2px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;"></div>
     <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
       <button class="btn btn-verde btn-sm" onclick="exportarLiqMatriz('${de}','${ha}',${precio})">⬇ Exportar Excel</button>
     </div>
@@ -2977,6 +3030,8 @@ window._buscarLiq=function(txt){
   if(!window._liqState)return;
   window._liqState.searchText=txt;
   _renderLiqMatriz();
+  const inp=document.getElementById('liq-search-input');
+  if(inp){inp.focus();inp.setSelectionRange(txt.length,txt.length);}
 };
 window._togglePagado=async function(gid,nombre){
   if(!window._liqState)return;
@@ -3085,30 +3140,38 @@ async function exportarLiqMatriz(de,ha,precio){
   if(!datosRep.length)return;
   const s=window._liqState;
   const filtroRec=s?s.filtroRec:'todos';
+  const rutasComb=s?s.rutasCombinadas:[];
+  const uidsComb=s?s.uidsCombinados:new Set();
+  const esFiltroCombi=filtroRec!=='todos'&&rutasComb.some(([cid])=>cid===filtroRec);
+  const hijosUids=esFiltroCombi?(rutasComb.find(([cid])=>cid===filtroRec)||[])[1]?.combinaUids||[]:[];
   const fechas=[...new Set(datosRep.map(d=>d.fecha))].sort();
-  const ganMap={};const ganRec={};const ganRecDiaExp={};const ganNovsExp={};
+  const ganMap={};const ganRec={};const ganRecIdSet={};const ganNovsExp={};
   datosRep.forEach(d=>{
     if(!ganMap[d.ganaderoId])ganMap[d.ganaderoId]=d.ganaderoNombre;
     if(!ganRec[d.ganaderoId])ganRec[d.ganaderoId]=new Set();
     ganRec[d.ganaderoId].add(d.recogedorNombre);
-    if(!ganRecDiaExp[d.ganaderoId])ganRecDiaExp[d.ganaderoId]={};
-    ganRecDiaExp[d.ganaderoId][d.fecha]=d.recogedorNombre;
+    if(!ganRecIdSet[d.ganaderoId])ganRecIdSet[d.ganaderoId]=new Set();
+    ganRecIdSet[d.ganaderoId].add(d.recogedorId);
     if(d.novedad&&d.novedad.trim()){
       if(!ganNovsExp[d.ganaderoId])ganNovsExp[d.ganaderoId]=[];
       ganNovsExp[d.ganaderoId].push(fmtFechaCorta(d.fecha)+' '+d.recogedorNombre+': '+d.novedad.trim());
     }
   });
   let gans=Object.entries(ganMap).sort((a,b)=>a[1].localeCompare(b[1]));
-  if(filtroRec!=='todos'){gans=gans.filter(([gid])=>ganRec[gid]&&ganRec[gid].has(filtroRec));}
+  if(filtroRec!=='todos'){
+    if(esFiltroCombi){gans=gans.filter(([gid])=>ganRecIdSet[gid]&&hijosUids.some(uid=>ganRecIdSet[gid].has(uid)));}
+    else{gans=gans.filter(([gid])=>ganRecIdSet[gid]&&ganRecIdSet[gid].has(filtroRec));}
+  }
   const celda={};const totalColL={};
   gans.forEach(([gid])=>{celda[gid]={};totalColL[gid]=0;});
   datosRep.forEach(d=>{const gid=d.ganaderoId;const f=d.fecha;const L=parseFloat(d.litros)||0;if(!celda[gid])celda[gid]={};celda[gid][f]=(celda[gid][f]||0)+L;totalColL[gid]=(totalColL[gid]||0)+L;});
   const TL=gans.reduce((ss,[gid])=>ss+totalColL[gid],0);
-  const filtroLabel=filtroRec!=='todos'?` (Recogedor: ${filtroRec})`:'';
+  const filtroNombre=filtroRec!=='todos'?(s?.recsUnicos?.get(filtroRec)||filtroRec):'';
+  const filtroLabel=filtroRec!=='todos'?` (Recogedor: ${filtroNombre})`:'';
   const headers=`Ganadero,Recogedor,${fechas.join(',')},Total L,A Pagar,Novedades\n`;
   const rows=gans.map(([gid,gn])=>{const dias=fechas.map(f=>celda[gid]&&celda[gid][f]?(celda[gid][f]):'0').join(',');const recs=[...(ganRec[gid]||[])].join(' / ');const novs=(ganNovsExp[gid]||[]).join(' | ');return`"${gn}","${recs}",${dias},${fmtL(totalColL[gid])},${(totalColL[gid]*precio).toFixed(0)},"${novs}"`;}).join('\n');
   const totRow=`TOTAL DIA,,${fechas.map(f=>{let ss=0;gans.forEach(([gid])=>ss+=((celda[gid]&&celda[gid][f])||0));return fmtL(ss);}).join(',')},${fmtL(TL)},${(TL*precio).toFixed(0)},`;
-  descargar(`LIQUIDACION QUINCENAL${filtroLabel} - ${de} al ${ha} - $${precio}/L\n${headers}${rows}\n${totRow}`,`liquidacion-${de}-${ha}${filtroRec!=='todos'?'-'+filtroRec:''}.csv`);
+  descargar(`LIQUIDACION QUINCENAL${filtroLabel} - ${de} al ${ha} - $${precio}/L\n${headers}${rows}\n${totRow}`,`liquidacion-${de}-${ha}${filtroRec!=='todos'?'-'+filtroNombre:''}.csv`);
   try{
     const litrosPorDia={};datosRep.forEach(d=>{litrosPorDia[d.fecha]=(litrosPorDia[d.fecha]||0)+(parseFloat(d.litros)||0);});
     const novedades=datosRep.filter(d=>d.novedad&&d.novedad.trim()).map(d=>({fecha:d.fecha,ganadero:d.ganaderoNombre,recogedor:d.recogedorNombre,litros:parseFloat(d.litros)||0,novedad:d.novedad}));
@@ -3218,7 +3281,7 @@ function _renderInterMatriz(){
     </div>
     ${filtros}
     ${leyenda?'<div style="margin-bottom:8px;">'+leyenda+'</div>':''}
-    <div style="margin-bottom:12px;"><input type="text" placeholder="🔍 Buscar intermediario..." value="${searchText||''}" oninput="window._buscarInter(this.value)" style="width:100%;padding:10px 14px;border:2px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;"></div>
+    <div style="margin-bottom:12px;"><input id="inter-search-input" type="text" placeholder="🔍 Buscar intermediario..." value="${searchText||''}" oninput="window._buscarInter(this.value)" style="width:100%;padding:10px 14px;border:2px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;"></div>
     <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
       <button class="btn btn-naranja btn-sm" onclick="exportarInterMatriz('${de}','${ha}',${precio})">⬇ Exportar Excel</button>
     </div>
@@ -3252,6 +3315,8 @@ window._buscarInter=function(txt){
   if(!window._interState)return;
   window._interState.searchText=txt;
   _renderInterMatriz();
+  const inp=document.getElementById('inter-search-input');
+  if(inp){inp.focus();inp.setSelectionRange(txt.length,txt.length);}
 };
 window._togglePagadoInter=async function(id,nombre){
   if(!window._interState)return;
