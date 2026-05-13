@@ -492,6 +492,31 @@
   </div>
 </div>
 
+<!-- ══ MINIAGRICULTURA ══ -->
+<div id="screen-mini-home" class="screen">
+  <div class="header"><div><div class="sub">🐄 Lácteos San Diego</div><h1 id="mini-nombre-header">Miniagricultura</h1><div id="mini-rol-header" style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.7);margin-top:-4px;text-transform:uppercase;letter-spacing:1px;"></div></div><button class="btn-salir" onclick="cerrarSesion()">Salir</button></div>
+  <div style="padding:20px;">
+    <div id="mini-fecha-label" style="font-size:15px;color:var(--gris2);margin-bottom:12px;"></div>
+    <div id="mini-fecha-wrap" style="display:none;margin-bottom:12px;"><label style="font-size:13px;font-weight:600;color:var(--gris2);">📅 Fecha (modo histórico):</label><input type="date" id="mini-fecha-input" onchange="cambiarFechaMiniagri()" style="width:100%;padding:8px;border:1.5px solid var(--gris1);border-radius:8px;margin-top:4px;"></div>
+    <div class="card" style="padding:12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <label style="font-size:14px;font-weight:700;color:var(--gris3);">📅 Fecha de registro</label>
+        <input type="date" id="mini-fecha-reg" onchange="onFechaMiniagriChange()" style="padding:6px 10px;border:1.5px solid var(--gris1);border-radius:8px;font-size:14px;">
+      </div>
+      <div id="mini-quincena-label" style="font-size:15px;font-weight:700;color:var(--verde);text-align:center;padding:6px;background:var(--verde3);border-radius:8px;"></div>
+    </div>
+    <div class="alerta alerta-rojo" id="mini-error"></div>
+    <div class="alerta alerta-verde" id="mini-ok"></div>
+    <div id="mini-tabla-wrap" style="overflow-x:auto;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.1);margin-bottom:16px;">
+      <div class="loading">Cargando...</div>
+    </div>
+    <button class="btn btn-verde" onclick="guardarRegistrosMiniagri()" style="margin-bottom:12px;">💾 GUARDAR TODO</button>
+    <button class="btn btn-amarillo btn-sm" onclick="abrirModalMiniagriGan()" style="margin-bottom:16px;">+ Agregar ganadero</button>
+    <div style="font-size:16px;font-weight:700;color:var(--gris3);margin-bottom:8px;">Registros del día</div>
+    <div id="mini-registros-hoy"><div style="font-size:13px;color:var(--gris2);">Sin registros</div></div>
+  </div>
+</div>
+
 <!-- ══ ADMIN DASHBOARD ══ -->
 <div id="screen-admin-dashboard" class="screen">
   <div class="header"><div><div class="sub">🐄 Lácteos San Diego</div><h1 id="admin-nombre-header">Admin</h1><div id="admin-rol-header" style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.7);margin-top:-4px;text-transform:uppercase;letter-spacing:1px;"></div></div><button class="btn-salir" onclick="cerrarSesion()">Salir</button></div>
@@ -586,6 +611,7 @@
       <button class="tab" onclick="cambiarTabReporte(4,this)">Por Ganadero</button>
       <button class="tab" onclick="cambiarTabReporte(5,this)">🧀 Producción</button>
       <button class="tab" onclick="cambiarTabReporte(6,this)">🛒 Ventas</button>
+      <button class="tab" onclick="cambiarTabReporte(7,this)">🏛️ Miniagricultura</button>
     </div>
     <div class="card">
       <div class="card-titulo">Período</div>
@@ -623,6 +649,7 @@
     <div id="rep-tab-4" style="display:none;"><div class="vacio"><div class="ico">📊</div><p>Selecciona un período y genera el reporte</p></div></div>
     <div id="rep-tab-5" style="display:none;"><div class="vacio"><div class="ico">🧀</div><p>Selecciona un período y genera el reporte de producción</p></div></div>
     <div id="rep-tab-6" style="display:none;"><div class="vacio"><div class="ico">🛒</div><p>Selecciona un período y genera el reporte de ventas</p></div></div>
+    <div id="rep-tab-7" style="display:none;"><div class="vacio"><div class="ico">🏛️</div><p>Selecciona un período y genera el reporte de Miniagricultura</p></div></div>
   </div>
 </div>
 
@@ -644,6 +671,11 @@
     <div class="alerta alerta-rojo" id="comp-error"></div>
     <div class="alerta alerta-verde" id="comp-ok"></div>
     <div id="lista-compradores-admin"><div class="loading">Cargando...</div></div>
+    <div style="margin-top:28px;font-size:16px;font-weight:700;color:var(--gris3);margin-bottom:12px;">🏛️ Ganaderos Miniagricultura</div>
+    <button class="btn btn-verde btn-sm" onclick="abrirModalMiniagriGan()" style="margin-bottom:12px;">+ Nuevo ganadero</button>
+    <div class="alerta alerta-rojo" id="miniagri-error"></div>
+    <div class="alerta alerta-verde" id="miniagri-ok"></div>
+    <div id="lista-ganaderos-miniagri"><div class="loading">Cargando...</div></div>
     <div style="margin-top:28px;font-size:16px;font-weight:700;color:var(--gris3);margin-bottom:12px;">🕐 Horario de funcionamiento</div>
     <div class="card">
       <div id="horario-estado" style="font-size:14px;margin-bottom:12px;">Cargando...</div>
@@ -881,6 +913,7 @@
         <option value="recibidor">Recibidor (planta)</option>
         <option value="cuajador">Cuajador</option>
         <option value="vendedor">Vendedor</option>
+        <option value="miniagricultura">Miniagricultura</option>
         <option value="admin">Administrador</option>
       </select>
     </div>
@@ -935,6 +968,20 @@
 </div>
 
 <div class="mc-overlay" id="mc-overlay">
+
+<div class="modal-overlay" id="modal-miniagri-gan">
+  <div class="modal">
+    <div class="modal-titulo" id="modal-miniagri-gan-titulo">Nuevo Ganadero Miniagricultura</div>
+    <div class="alerta alerta-rojo" id="m-miniagri-error"></div>
+    <div class="campo"><label>No. Documento *</label><input type="text" id="m-miniagri-doc" placeholder="Ej: 27175017" inputmode="numeric" autocomplete="off"></div>
+    <div class="campo"><label>Nombre completo *</label><input type="text" id="m-miniagri-nombre" placeholder="Ej: LUZ ANGELICA LOPEZ" autocomplete="off"></div>
+    <input type="hidden" id="m-miniagri-id" value="">
+    <div class="fila" style="margin-top:8px;">
+      <button class="btn btn-gris" onclick="cerrarModal('modal-miniagri-gan')">Cancelar</button>
+      <button class="btn btn-verde" onclick="guardarGanaderoExt()">Guardar</button>
+    </div>
+  </div>
+</div>
   <div class="mc-box">
     <div class="mc-msg" id="mc-msg"></div>
     <input class="mc-input" id="mc-input" style="display:none;" autocomplete="off">
@@ -1011,7 +1058,7 @@ async function iniciarSesionConRol(){
   if(rol==='admin'){initAdmin();return;}
   try{const sc=await getDocs(query(collection(db,'configuracion'),limit(1)));if(!sc.empty){const dc=sc.docs[0].data();_horarioInicio=dc.horarioInicio||'04:00';_horarioFin=dc.horarioFin||'18:00';}}catch(e){}
   if(!verificarHorario()){await signOut(auth);localStorage.removeItem('lsd_perfil');alerta('login-error',`⏰ La app está disponible de ${_horarioInicio} a ${_horarioFin}. Fuera de horario.`,'rojo');return;}
-  if(rol==='recibidor')initRecibidor();else if(rol==='cuajador')initCuajador();else if(rol==='vendedor')initVendedor();else initRec();
+  if(rol==='recibidor')initRecibidor();else if(rol==='cuajador')initCuajador();else if(rol==='vendedor')initVendedor();else if(rol==='miniagricultura')initMiniagri();else initRec();
 }
 function ir(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
@@ -2835,7 +2882,7 @@ function quincenaPendiente(){
   }
   return{de,ha};
 }
-function cambiarTabReporte(idx,btn){tabRep=idx;document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('activo',i===idx));for(let i=0;i<7;i++){const el=document.getElementById(`rep-tab-${i}`);if(el)el.style.display=i===idx?'block':'none';}const h0=document.getElementById('rep-tab-0-historial');if(h0)h0.style.display=idx===0?'block':'none';const h1=document.getElementById('rep-tab-1-historial');if(h1)h1.style.display=idx===1?'block':'none';const pw=document.getElementById('precio-liq-wrap');if(pw)pw.style.display=idx===0?'block':'none';const pi=document.getElementById('precio-inter-wrap');if(pi)pi.style.display=idx===1?'block':'none';if(idx===0){const q=quincenaPendiente();document.getElementById('rep-desde').value=q.de;document.getElementById('rep-hasta').value=q.ha;_cargarHistorialReportes('liq');}if(idx===1){_cargarHistorialReportes('inter');}}window.cambiarTabReporte=cambiarTabReporte;
+function cambiarTabReporte(idx,btn){tabRep=idx;document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('activo',i===idx));for(let i=0;i<8;i++){const el=document.getElementById(`rep-tab-${i}`);if(el)el.style.display=i===idx?'block':'none';}const h0=document.getElementById('rep-tab-0-historial');if(h0)h0.style.display=idx===0?'block':'none';const h1=document.getElementById('rep-tab-1-historial');if(h1)h1.style.display=idx===1?'block':'none';const pw=document.getElementById('precio-liq-wrap');if(pw)pw.style.display=idx===0?'block':'none';const pi=document.getElementById('precio-inter-wrap');if(pi)pi.style.display=idx===1?'block':'none';if(idx===0){const q=quincenaPendiente();document.getElementById('rep-desde').value=q.de;document.getElementById('rep-hasta').value=q.ha;_cargarHistorialReportes('liq');}if(idx===1){_cargarHistorialReportes('inter');}}window.cambiarTabReporte=cambiarTabReporte;
 function setFiltroRapido(t){const h=new Date();const y=h.getFullYear();const m=String(h.getMonth()+1).padStart(2,'0');const d=String(h.getDate()).padStart(2,'0');const D=i=>document.getElementById(i);if(t==='hoy'){D('rep-desde').value=`${y}-${m}-${d}`;D('rep-hasta').value=`${y}-${m}-${d}`;}else if(t==='semana'){const i=new Date(h);i.setDate(h.getDate()-h.getDay());D('rep-desde').value=i.toISOString().split('T')[0];D('rep-hasta').value=`${y}-${m}-${d}`;}else if(t==='quincena1'){D('rep-desde').value=`${y}-${m}-01`;D('rep-hasta').value=`${y}-${m}-15`;}else if(t==='quincena2'){const u=new Date(y,h.getMonth()+1,0).getDate();D('rep-desde').value=`${y}-${m}-16`;D('rep-hasta').value=`${y}-${m}-${u}`;}else if(t==='mes'){const u=new Date(y,h.getMonth()+1,0).getDate();D('rep-desde').value=`${y}-${m}-01`;D('rep-hasta').value=`${y}-${m}-${u}`;}}window.setFiltroRapido=setFiltroRapido;
 
 async function generarReporte(){
@@ -2868,6 +2915,7 @@ async function generarReporte(){
     }
     if(tabRep===5){await repProduccion(de,ha);}
     if(tabRep===6){await repVentas(de,ha);}
+    if(tabRep===7){await repMiniagri(de,ha);}
   }catch(e){console.error(e);}
 }window.generarReporte=generarReporte;
 
@@ -3597,13 +3645,13 @@ async function usuAdmin(){
 }
 async function resetearContrasena(email){try{await sendPasswordResetEmail(auth,email);alerta('usr-ok',`✅ Correo enviado a ${email}. El usuario debe revisar su bandeja de entrada.`,'verde');}catch(e){alerta('usr-error','Error al enviar el correo.','rojo');}}window.resetearContrasena=resetearContrasena;
 async function cambiarRol(uid,rolActual,nombre){
-  const roles=['recogedor','recibidor','cuajador','vendedor','admin'];
-  const nombres={'recogedor':'Recogedor','recibidor':'Recibidor (planta)','cuajador':'Cuajador','vendedor':'Vendedor','admin':'Administrador'};
+  const roles=['recogedor','recibidor','cuajador','vendedor','miniagricultura','admin'];
+  const nombres={'recogedor':'Recogedor','recibidor':'Recibidor (planta)','cuajador':'Cuajador','vendedor':'Vendedor','miniagricultura':'Miniagricultura','admin':'Administrador'};
   const opciones=roles.filter(r=>r!==rolActual).map(r=>nombres[r]).join(' / ');
-  const nuevoNombre=await modalPrompt(`¿A qué rol quieres cambiar a ${nombre}?\n\nRol actual: ${nombres[rolActual]}\nOpciones: ${opciones}\n\nEscribe exactamente: recogedor, recibidor, cuajador, vendedor o admin`);
+  const nuevoNombre=await modalPrompt(`¿A qué rol quieres cambiar a ${nombre}?\n\nRol actual: ${nombres[rolActual]}\nOpciones: ${opciones}\n\nEscribe exactamente: recogedor, recibidor, cuajador, vendedor, miniagricultura o admin`);
   if(!nuevoNombre)return;
   const nuevo=nuevoNombre.trim().toLowerCase();
-  if(!roles.includes(nuevo)){await modalAlert('Rol no válido. Escribe: recogedor, recibidor, cuajador, vendedor o admin');return;}
+  if(!roles.includes(nuevo)){await modalAlert('Rol no válido. Escribe: recogedor, recibidor, cuajador, vendedor, miniagricultura o admin');return;}
   if(nuevo===rolActual){await modalAlert('Ya tiene ese rol.');return;}
   try{
     await updateDoc(doc(db,'usuarios',uid),{rol:nuevo});
@@ -4308,7 +4356,293 @@ async function repVentas(de,ha){
   }catch(e){console.error(e);tab.innerHTML='<div class="vacio"><p>Error al cargar ventas</p></div>';}
 }
 
-function navAdmin(p,b){ir(p);document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('activo'));b.classList.add('activo');if(p==='screen-admin-dashboard')dashAdmin();if(p==='screen-admin-ganaderos')ganAdmin();if(p==='screen-admin-costos')initCostos();if(p==='screen-admin-reportes'){_cargarHistorialReportes('liq');_cargarHistorialReportes('inter');}if(p==='screen-admin-usuarios'){usuAdmin();interAdmin2();compradoresAdmin();actualizarUIHistorico();cargarHorario();}}window.navAdmin=navAdmin;
+// ══════════════════════════════════════════
+//  MINIAGRICULTURA — ROL + ADMIN + REPORTE
+// ══════════════════════════════════════════
+let _ganExtList=[],_miniagriRegs={};
+
+function calcQuincena(fechaStr){
+  const d=new Date(fechaStr+'T00:00:00');
+  const dia=d.getDate();const mes=d.toLocaleString('es-CO',{month:'long'}).toUpperCase();const anio=d.getFullYear();
+  return dia<=15?`1 QUINCENA ${mes} ${anio}`:`2 QUINCENA ${mes} ${anio}`;
+}
+
+async function initMiniagri(){
+  document.getElementById('mini-nombre-header').textContent=UA.nombre||'Miniagricultura';
+  document.getElementById('mini-rol-header').textContent='miniagricultura';
+  try{const uDoc=await getDoc(doc(db,'usuarios',UA.uid));modoHistorico=uDoc.exists()&&uDoc.data().modoHistorico||false;}catch(e){modoHistorico=false;}
+  fechaReg=hoy();
+  document.getElementById('mini-fecha-label').textContent=fmtFecha(fechaReg);
+  document.getElementById('mini-fecha-reg').value=hoy();
+  onFechaMiniagriChange();
+  const wrap=document.getElementById('mini-fecha-wrap');
+  if(wrap)wrap.style.display=modoHistorico?'block':'none';
+  if(modoHistorico){
+    const inp=document.getElementById('mini-fecha-input');
+    if(inp){const h=new Date();inp.max=hoy();inp.min=`${h.getFullYear()}-${String(h.getMonth()+1).padStart(2,'0')}-01`;inp.value=hoy();}
+  }
+  await cargarGanaderosExt();
+  await cargarRegistrosMiniagri();
+  renderTablaMiniagri();
+  renderRegistrosHoyMiniagri();
+  ir('screen-mini-home');
+}
+
+function onFechaMiniagriChange(){
+  const f=document.getElementById('mini-fecha-reg').value;
+  if(!f)return;
+  fechaReg=f;
+  document.getElementById('mini-fecha-label').textContent=fmtFecha(f);
+  document.getElementById('mini-quincena-label').textContent=calcQuincena(f);
+  cargarRegistrosMiniagri().then(()=>{renderTablaMiniagri();renderRegistrosHoyMiniagri();});
+}window.onFechaMiniagriChange=onFechaMiniagriChange;
+
+function cambiarFechaMiniagri(){
+  const inp=document.getElementById('mini-fecha-input');
+  if(inp){fechaReg=inp.value||hoy();document.getElementById('mini-fecha-label').textContent=fmtFecha(fechaReg);document.getElementById('mini-fecha-reg').value=fechaReg;onFechaMiniagriChange();}
+}window.cambiarFechaMiniagri=cambiarFechaMiniagri;
+
+async function cargarGanaderosExt(){
+  try{
+    const snap=await getDocs(query(collection(db,'ganaderosExt'),where('activo','==',true)));
+    _ganExtList=[];snap.forEach(d=>_ganExtList.push({id:d.id,...d.data()}));
+    _ganExtList.sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||''));
+  }catch(e){console.error('Error cargando ganaderos ext:',e);}
+}
+
+async function cargarRegistrosMiniagri(){
+  const f=fechaReg||hoy();
+  try{
+    const snap=await getDocs(query(collection(db,'miniagricultura'),where('fecha','==',f)));
+    _miniagriRegs={};snap.forEach(d=>{const da=d.data();_miniagriRegs[da.ganaderoExtId]={id:d.id,...da};});
+  }catch(e){console.error('Error cargando registros miniagri:',e);}
+}
+
+function renderTablaMiniagri(){
+  const wrap=document.getElementById('mini-tabla-wrap');if(!wrap)return;
+  if(_ganExtList.length===0){wrap.innerHTML='<div style="padding:20px;text-align:center;color:var(--gris2);">Sin ganaderos registrados. Agrega uno primero.</div>';return;}
+  let totalLitros=0,totalVrLitro=0,totalVrTotal=0;
+  let html='<table class="tabla-matriz" style="width:100%;"><thead><tr><th>#</th><th>No.Doc</th><th>Nombre</th><th>Litros</th><th>Vr Litro</th><th>Vr Total</th><th></th></tr></thead><tbody>';
+  _ganExtList.forEach((g,i)=>{
+    const reg=_miniagriRegs[g.id]||{};
+    const litros=reg.litros||'';
+    const vrLitro=reg.vrLitro||'';
+    const vrTotal=(parseFloat(litros)||0)*(parseFloat(vrLitro)||0);
+    totalLitros+=(parseFloat(litros)||0);
+    totalVrLitro+=(parseFloat(vrLitro)||0);
+    totalVrTotal+=vrTotal;
+    html+=`<tr>
+      <td style="font-weight:700;">${i+1}</td>
+      <td style="font-size:11px;">${g.documento||''}</td>
+      <td style="font-size:11px;white-space:normal;min-width:100px;">${g.nombre}</td>
+      <td><input type="number" id="mini-litros-${g.id}" value="${litros}" placeholder="0" inputmode="decimal" step="0.1" style="width:70px;padding:6px;border:1.5px solid var(--gris1);border-radius:6px;font-size:14px;text-align:center;" oninput="actualizarVrTotalMiniagri('${g.id}')"></td>
+      <td><input type="number" id="mini-vrl-${g.id}" value="${vrLitro}" placeholder="0" inputmode="numeric" style="width:70px;padding:6px;border:1.5px solid var(--gris1);border-radius:6px;font-size:14px;text-align:center;" oninput="actualizarVrTotalMiniagri('${g.id}')"></td>
+      <td id="mini-vrt-${g.id}" style="font-weight:700;font-size:13px;white-space:nowrap;">${vrTotal?fmtPeso(vrTotal):'-'}</td>
+      <td>${reg.id?'<button onclick="eliminarRegistroMiniagri(\''+g.id+'\')" style="background:none;border:none;color:var(--rojo);font-size:16px;cursor:pointer;">🗑️</button>':''}</td>
+    </tr>`;
+  });
+  html+=`<tr style="font-weight:700;background:var(--verde3);"><td colspan="3" style="text-align:center;font-weight:800;">TOTALES</td><td style="text-align:center;">${fmtL(totalLitros)}</td><td style="text-align:center;">${fmtPeso(totalVrLitro)}</td><td style="font-weight:800;">${fmtPeso(totalVrTotal)}</td><td></td></tr>`;
+  html+='</tbody></table>';
+  wrap.innerHTML=html;
+}window.renderTablaMiniagri=renderTablaMiniagri;
+
+function actualizarVrTotalMiniagri(gid){
+  const litros=parseFloat(document.getElementById('mini-litros-'+gid).value)||0;
+  const vrl=parseFloat(document.getElementById('mini-vrl-'+gid).value)||0;
+  const vrt=litros*vrl;
+  document.getElementById('mini-vrt-'+gid).textContent=vrt?fmtPeso(vrt):'-';
+}window.actualizarVrTotalMiniagri=actualizarVrTotalMiniagri;
+
+async function guardarRegistrosMiniagri(){
+  if(!navigator.onLine){alerta('mini-error','❌ Sin conexión a internet','rojo');return;}
+  const f=fechaReg||hoy();
+  const quincena=calcQuincena(f);
+  let guardados=0;
+  try{
+    for(const g of _ganExtList){
+      const litrosEl=document.getElementById('mini-litros-'+g.id);
+      const vrlEl=document.getElementById('mini-vrl-'+g.id);
+      if(!litrosEl||!vrlEl)continue;
+      const litros=parseFloat(litrosEl.value)||0;
+      const vrLitro=parseFloat(vrlEl.value)||0;
+      if(litros<=0&&vrLitro<=0)continue;
+      const vrTotal=litros*vrLitro;
+      const docId=`${g.id}_${f}`;
+      await setDoc(doc(db,'miniagricultura',docId),{
+        ganaderoExtId:g.id,ganaderoNombre:g.nombre,ganaderoDocumento:g.documento||'',
+        litros,vrLitro,vrTotal,fecha:f,quincena,
+        registradoPor:UA.uid,registradoPorNombre:UA.nombre||'',hora:horaAhora()
+      });
+      guardados++;
+    }
+    if(guardados===0){alerta('mini-error','No hay datos para guardar','naranja');return;}
+    alerta('mini-ok',`✅ ${guardados} registro(s) guardados`,'verde');
+    await cargarRegistrosMiniagri();
+    renderTablaMiniagri();
+    renderRegistrosHoyMiniagri();
+  }catch(e){console.error(e);alerta('mini-error','Error al guardar','rojo');}
+}window.guardarRegistrosMiniagri=guardarRegistrosMiniagri;
+
+async function eliminarRegistroMiniagri(gid){
+  const reg=_miniagriRegs[gid];if(!reg||!reg.id)return;
+  const motivo=await modalPrompt('Motivo de la eliminación:');
+  if(!motivo||!motivo.trim())return;
+  try{
+    await addDoc(collection(db,'eliminaciones'),{tipo:'miniagricultura',registroId:reg.id,ganaderoNombre:reg.ganaderoNombre,litros:reg.litros,fecha:reg.fecha,motivo:motivo.trim(),eliminadoPor:UA.uid,eliminadoPorNombre:UA.nombre||'',fechaEliminacion:hoy(),horaEliminacion:horaAhora()});
+    await deleteDoc(doc(db,'miniagricultura',reg.id));
+    alerta('mini-ok','✅ Registro eliminado','verde');
+    await cargarRegistrosMiniagri();
+    renderTablaMiniagri();
+    renderRegistrosHoyMiniagri();
+  }catch(e){console.error(e);alerta('mini-error','Error al eliminar','rojo');}
+}window.eliminarRegistroMiniagri=eliminarRegistroMiniagri;
+
+function renderRegistrosHoyMiniagri(){
+  const el=document.getElementById('mini-registros-hoy');if(!el)return;
+  const regs=Object.values(_miniagriRegs);
+  if(regs.length===0){el.innerHTML='<div style="font-size:13px;color:var(--gris2);">Sin registros para esta fecha</div>';return;}
+  let html='';
+  regs.sort((a,b)=>(a.ganaderoNombre||'').localeCompare(b.ganaderoNombre||''));
+  regs.forEach(r=>{
+    html+=`<div class="lista-item" style="cursor:default;"><div><div class="nombre">${r.ganaderoNombre}</div><div class="detalle">${fmtL(r.litros)} lts × ${fmtPeso(r.vrLitro)} = <strong>${fmtPeso(r.vrTotal)}</strong></div></div><button onclick="eliminarRegistroMiniagri('${r.ganaderoExtId}')" style="background:none;border:none;color:var(--rojo);font-size:18px;cursor:pointer;">🗑️</button></div>`;
+  });
+  el.innerHTML=html;
+}
+
+function abrirModalMiniagriGan(id){
+  document.getElementById('m-miniagri-doc').value='';
+  document.getElementById('m-miniagri-nombre').value='';
+  document.getElementById('m-miniagri-id').value=id||'';
+  ocult('m-miniagri-error');
+  if(id){
+    document.getElementById('modal-miniagri-gan-titulo').textContent='Editar Ganadero';
+    const g=_ganExtList.find(x=>x.id===id);
+    if(g){document.getElementById('m-miniagri-doc').value=g.documento||'';document.getElementById('m-miniagri-nombre').value=g.nombre||'';}
+  }else{
+    document.getElementById('modal-miniagri-gan-titulo').textContent='Nuevo Ganadero Miniagricultura';
+  }
+  abrirModal('modal-miniagri-gan');
+}window.abrirModalMiniagriGan=abrirModalMiniagriGan;
+
+async function guardarGanaderoExt(){
+  const docNum=document.getElementById('m-miniagri-doc').value.trim();
+  const nombre=document.getElementById('m-miniagri-nombre').value.trim().toUpperCase();
+  const editId=document.getElementById('m-miniagri-id').value;
+  if(!docNum||!nombre){alerta('m-miniagri-error','Documento y nombre son obligatorios','rojo');return;}
+  try{
+    if(editId){
+      await updateDoc(doc(db,'ganaderosExt',editId),{documento:docNum,nombre});
+    }else{
+      await addDoc(collection(db,'ganaderosExt'),{documento:docNum,nombre,activo:true,fechaAgregado:hoy(),agregadoPor:UA.uid});
+    }
+    cerrarModal('modal-miniagri-gan');
+    await cargarGanaderosExt();
+    if(rol==='miniagricultura'){renderTablaMiniagri();}
+    if(rol==='admin'){miniagriAdmin();}
+    const okEl=document.getElementById('miniagri-ok')||document.getElementById('mini-ok');
+    if(okEl){okEl.className='alerta alerta-verde show';okEl.textContent=editId?'✅ Ganadero actualizado':'✅ Ganadero agregado';setTimeout(()=>okEl.classList.remove('show'),3000);}
+  }catch(e){console.error(e);alerta('m-miniagri-error','Error al guardar','rojo');}
+}window.guardarGanaderoExt=guardarGanaderoExt;
+
+async function miniagriAdmin(){
+  const el=document.getElementById('lista-ganaderos-miniagri');if(!el)return;
+  try{
+    const snap=await getDocs(collection(db,'ganaderosExt'));
+    const lista=[];snap.forEach(d=>lista.push({id:d.id,...d.data()}));
+    lista.sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||''));
+    if(lista.length===0){el.innerHTML='<p style="color:var(--gris2);font-size:13px;">Sin ganaderos</p>';return;}
+    el.innerHTML=lista.map(g=>`<div class="card" style="padding:12px;margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div><div style="font-weight:700;">${g.nombre}</div><div style="font-size:12px;color:var(--gris2);">Doc: ${g.documento||'—'} ${g.activo===false?' · <span style="color:var(--rojo);">Inactivo</span>':''}</div></div>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-sm" style="background:transparent;color:var(--verde);border:2px solid var(--verde);" onclick="abrirModalMiniagriGan('${g.id}')">✏️</button>
+          <button class="btn btn-sm" style="background:transparent;color:${g.activo===false?'#15803d':'var(--rojo)'};border:2px solid ${g.activo===false?'#15803d':'var(--rojo)'};" onclick="toggleGanaderoExt('${g.id}',${g.activo!==false})">${g.activo===false?'✅':'❌'}</button>
+        </div>
+      </div>
+    </div>`).join('');
+  }catch(e){console.error(e);el.innerHTML='<p style="color:var(--rojo);">Error al cargar</p>';}
+}window.miniagriAdmin=miniagriAdmin;
+
+async function toggleGanaderoExt(id,activo){
+  try{
+    await updateDoc(doc(db,'ganaderosExt',id),{activo:!activo});
+    const okEl=document.getElementById('miniagri-ok');
+    if(okEl){okEl.className='alerta alerta-verde show';okEl.textContent=activo?'❌ Ganadero desactivado':'✅ Ganadero activado';setTimeout(()=>okEl.classList.remove('show'),3000);}
+    miniagriAdmin();
+  }catch(e){console.error(e);}
+}window.toggleGanaderoExt=toggleGanaderoExt;
+
+// ── REPORTE MINIAGRICULTURA ──
+async function repMiniagri(de,ha){
+  const tab=document.getElementById('rep-tab-7');if(!tab)return;
+  try{
+    const snap=await getDocs(query(collection(db,'miniagricultura'),where('fecha','>=',de),where('fecha','<=',ha),orderBy('fecha')));
+    const regs=[];snap.forEach(d=>regs.push({id:d.id,...d.data()}));
+    if(regs.length===0){tab.innerHTML='<div class="vacio"><div class="ico">🏛️</div><p>Sin datos de Miniagricultura en este período</p></div>';return;}
+    // Agrupar por quincena
+    const porQ={};
+    regs.forEach(r=>{
+      const q=r.quincena||calcQuincena(r.fecha);
+      if(!porQ[q])porQ[q]=[];
+      porQ[q].push(r);
+    });
+    let html='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;"><button class="btn btn-sm btn-verde" onclick="exportarMiniagri(\'ambas\')">📥 Exportar Todo</button><button class="btn btn-sm btn-azul" onclick="exportarMiniagri(\'q1\')">📥 Q1</button><button class="btn btn-sm btn-naranja" onclick="exportarMiniagri(\'q2\')">📥 Q2</button></div>';
+    Object.keys(porQ).sort().forEach(q=>{
+      const datos=porQ[q];
+      datos.sort((a,b)=>(a.ganaderoNombre||'').localeCompare(b.ganaderoNombre||''));
+      let totalL=0,totalVrl=0,totalVrt=0;
+      html+=`<div class="card" style="padding:0;overflow:hidden;margin-bottom:16px;"><div style="background:var(--verde);color:white;padding:10px 14px;font-weight:700;font-size:14px;">📋 ${q}</div>`;
+      html+=`<div style="overflow-x:auto;"><table class="tabla"><thead><tr><th>#</th><th>Fecha</th><th>No.Doc</th><th>Nombre</th><th>Litros</th><th>Vr Litro</th><th>Vr Total</th></tr></thead><tbody>`;
+      datos.forEach((r,i)=>{
+        totalL+=(r.litros||0);totalVrl+=(r.vrLitro||0);totalVrt+=(r.vrTotal||0);
+        html+=`<tr><td>${i+1}</td><td>${fmtFechaCorta(r.fecha)}</td><td>${r.ganaderoDocumento||''}</td><td>${r.ganaderoNombre}</td><td style="font-weight:700;">${fmtL(r.litros)}</td><td>${fmtPeso(r.vrLitro)}</td><td style="font-weight:700;">${fmtPeso(r.vrTotal)}</td></tr>`;
+      });
+      html+=`<tr style="font-weight:700;background:var(--verde3);"><td colspan="4" style="text-align:center;">TOTALES</td><td>${fmtL(totalL)}</td><td>${fmtPeso(totalVrl)}</td><td>${fmtPeso(totalVrt)}</td></tr>`;
+      html+='</tbody></table></div></div>';
+    });
+    tab.innerHTML=html;
+  }catch(e){console.error(e);tab.innerHTML='<div class="vacio"><p>Error al cargar reporte</p></div>';}
+}
+
+async function exportarMiniagri(tipo){
+  const de=document.getElementById('rep-desde').value;const ha=document.getElementById('rep-hasta').value;
+  if(!de||!ha)return;
+  try{
+    const snap=await getDocs(query(collection(db,'miniagricultura'),where('fecha','>=',de),where('fecha','<=',ha),orderBy('fecha')));
+    const regs=[];snap.forEach(d=>regs.push({id:d.id,...d.data()}));
+    if(regs.length===0){await modalAlert('Sin datos para exportar');return;}
+    const porQ={};
+    regs.forEach(r=>{
+      const q=r.quincena||calcQuincena(r.fecha);
+      if(!porQ[q])porQ[q]=[];
+      porQ[q].push(r);
+    });
+    const XLSX=window.XLSX;if(!XLSX){await modalAlert('Error cargando SheetJS');return;}
+    const wb=XLSX.utils.book_new();
+    const quincenas=Object.keys(porQ).sort();
+    const filtradas=tipo==='q1'?quincenas.filter(q=>q.startsWith('1')):tipo==='q2'?quincenas.filter(q=>q.startsWith('2')):quincenas;
+    if(filtradas.length===0){await modalAlert('Sin datos para el filtro seleccionado');return;}
+    filtradas.forEach(q=>{
+      const datos=porQ[q];
+      datos.sort((a,b)=>(a.ganaderoNombre||'').localeCompare(b.ganaderoNombre||''));
+      const rows=[['','','LACTEOS SAN DIEGO','','','','',''],['ITEM','Fecha','Quincena','No.Documento','Nombres y Apellidos','Cant litros','Vr Litro','Vr Total']];
+      let totalL=0,totalVrl=0,totalVrt=0;
+      datos.forEach((r,i)=>{
+        totalL+=(r.litros||0);totalVrl+=(r.vrLitro||0);totalVrt+=(r.vrTotal||0);
+        rows.push([i+1,fmtFechaCorta(r.fecha),q,r.ganaderoDocumento||'',r.ganaderoNombre,r.litros||0,r.vrLitro||0,r.vrTotal||0]);
+      });
+      rows.push([]);
+      rows.push(['TOTALES','','','','',totalL,totalVrl,totalVrt]);
+      const ws=XLSX.utils.aoa_to_sheet(rows);
+      ws['!cols']=[{wch:6},{wch:10},{wch:28},{wch:14},{wch:36},{wch:12},{wch:10},{wch:14}];
+      const sheetName=q.length>31?q.substring(0,31):q;
+      XLSX.utils.book_append_sheet(wb,ws,sheetName);
+    });
+    XLSX.writeFile(wb,`Miniagricultura_${de}_${ha}.xlsx`);
+  }catch(e){console.error(e);await modalAlert('Error al exportar');}
+}window.exportarMiniagri=exportarMiniagri;
+
+function navAdmin(p,b){ir(p);document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('activo'));b.classList.add('activo');if(p==='screen-admin-dashboard')dashAdmin();if(p==='screen-admin-ganaderos')ganAdmin();if(p==='screen-admin-costos')initCostos();if(p==='screen-admin-reportes'){_cargarHistorialReportes('liq');_cargarHistorialReportes('inter');}if(p==='screen-admin-usuarios'){usuAdmin();interAdmin2();compradoresAdmin();miniagriAdmin();actualizarUIHistorico();cargarHorario();}}window.navAdmin=navAdmin;
 document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')hacerLogin();});
 // iOS fix: usar tanto click como touchend
 const btnEntrar=document.getElementById('btn-entrar');
