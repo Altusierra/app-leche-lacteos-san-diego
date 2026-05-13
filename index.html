@@ -406,6 +406,92 @@
   </div>
 </div>
 
+
+<!-- ══ VENDEDOR ══ -->
+<div id="screen-vend-home" class="screen">
+  <div class="header"><div><div class="sub">🐄 Lácteos San Diego</div><h1 id="vend-nombre-header">Vendedor</h1><div id="vend-rol-header" style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.7);margin-top:-4px;text-transform:uppercase;letter-spacing:1px;"></div></div><button class="btn-salir" onclick="cerrarSesion()">Salir</button></div>
+  <div style="padding:20px;">
+    <div id="vend-fecha" style="font-size:15px;color:var(--gris2);margin-bottom:16px;"></div>
+    <div id="vend-fecha-selector" style="display:none;margin-bottom:12px;"><label style="font-size:13px;font-weight:600;color:var(--gris2);">📅 Fecha (modo histórico):</label><input type="date" id="vend-fecha-home-input" onchange="cambiarFechaVendedor()" style="width:100%;padding:8px;border:1.5px solid var(--gris1);border-radius:8px;margin-top:4px;"></div>
+    <div id="vend-resumen-semanal"></div>
+    <div class="fila" style="margin-bottom:16px;">
+      <button class="btn btn-azul" style="font-size:17px;padding:20px;" onclick="irPantalla('screen-vend-compradores');renderCompradoresVendCarga()">📦 REGISTRAR CARGA</button>
+      <button class="btn btn-verde" style="font-size:17px;padding:20px;" onclick="irPantalla('screen-vend-abono-lista');renderCompradoresVendAbono()">💵 REGISTRAR ABONO</button>
+    </div>
+    <button class="btn btn-amarillo" style="font-size:15px;padding:14px;margin-bottom:16px;" onclick="abrirModalComprador(null)">🏪 NUEVO COMPRADOR</button>
+    <div style="margin-bottom:12px;font-size:16px;font-weight:700;color:var(--gris3);">Mis registros de hoy</div>
+    <div id="vend-lista-hoy"><div class="loading">Cargando...</div></div>
+  </div>
+</div>
+
+<div id="screen-vend-compradores" class="screen">
+  <div class="header">
+    <button style="background:none;border:none;color:white;font-size:24px;cursor:pointer;" onclick="irPantalla('screen-vend-home')">←</button>
+    <h1>Seleccionar Comprador</h1><div style="width:40px;"></div>
+  </div>
+  <div style="padding:20px;">
+    <div class="buscador"><span class="ico">🔍</span><input type="text" id="buscar-comprador-vend" placeholder="Buscar comprador..." oninput="filtrarCompradoresVend()" autocomplete="off"></div>
+    <div id="lista-compradores-vend"><div class="loading">Cargando...</div></div>
+  </div>
+</div>
+
+<div id="screen-vend-carga" class="screen">
+  <div class="header">
+    <button style="background:none;border:none;color:white;font-size:24px;cursor:pointer;" onclick="irPantalla('screen-vend-compradores')">←</button>
+    <h1>Registrar Carga</h1><div style="width:40px;"></div>
+  </div>
+  <div style="padding:20px;">
+    <div class="card" style="background:var(--azul2);border:2px solid var(--azul);">
+      <div style="font-size:13px;color:var(--azul);font-weight:600;">COMPRADOR</div>
+      <div id="vend-comprador-nombre" style="font-size:22px;font-weight:800;color:var(--azul);margin-top:4px;"></div>
+      <div id="vend-comprador-ciudad" style="font-size:14px;color:var(--azul);margin-top:2px;"></div>
+    </div>
+    <div class="alerta alerta-rojo" id="vend-carga-error"></div>
+    <div id="vend-carga-fecha-wrap" style="display:none;" class="form-grupo"><label class="form-label">📅 Fecha</label><div class="form-grande"><input type="date" id="vend-carga-fecha"></div></div>
+    <div class="form-grupo"><label class="form-label">📦 ¿Cuántas CANASTAS?</label><div class="form-grande"><input type="number" id="vend-canastas" placeholder="0" inputmode="numeric" min="1" oninput="actualizarPreviewCarga()"></div></div>
+    <div class="form-grupo"><label class="form-label">💰 Precio por BLOQUE ($)</label><div class="form-grande"><input type="text" id="vend-precio" placeholder="Ej: 18.000" inputmode="numeric" oninput="formatearPrecioVend(this)"></div></div>
+    <div id="vend-carga-preview" style="display:none;background:var(--azul2);border-radius:12px;padding:14px;margin-bottom:16px;font-size:14px;color:var(--azul);font-weight:600;"></div>
+    <button class="btn btn-azul" onclick="guardarCarga()">✅ GUARDAR CARGA</button>
+  </div>
+</div>
+
+<div id="screen-vend-abono-lista" class="screen">
+  <div class="header">
+    <button style="background:none;border:none;color:white;font-size:24px;cursor:pointer;" onclick="irPantalla('screen-vend-home')">←</button>
+    <h1>Registrar Abono</h1><div style="width:40px;"></div>
+  </div>
+  <div style="padding:20px;">
+    <div class="buscador"><span class="ico">🔍</span><input type="text" id="buscar-comprador-abono" placeholder="Buscar comprador..." oninput="filtrarCompradoresAbono()" autocomplete="off"></div>
+    <div id="lista-compradores-abono"><div class="loading">Cargando...</div></div>
+  </div>
+</div>
+
+<div id="screen-vend-abono" class="screen">
+  <div class="header">
+    <button style="background:none;border:none;color:white;font-size:24px;cursor:pointer;" onclick="irPantalla('screen-vend-abono-lista')">←</button>
+    <h1>Registrar Abono</h1><div style="width:40px;"></div>
+  </div>
+  <div style="padding:20px;">
+    <div class="card" style="background:var(--verde3);border:2px solid var(--verde);">
+      <div style="font-size:13px;color:var(--verde);font-weight:600;">COMPRADOR</div>
+      <div id="vend-abono-nombre" style="font-size:22px;font-weight:800;color:var(--verde);margin-top:4px;"></div>
+      <div id="vend-abono-ciudad" style="font-size:14px;color:var(--verde);margin-top:2px;"></div>
+    </div>
+    <div class="alerta alerta-rojo" id="vend-abono-error"></div>
+    <div id="vend-abono-fecha-wrap" style="display:none;" class="form-grupo"><label class="form-label">📅 Fecha</label><div class="form-grande"><input type="date" id="vend-abono-fecha"></div></div>
+    <div class="form-grupo"><label class="form-label">💵 Monto del ABONO ($)</label><div class="form-grande"><input type="text" id="vend-abono-monto" placeholder="Ej: 500.000" inputmode="numeric" oninput="formatearAbonoVend(this)"></div></div>
+    <button class="btn btn-verde" onclick="guardarAbono()">✅ GUARDAR ABONO</button>
+  </div>
+</div>
+
+<div id="screen-vend-exito" class="screen">
+  <div style="padding:20px;">
+    <div class="check-exito"><div class="ico">✅</div><h2 id="vend-exito-titulo">¡Guardado!</h2><p id="vend-exito-detalle"></p></div>
+    <button class="btn btn-azul" onclick="irPantalla('screen-vend-compradores');renderCompradoresVendCarga()">📦 NUEVA CARGA</button>
+    <button class="btn btn-gris" onclick="irPantalla('screen-vend-home')" style="margin-top:12px;">IR AL INICIO</button>
+  </div>
+</div>
+
 <!-- ══ ADMIN DASHBOARD ══ -->
 <div id="screen-admin-dashboard" class="screen">
   <div class="header"><div><div class="sub">🐄 Lácteos San Diego</div><h1 id="admin-nombre-header">Admin</h1><div id="admin-rol-header" style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.7);margin-top:-4px;text-transform:uppercase;letter-spacing:1px;"></div></div><button class="btn-salir" onclick="cerrarSesion()">Salir</button></div>
@@ -439,6 +525,17 @@
       <div id="admin-sin-recolectar"><div class="loading">Cargando...</div></div>
     </div>
     <div id="admin-alertas-container"></div>
+    <div class="card">
+      <div class="card-titulo" style="color:var(--azul);">💰 Ventas y Deudas</div>
+      <div id="admin-ventas-cards" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:center;margin-bottom:12px;">
+        <div style="background:var(--crema);border-radius:10px;padding:10px;"><div style="font-size:10px;color:var(--gris2);font-weight:600;">📦 CANASTAS</div><div id="admin-vt-canastas" style="font-size:20px;font-weight:800;">-</div></div>
+        <div style="background:var(--crema);border-radius:10px;padding:10px;"><div style="font-size:10px;color:var(--gris2);font-weight:600;">💵 DESPACHADO</div><div id="admin-vt-despachado" style="font-size:20px;font-weight:800;">-</div></div>
+        <div style="background:var(--crema);border-radius:10px;padding:10px;"><div style="font-size:10px;color:var(--gris2);font-weight:600;">✅ RECIBIDO</div><div id="admin-vt-recibido" style="font-size:20px;font-weight:800;color:#15803d;">-</div></div>
+        <div style="background:var(--crema);border-radius:10px;padding:10px;"><div style="font-size:10px;color:var(--gris2);font-weight:600;">💰 PENDIENTE</div><div id="admin-vt-pendiente" style="font-size:20px;font-weight:800;color:var(--rojo);">-</div></div>
+      </div>
+      <div id="admin-ventas-alerta-morosos"></div>
+      <div id="admin-ventas-lista"><div class="loading">Cargando...</div></div>
+    </div>
     <div class="card">
       <div class="card-titulo">📋 Historial de quincenas</div>
       <div id="admin-historial-quincenas"><div class="loading">Cargando...</div></div>
@@ -488,6 +585,7 @@
       <button class="tab" onclick="cambiarTabReporte(3,this)">Por Día</button>
       <button class="tab" onclick="cambiarTabReporte(4,this)">Por Ganadero</button>
       <button class="tab" onclick="cambiarTabReporte(5,this)">🧀 Producción</button>
+      <button class="tab" onclick="cambiarTabReporte(6,this)">🛒 Ventas</button>
     </div>
     <div class="card">
       <div class="card-titulo">Período</div>
@@ -524,6 +622,7 @@
     <div id="rep-tab-3" style="display:none;"><div class="vacio"><div class="ico">📅</div><p>Selecciona un período</p></div></div>
     <div id="rep-tab-4" style="display:none;"><div class="vacio"><div class="ico">📊</div><p>Selecciona un período y genera el reporte</p></div></div>
     <div id="rep-tab-5" style="display:none;"><div class="vacio"><div class="ico">🧀</div><p>Selecciona un período y genera el reporte de producción</p></div></div>
+    <div id="rep-tab-6" style="display:none;"><div class="vacio"><div class="ico">🛒</div><p>Selecciona un período y genera el reporte de ventas</p></div></div>
   </div>
 </div>
 
@@ -540,6 +639,11 @@
     <button class="btn btn-verde btn-sm" onclick="abrirModalInter()" style="margin-bottom:12px;">+ Nuevo intermediario</button>
     <div class="alerta alerta-rojo" id="inter-error2"></div>
     <div id="lista-intermediarios2"><div class="loading">Cargando...</div></div>
+    <div style="margin-top:28px;font-size:16px;font-weight:700;color:var(--gris3);margin-bottom:12px;">🛒 Compradores</div>
+    <button class="btn btn-azul btn-sm" onclick="abrirModalComprador(null)" style="margin-bottom:12px;">+ Nuevo comprador</button>
+    <div class="alerta alerta-rojo" id="comp-error"></div>
+    <div class="alerta alerta-verde" id="comp-ok"></div>
+    <div id="lista-compradores-admin"><div class="loading">Cargando...</div></div>
     <div style="margin-top:28px;font-size:16px;font-weight:700;color:var(--gris3);margin-bottom:12px;">🕐 Horario de funcionamiento</div>
     <div class="card">
       <div id="horario-estado" style="font-size:14px;margin-bottom:12px;">Cargando...</div>
@@ -776,6 +880,7 @@
         <option value="recogedor">Recogedor</option>
         <option value="recibidor">Recibidor (planta)</option>
         <option value="cuajador">Cuajador</option>
+        <option value="vendedor">Vendedor</option>
         <option value="admin">Administrador</option>
       </select>
     </div>
@@ -810,6 +915,25 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="modal-comprador">
+  <div class="modal">
+    <div class="modal-titulo" id="modal-comprador-titulo">Nuevo Comprador</div>
+    <div class="alerta alerta-rojo" id="m-comp-error"></div>
+    <div class="campo"><label>Nombre completo *</label><input type="text" id="m-comp-nombre" placeholder="Ej: Juan Pérez" autocomplete="off"></div>
+    <div class="campo"><label>Ciudad *</label><input type="text" id="m-comp-ciudad" placeholder="Ej: Bogotá" autocomplete="off"></div>
+    <div class="campo"><label>Teléfono (opcional)</label><input type="tel" id="m-comp-tel" placeholder="3XX XXX XXXX"></div>
+    <div class="campo" id="m-comp-estado-wrap" style="display:none;"><label>Estado</label>
+      <select id="m-comp-activo" style="width:100%;padding:14px;font-size:16px;border:2px solid #d1d5db;border-radius:12px;">
+        <option value="true">Activo</option><option value="false">Inactivo</option>
+      </select>
+    </div>
+    <div class="fila" style="margin-top:8px;">
+      <button class="btn btn-gris" onclick="cerrarModal('modal-comprador')">Cancelar</button>
+      <button class="btn btn-azul" onclick="guardarComprador()">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <div class="mc-overlay" id="mc-overlay">
   <div class="mc-box">
     <div class="mc-msg" id="mc-msg"></div>
@@ -835,6 +959,7 @@ let UA=null,rol=null,ganList=[],regHoyGan={},_porGan={},_porRec={},_porRecPlanta
 let recibSeleccionado=null,ganSel=null,listaRecogedores=[],modoHistorico=false,fechaReg=null,_costosRecFilter='todos';
 let _litrosPorGanadero={},_ordenGan='az';
 let _horarioInicio='04:00',_horarioFin='18:00',_horarioOrigInicio='04:00',_horarioOrigFin='18:00';
+let _compradoresList=[],_compradorSel=null,editCompId=null;
 
 // ── MODALES CUSTOM ──
 function _mcClose(){document.getElementById('mc-overlay').classList.remove('show');}
@@ -886,13 +1011,15 @@ async function iniciarSesionConRol(){
   if(rol==='admin'){initAdmin();return;}
   try{const sc=await getDocs(query(collection(db,'configuracion'),limit(1)));if(!sc.empty){const dc=sc.docs[0].data();_horarioInicio=dc.horarioInicio||'04:00';_horarioFin=dc.horarioFin||'18:00';}}catch(e){}
   if(!verificarHorario()){await signOut(auth);localStorage.removeItem('lsd_perfil');alerta('login-error',`⏰ La app está disponible de ${_horarioInicio} a ${_horarioFin}. Fuera de horario.`,'rojo');return;}
-  if(rol==='recibidor')initRecibidor();else if(rol==='cuajador')initCuajador();else initRec();
+  if(rol==='recibidor')initRecibidor();else if(rol==='cuajador')initCuajador();else if(rol==='vendedor')initVendedor();else initRec();
 }
 function ir(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   document.getElementById('bottom-nav').style.display=id.startsWith('screen-admin')?'flex':'none';
   if(id==='screen-recibi-registrar'){cargarRecogedoresParaRecibidor();cargarInter();}
+  if(id==='screen-vend-compradores'&&_compradoresList.length>0)renderCompradoresVendCarga();
+  if(id==='screen-vend-abono-lista'&&_compradoresList.length>0)renderCompradoresVendAbono();
   if(id==='screen-recibi-home'&&typeof resumenRecibidor==='function'){resumenRecibidor();}
   if(id==='screen-rec-buscar'){
     const inp=document.getElementById('buscar-input');
@@ -2169,6 +2296,8 @@ async function dashAdmin(){
     await cargarSinRecolectar();
     // Producción cuajador
     await cargarProduccionHoy();
+    // Dashboard ventas
+    await cargarDashboardVentas();
     // Historial quincenas
     await renderHistorialQuincenas();
   }catch(e){console.error(e);}
@@ -2706,7 +2835,7 @@ function quincenaPendiente(){
   }
   return{de,ha};
 }
-function cambiarTabReporte(idx,btn){tabRep=idx;document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('activo',i===idx));for(let i=0;i<6;i++){const el=document.getElementById(`rep-tab-${i}`);if(el)el.style.display=i===idx?'block':'none';}const h0=document.getElementById('rep-tab-0-historial');if(h0)h0.style.display=idx===0?'block':'none';const h1=document.getElementById('rep-tab-1-historial');if(h1)h1.style.display=idx===1?'block':'none';const pw=document.getElementById('precio-liq-wrap');if(pw)pw.style.display=idx===0?'block':'none';const pi=document.getElementById('precio-inter-wrap');if(pi)pi.style.display=idx===1?'block':'none';if(idx===0){const q=quincenaPendiente();document.getElementById('rep-desde').value=q.de;document.getElementById('rep-hasta').value=q.ha;_cargarHistorialReportes('liq');}if(idx===1){_cargarHistorialReportes('inter');}}window.cambiarTabReporte=cambiarTabReporte;
+function cambiarTabReporte(idx,btn){tabRep=idx;document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('activo',i===idx));for(let i=0;i<7;i++){const el=document.getElementById(`rep-tab-${i}`);if(el)el.style.display=i===idx?'block':'none';}const h0=document.getElementById('rep-tab-0-historial');if(h0)h0.style.display=idx===0?'block':'none';const h1=document.getElementById('rep-tab-1-historial');if(h1)h1.style.display=idx===1?'block':'none';const pw=document.getElementById('precio-liq-wrap');if(pw)pw.style.display=idx===0?'block':'none';const pi=document.getElementById('precio-inter-wrap');if(pi)pi.style.display=idx===1?'block':'none';if(idx===0){const q=quincenaPendiente();document.getElementById('rep-desde').value=q.de;document.getElementById('rep-hasta').value=q.ha;_cargarHistorialReportes('liq');}if(idx===1){_cargarHistorialReportes('inter');}}window.cambiarTabReporte=cambiarTabReporte;
 function setFiltroRapido(t){const h=new Date();const y=h.getFullYear();const m=String(h.getMonth()+1).padStart(2,'0');const d=String(h.getDate()).padStart(2,'0');const D=i=>document.getElementById(i);if(t==='hoy'){D('rep-desde').value=`${y}-${m}-${d}`;D('rep-hasta').value=`${y}-${m}-${d}`;}else if(t==='semana'){const i=new Date(h);i.setDate(h.getDate()-h.getDay());D('rep-desde').value=i.toISOString().split('T')[0];D('rep-hasta').value=`${y}-${m}-${d}`;}else if(t==='quincena1'){D('rep-desde').value=`${y}-${m}-01`;D('rep-hasta').value=`${y}-${m}-15`;}else if(t==='quincena2'){const u=new Date(y,h.getMonth()+1,0).getDate();D('rep-desde').value=`${y}-${m}-16`;D('rep-hasta').value=`${y}-${m}-${u}`;}else if(t==='mes'){const u=new Date(y,h.getMonth()+1,0).getDate();D('rep-desde').value=`${y}-${m}-01`;D('rep-hasta').value=`${y}-${m}-${u}`;}}window.setFiltroRapido=setFiltroRapido;
 
 async function generarReporte(){
@@ -2738,6 +2867,7 @@ async function generarReporte(){
       repInter(datosInter,de,ha,0);
     }
     if(tabRep===5){await repProduccion(de,ha);}
+    if(tabRep===6){await repVentas(de,ha);}
   }catch(e){console.error(e);}
 }window.generarReporte=generarReporte;
 
@@ -3436,9 +3566,9 @@ async function usuAdmin(){
   try{
     const s=await getDocs(query(collection(db,'usuarios'),orderBy('nombre')));
     const u=[];s.forEach(d=>u.push({id:d.id,...d.data()}));
-    const _rolOrden={recogedor:0,recibidor:1,cuajador:2,admin:3};
+    const _rolOrden={recogedor:0,recibidor:1,cuajador:2,vendedor:3,admin:4};
     u.sort((a,b)=>(_rolOrden[a.rol]??99)-(_rolOrden[b.rol]??99)||(a.nombre||'').localeCompare(b.nombre||''));
-    const badgeRol=r=>r==='admin'?'badge-azul':r==='recibidor'?'badge-naranja':r==='cuajador'?'badge-verde':'badge-verde';
+    const badgeRol=r=>r==='admin'?'badge-azul':r==='recibidor'?'badge-naranja':r==='cuajador'?'badge-verde':r==='vendedor'?'badge-amarillo':'badge-verde';
     document.getElementById('lista-usuarios').innerHTML=u.map(x=>`
       <div class="usr-card ${x.bloqueado?'bloqueado':''}">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;">
@@ -3467,13 +3597,13 @@ async function usuAdmin(){
 }
 async function resetearContrasena(email){try{await sendPasswordResetEmail(auth,email);alerta('usr-ok',`✅ Correo enviado a ${email}. El usuario debe revisar su bandeja de entrada.`,'verde');}catch(e){alerta('usr-error','Error al enviar el correo.','rojo');}}window.resetearContrasena=resetearContrasena;
 async function cambiarRol(uid,rolActual,nombre){
-  const roles=['recogedor','recibidor','cuajador','admin'];
-  const nombres={'recogedor':'Recogedor','recibidor':'Recibidor (planta)','cuajador':'Cuajador','admin':'Administrador'};
+  const roles=['recogedor','recibidor','cuajador','vendedor','admin'];
+  const nombres={'recogedor':'Recogedor','recibidor':'Recibidor (planta)','cuajador':'Cuajador','vendedor':'Vendedor','admin':'Administrador'};
   const opciones=roles.filter(r=>r!==rolActual).map(r=>nombres[r]).join(' / ');
-  const nuevoNombre=await modalPrompt(`¿A qué rol quieres cambiar a ${nombre}?\n\nRol actual: ${nombres[rolActual]}\nOpciones: ${opciones}\n\nEscribe exactamente: recogedor, recibidor, cuajador o admin`);
+  const nuevoNombre=await modalPrompt(`¿A qué rol quieres cambiar a ${nombre}?\n\nRol actual: ${nombres[rolActual]}\nOpciones: ${opciones}\n\nEscribe exactamente: recogedor, recibidor, cuajador, vendedor o admin`);
   if(!nuevoNombre)return;
   const nuevo=nuevoNombre.trim().toLowerCase();
-  if(!roles.includes(nuevo)){await modalAlert('Rol no válido. Escribe: recogedor, recibidor, cuajador o admin');return;}
+  if(!roles.includes(nuevo)){await modalAlert('Rol no válido. Escribe: recogedor, recibidor, cuajador, vendedor o admin');return;}
   if(nuevo===rolActual){await modalAlert('Ya tiene ese rol.');return;}
   try{
     await updateDoc(doc(db,'usuarios',uid),{rol:nuevo});
@@ -3808,6 +3938,7 @@ function abrirVistaRol(uid,nombre,rolVer){
   if(rolVer==='recogedor')initRec();
   else if(rolVer==='recibidor')initRecibidor();
   else if(rolVer==='cuajador')initCuajador();
+  else if(rolVer==='vendedor')initVendedor();
 }window.abrirVistaRol=abrirVistaRol;
 function volverAAdmin(){
   if(!_adminBackup)return;
@@ -3817,7 +3948,367 @@ function volverAAdmin(){
   initAdmin();
 }window.volverAAdmin=volverAAdmin;
 
-function navAdmin(p,b){ir(p);document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('activo'));b.classList.add('activo');if(p==='screen-admin-dashboard')dashAdmin();if(p==='screen-admin-ganaderos')ganAdmin();if(p==='screen-admin-costos')initCostos();if(p==='screen-admin-reportes'){_cargarHistorialReportes('liq');_cargarHistorialReportes('inter');}if(p==='screen-admin-usuarios'){usuAdmin();interAdmin2();actualizarUIHistorico();cargarHorario();}}window.navAdmin=navAdmin;
+// ══════════════════════════════════════════
+//  VENDEDOR
+// ══════════════════════════════════════════
+async function initVendedor(){
+  document.getElementById('vend-nombre-header').textContent=UA.nombre||'Vendedor';
+  document.getElementById('vend-rol-header').textContent='vendedor';
+  try{const uDoc=await getDoc(doc(db,'usuarios',UA.uid));modoHistorico=uDoc.exists()&&uDoc.data().modoHistorico||false;}catch(e){modoHistorico=false;}
+  fechaReg=hoy();
+  document.getElementById('vend-fecha').textContent=fmtFecha(fechaReg);
+  const wrap=document.getElementById('vend-fecha-selector');
+  if(wrap)wrap.style.display=modoHistorico?'block':'none';
+  if(modoHistorico){
+    const inp=document.getElementById('vend-fecha-home-input');
+    if(inp){const h=new Date();inp.max=hoy();inp.min=`${h.getFullYear()}-${String(h.getMonth()+1).padStart(2,'0')}-01`;inp.value=hoy();
+    inp.onchange=()=>{fechaReg=inp.value||hoy();document.getElementById('vend-fecha').textContent=fmtFecha(fechaReg);resumenVendedor();};}
+  }
+  await cargarCompradoresVend();
+  await resumenVendedor();
+  await cargarResumenVendSemanal();
+  ir('screen-vend-home');
+}
+function cambiarFechaVendedor(){
+  const inp=document.getElementById('vend-fecha-home-input');
+  if(inp){fechaReg=inp.value||hoy();document.getElementById('vend-fecha').textContent=fmtFecha(fechaReg);resumenVendedor();}
+}window.cambiarFechaVendedor=cambiarFechaVendedor;
+
+async function cargarCompradoresVend(){
+  try{
+    const snap=await getDocs(query(collection(db,'compradores'),where('activo','==',true)));
+    _compradoresList=[];snap.forEach(d=>_compradoresList.push({id:d.id,...d.data()}));
+    _compradoresList.sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||''));
+  }catch(e){console.error('Error cargando compradores:',e);}
+}
+
+function renderCompradoresVendCarga(){
+  const el=document.getElementById('lista-compradores-vend');if(!el)return;
+  if(_compradoresList.length===0){el.innerHTML='<div class="vacio"><div class="ico">🏪</div><p>Sin compradores</p></div>';return;}
+  el.innerHTML=_compradoresList.map(c=>`<div class="lista-item" onclick="selCompradorCarga('${c.id}')"><div><div class="nombre">${c.nombre}</div><div class="detalle">📍 ${c.ciudad||'Sin ciudad'}${c.telefono?' · 📞 '+c.telefono:''}</div></div><span class="flecha">→</span></div>`).join('');
+}window.renderCompradoresVendCarga=renderCompradoresVendCarga;
+function renderCompradoresVendAbono(){
+  const el=document.getElementById('lista-compradores-abono');if(!el)return;
+  if(_compradoresList.length===0){el.innerHTML='<div class="vacio"><div class="ico">💵</div><p>Sin compradores</p></div>';return;}
+  el.innerHTML=_compradoresList.map(c=>`<div class="lista-item" onclick="selCompradorAbono('${c.id}')"><div><div class="nombre">${c.nombre}</div><div class="detalle">📍 ${c.ciudad||'Sin ciudad'}</div></div><span class="flecha">→</span></div>`).join('');
+}window.renderCompradoresVendAbono=renderCompradoresVendAbono;
+function filtrarCompradoresVend(){
+  const b=document.getElementById('buscar-comprador-vend').value.trim().toLowerCase();
+  if(!b){renderCompradoresVendCarga();return;}
+  const fil=_compradoresList.filter(c=>matchInicio(c.nombre,b)||(c.ciudad||'').toLowerCase().includes(b));
+  const el=document.getElementById('lista-compradores-vend');if(!el)return;
+  if(fil.length===0){el.innerHTML='<p style="color:var(--gris2);font-size:14px;">Sin resultados</p>';return;}
+  el.innerHTML=fil.map(c=>`<div class="lista-item" onclick="selCompradorCarga('${c.id}')"><div><div class="nombre">${c.nombre}</div><div class="detalle">📍 ${c.ciudad||'Sin ciudad'}</div></div><span class="flecha">→</span></div>`).join('');
+}window.filtrarCompradoresVend=filtrarCompradoresVend;
+function filtrarCompradoresAbono(){
+  const b=document.getElementById('buscar-comprador-abono').value.trim().toLowerCase();
+  if(!b){renderCompradoresVendAbono();return;}
+  const fil=_compradoresList.filter(c=>matchInicio(c.nombre,b)||(c.ciudad||'').toLowerCase().includes(b));
+  const el=document.getElementById('lista-compradores-abono');if(!el)return;
+  if(fil.length===0){el.innerHTML='<p style="color:var(--gris2);font-size:14px;">Sin resultados</p>';return;}
+  el.innerHTML=fil.map(c=>`<div class="lista-item" onclick="selCompradorAbono('${c.id}')"><div><div class="nombre">${c.nombre}</div><div class="detalle">📍 ${c.ciudad||'Sin ciudad'}</div></div><span class="flecha">→</span></div>`).join('');
+}window.filtrarCompradoresAbono=filtrarCompradoresAbono;
+
+function selCompradorCarga(id){
+  _compradorSel=_compradoresList.find(c=>c.id===id);if(!_compradorSel)return;
+  document.getElementById('vend-comprador-nombre').textContent=_compradorSel.nombre;
+  document.getElementById('vend-comprador-ciudad').textContent='📍 '+(_compradorSel.ciudad||'');
+  document.getElementById('vend-canastas').value='';
+  document.getElementById('vend-precio').value='';
+  ocult('vend-carga-error');
+  const prev=document.getElementById('vend-carga-preview');if(prev)prev.style.display='none';
+  const fwrap=document.getElementById('vend-carga-fecha-wrap');
+  if(fwrap)fwrap.style.display=modoHistorico?'block':'none';
+  if(modoHistorico){const fi=document.getElementById('vend-carga-fecha');if(fi){fi.value=fechaReg||hoy();fi.max=hoy();const h=new Date();fi.min=`${h.getFullYear()}-${String(h.getMonth()+1).padStart(2,'0')}-01`;}}
+  ir('screen-vend-carga');
+}window.selCompradorCarga=selCompradorCarga;
+
+function formatearPrecioVend(el){let v=el.value.replace(/\D/g,'');if(!v){el.value='';actualizarPreviewCarga();return;}el.value=parseInt(v).toLocaleString('es-CO');actualizarPreviewCarga();}window.formatearPrecioVend=formatearPrecioVend;
+function formatearAbonoVend(el){let v=el.value.replace(/\D/g,'');if(!v){el.value='';return;}el.value=parseInt(v).toLocaleString('es-CO');}window.formatearAbonoVend=formatearAbonoVend;
+
+function actualizarPreviewCarga(){
+  const prev=document.getElementById('vend-carga-preview');if(!prev)return;
+  const canastas=parseInt(document.getElementById('vend-canastas').value)||0;
+  const precioRaw=document.getElementById('vend-precio').value.replace(/\./g,'').replace(/,/g,'');
+  const precio=parseFloat(precioRaw)||0;
+  if(canastas>0&&precio>0){
+    const bloques=canastas*16;const total=bloques*precio;
+    prev.style.display='block';
+    prev.innerHTML=`📦 ${canastas} canastas × 16 = <strong>${bloques} bloques</strong><br>💰 ${bloques} × ${fmtPeso(precio)} = <strong>${fmtPeso(total)}</strong>`;
+  }else{prev.style.display='none';}
+}window.actualizarPreviewCarga=actualizarPreviewCarga;
+
+async function guardarCarga(){
+  if(!_compradorSel){alerta('vend-carga-error','Selecciona un comprador','rojo');return;}
+  if(!navigator.onLine){alerta('vend-carga-error','Sin conexión a internet','rojo');return;}
+  const canastas=parseInt(document.getElementById('vend-canastas').value)||0;
+  const precioRaw=document.getElementById('vend-precio').value.replace(/\./g,'').replace(/,/g,'');
+  const precio=parseFloat(precioRaw)||0;
+  if(canastas<=0){alerta('vend-carga-error','Ingresa las canastas','rojo');return;}
+  if(precio<=0){alerta('vend-carga-error','Ingresa el precio por bloque','rojo');return;}
+  const bloques=canastas*16;const total=bloques*precio;
+  const fecha=modoHistorico?(document.getElementById('vend-carga-fecha').value||hoy()):hoy();
+  try{
+    await addDoc(collection(db,'ventas'),{
+      fecha,compradorId:_compradorSel.id,compradorNombre:_compradorSel.nombre,compradorCiudad:_compradorSel.ciudad||'',
+      canastas,precioPorBloque:precio,bloques,totalVenta:total,
+      registradoPor:UA.uid,registradoPorNombre:UA.nombre||UA.email,hora:horaAhora(),timestamp:serverTimestamp()
+    });
+    document.getElementById('vend-exito-titulo').textContent='¡Carga guardada!';
+    document.getElementById('vend-exito-detalle').textContent=`${_compradorSel.nombre} · ${canastas} canastas (${bloques} bloques) · ${fmtPeso(total)}`;
+    ir('screen-vend-exito');resumenVendedor();
+  }catch(e){alerta('vend-carga-error','Error al guardar','rojo');console.error(e);}
+}window.guardarCarga=guardarCarga;
+
+function selCompradorAbono(id){
+  _compradorSel=_compradoresList.find(c=>c.id===id);if(!_compradorSel)return;
+  document.getElementById('vend-abono-nombre').textContent=_compradorSel.nombre;
+  document.getElementById('vend-abono-ciudad').textContent='📍 '+(_compradorSel.ciudad||'');
+  document.getElementById('vend-abono-monto').value='';
+  ocult('vend-abono-error');
+  const fwrap=document.getElementById('vend-abono-fecha-wrap');
+  if(fwrap)fwrap.style.display=modoHistorico?'block':'none';
+  if(modoHistorico){const fi=document.getElementById('vend-abono-fecha');if(fi){fi.value=fechaReg||hoy();fi.max=hoy();const h=new Date();fi.min=`${h.getFullYear()}-${String(h.getMonth()+1).padStart(2,'0')}-01`;}}
+  ir('screen-vend-abono');
+}window.selCompradorAbono=selCompradorAbono;
+
+async function guardarAbono(){
+  if(!_compradorSel){alerta('vend-abono-error','Selecciona un comprador','rojo');return;}
+  if(!navigator.onLine){alerta('vend-abono-error','Sin conexión a internet','rojo');return;}
+  const montoRaw=document.getElementById('vend-abono-monto').value.replace(/\./g,'').replace(/,/g,'');
+  const monto=parseFloat(montoRaw)||0;
+  if(monto<=0){alerta('vend-abono-error','Ingresa el monto','rojo');return;}
+  const fecha=modoHistorico?(document.getElementById('vend-abono-fecha').value||hoy()):hoy();
+  try{
+    await addDoc(collection(db,'abonos'),{
+      fecha,compradorId:_compradorSel.id,compradorNombre:_compradorSel.nombre,compradorCiudad:_compradorSel.ciudad||'',
+      monto,registradoPor:UA.uid,registradoPorNombre:UA.nombre||UA.email,hora:horaAhora(),timestamp:serverTimestamp()
+    });
+    document.getElementById('vend-exito-titulo').textContent='¡Abono guardado!';
+    document.getElementById('vend-exito-detalle').textContent=`${_compradorSel.nombre} · Abono: ${fmtPeso(monto)}`;
+    ir('screen-vend-exito');resumenVendedor();
+  }catch(e){alerta('vend-abono-error','Error al guardar','rojo');console.error(e);}
+}window.guardarAbono=guardarAbono;
+
+async function resumenVendedor(){
+  const el=document.getElementById('vend-lista-hoy');if(!el)return;
+  const f=getFechaReg();
+  try{
+    const snapV=await getDocs(query(collection(db,'ventas'),where('fecha','==',f),where('registradoPor','==',UA.uid)));
+    const snapA=await getDocs(query(collection(db,'abonos'),where('fecha','==',f),where('registradoPor','==',UA.uid)));
+    const ventas=[];snapV.forEach(d=>ventas.push(d.data()));
+    const abonos=[];snapA.forEach(d=>abonos.push(d.data()));
+    if(ventas.length===0&&abonos.length===0){el.innerHTML='<p style="color:var(--gris2);font-size:14px;">Sin registros hoy</p>';return;}
+    let html='';
+    ventas.forEach(v=>{html+=`<div class="lista-item"><div><div class="nombre">📦 ${v.compradorNombre}</div><div class="detalle">${v.canastas} can × 16 × ${fmtPeso(v.precioPorBloque)} = ${fmtPeso(v.totalVenta)}</div></div></div>`;});
+    abonos.forEach(a=>{html+=`<div class="lista-item"><div><div class="nombre">💰 ${a.compradorNombre}</div><div class="detalle">Abono: ${fmtPeso(a.monto)}</div></div></div>`;});
+    el.innerHTML=html;
+  }catch(e){console.error(e);}
+}
+
+async function cargarResumenVendSemanal(){
+  const cont=document.getElementById('vend-resumen-semanal');if(!cont)return;
+  try{
+    function fLocal(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+    const hoyD=new Date();const dias=[];
+    for(let i=4;i>=0;i--){const d=new Date(hoyD);d.setDate(hoyD.getDate()-i);dias.push(fLocal(d));}
+    const snapV=await getDocs(query(collection(db,'ventas'),where('fecha','>=',dias[0]),where('fecha','<=',dias[4]),where('registradoPor','==',UA.uid)));
+    const snapA=await getDocs(query(collection(db,'abonos'),where('fecha','>=',dias[0]),where('fecha','<=',dias[4]),where('registradoPor','==',UA.uid)));
+    const porDia={};dias.forEach(d=>{porDia[d]={v:0,a:0};});
+    snapV.forEach(d=>{const da=d.data();if(porDia[da.fecha])porDia[da.fecha].v++;});
+    snapA.forEach(d=>{const da=d.data();if(porDia[da.fecha])porDia[da.fecha].a++;});
+    const nomDia=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+    const hoyStr=hoy();
+    cont.innerHTML=`<div style="display:flex;gap:6px;margin-bottom:16px;">${dias.map(d=>{const dw=new Date(d+'T12:00:00').getDay();const t=porDia[d].v+porDia[d].a;const esHoy=d===hoyStr;return`<div style="flex:1;text-align:center;padding:8px 4px;border-radius:10px;background:${esHoy?'var(--azul)':'var(--azul2)'};"><div style="font-size:10px;font-weight:700;color:${esHoy?'white':'var(--azul)'};">${nomDia[dw]}</div><div style="font-size:16px;font-weight:800;color:${esHoy?'white':'var(--azul)'};">${t||'—'}</div></div>`;}).join('')}</div>`;
+  }catch(e){}
+}
+
+// ══════════════════════════════════════════
+//  COMPRADORES (ADMIN)
+// ══════════════════════════════════════════
+function abrirModalComprador(id){
+  editCompId=id;
+  document.getElementById('modal-comprador-titulo').textContent=id?'Editar Comprador':'Nuevo Comprador';
+  document.getElementById('m-comp-nombre').value='';
+  document.getElementById('m-comp-ciudad').value='';
+  document.getElementById('m-comp-tel').value='';
+  document.getElementById('m-comp-activo').value='true';
+  document.getElementById('m-comp-estado-wrap').style.display=id?'block':'none';
+  ocult('m-comp-error');
+  if(id){
+    getDoc(doc(db,'compradores',id)).then(s=>{
+      if(s.exists()){const d=s.data();document.getElementById('m-comp-nombre').value=d.nombre||'';document.getElementById('m-comp-ciudad').value=d.ciudad||'';document.getElementById('m-comp-tel').value=d.telefono||'';document.getElementById('m-comp-activo').value=String(d.activo!==false);}
+    });
+  }
+  abrirModal('modal-comprador');
+}window.abrirModalComprador=abrirModalComprador;
+async function guardarComprador(){
+  const nombre=document.getElementById('m-comp-nombre').value.trim();
+  const ciudad=document.getElementById('m-comp-ciudad').value.trim();
+  const telefono=document.getElementById('m-comp-tel').value.trim();
+  const activo=document.getElementById('m-comp-activo').value==='true';
+  if(!nombre){alerta('m-comp-error','El nombre es obligatorio','rojo');return;}
+  if(!ciudad){alerta('m-comp-error','La ciudad es obligatoria','rojo');return;}
+  try{
+    if(editCompId){
+      await updateDoc(doc(db,'compradores',editCompId),{nombre,ciudad,telefono,activo});
+    }else{
+      await addDoc(collection(db,'compradores'),{nombre,ciudad,telefono,activo:true,agregadoPor:UA.uid,agregadoPorNombre:UA.nombre||UA.email,fechaAgregado:hoy()});
+    }
+    cerrarModal('modal-comprador');
+    if(rol==='vendedor'){await cargarCompradoresVend();}
+    else{alerta('comp-ok',editCompId?'✅ Comprador actualizado':'✅ Comprador agregado','verde');await compradoresAdmin();}
+  }catch(e){alerta('m-comp-error','Error al guardar','rojo');}
+}window.guardarComprador=guardarComprador;
+
+async function compradoresAdmin(){
+  const cont=document.getElementById('lista-compradores-admin');if(!cont)return;
+  try{
+    const snapC=await getDocs(collection(db,'compradores'));
+    const comps=[];snapC.forEach(d=>comps.push({id:d.id,...d.data()}));
+    comps.sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||''));
+    const snapV=await getDocs(collection(db,'ventas'));
+    const snapA=await getDocs(collection(db,'abonos'));
+    const ventasPorComp={};const abonosPorComp={};const ultimoAbono={};const ultimaCarga={};
+    snapV.forEach(d=>{const da=d.data();ventasPorComp[da.compradorId]=(ventasPorComp[da.compradorId]||0)+(da.totalVenta||0);if(!ultimaCarga[da.compradorId]||da.fecha>ultimaCarga[da.compradorId])ultimaCarga[da.compradorId]=da.fecha;});
+    snapA.forEach(d=>{const da=d.data();abonosPorComp[da.compradorId]=(abonosPorComp[da.compradorId]||0)+(da.monto||0);if(!ultimoAbono[da.compradorId]||da.fecha>ultimoAbono[da.compradorId])ultimoAbono[da.compradorId]=da.fecha;});
+    if(comps.length===0){cont.innerHTML='<p style="color:var(--gris2);font-size:14px;">Sin compradores</p>';return;}
+    cont.innerHTML=comps.map(c=>{
+      const despachado=ventasPorComp[c.id]||0;const abonado=abonosPorComp[c.id]||0;const saldo=despachado-abonado;
+      const ultAb=ultimoAbono[c.id];const ultCa=ultimaCarga[c.id];
+      const diasSinAbonar=ultAb?Math.floor((new Date()-new Date(ultAb+'T00:00:00'))/(1000*60*60*24)):999;
+      const badge=saldo<=0?'badge-verde':diasSinAbonar>25?'badge-rojo':'badge-amarillo';
+      const badgeText=saldo<=0?'Al día':diasSinAbonar>25?'🔴 +25 días':'Debe';
+      return`<div style="background:white;border-radius:12px;padding:14px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div><div style="font-weight:700;font-size:15px;">${c.nombre} ${c.activo===false?'<span style="color:var(--rojo);font-size:12px;">(Inactivo)</span>':''}</div><div style="font-size:12px;color:var(--gris2);margin-top:2px;">📍 ${c.ciudad||'—'} ${c.telefono?'· 📞 '+c.telefono:''}</div></div>
+          <span class="badge ${badge}">${badgeText}</span>
+        </div>
+        <div style="margin-top:8px;font-size:13px;color:var(--gris3);">Saldo: <strong style="color:${saldo>0?'var(--rojo)':'#15803d'};">${fmtPeso(saldo>0?saldo:0)}</strong></div>
+        <div style="font-size:11px;color:var(--gris2);margin-top:4px;">Última carga: ${ultCa||'—'} · Último abono: ${ultAb||'—'}${diasSinAbonar<999&&saldo>0?' · '+diasSinAbonar+' días sin abonar':''}</div>
+        <div style="margin-top:8px;"><button class="btn btn-gris btn-sm" onclick="abrirModalComprador('${c.id}')">✏️ Editar</button></div>
+      </div>`;
+    }).join('');
+  }catch(e){console.error(e);cont.innerHTML='<p style="color:var(--gris2);">Error al cargar</p>';}
+}
+
+// ══════════════════════════════════════════
+//  DASHBOARD VENTAS (ADMIN)
+// ══════════════════════════════════════════
+async function cargarDashboardVentas(){
+  try{
+    const snapV=await getDocs(collection(db,'ventas'));
+    const snapA=await getDocs(collection(db,'abonos'));
+    let totalCanastas=0,totalDespachado=0,totalRecibido=0;
+    const porComp={};const ultimoAbono={};
+    snapV.forEach(d=>{
+      const da=d.data();totalCanastas+=(da.canastas||0);totalDespachado+=(da.totalVenta||0);
+      if(!porComp[da.compradorId])porComp[da.compradorId]={nombre:da.compradorNombre,ciudad:da.compradorCiudad||'',desp:0,abon:0};
+      porComp[da.compradorId].desp+=(da.totalVenta||0);
+    });
+    snapA.forEach(d=>{
+      const da=d.data();totalRecibido+=(da.monto||0);
+      if(!porComp[da.compradorId])porComp[da.compradorId]={nombre:da.compradorNombre,ciudad:da.compradorCiudad||'',desp:0,abon:0};
+      porComp[da.compradorId].abon+=(da.monto||0);
+      if(!ultimoAbono[da.compradorId]||da.fecha>ultimoAbono[da.compradorId])ultimoAbono[da.compradorId]=da.fecha;
+    });
+    const pendiente=totalDespachado-totalRecibido;
+    document.getElementById('admin-vt-canastas').textContent=totalCanastas;
+    document.getElementById('admin-vt-despachado').textContent=fmtPesoCorto(totalDespachado);
+    document.getElementById('admin-vt-recibido').textContent=fmtPesoCorto(totalRecibido);
+    document.getElementById('admin-vt-pendiente').textContent=fmtPesoCorto(pendiente>0?pendiente:0);
+    const listaComp=Object.entries(porComp).map(([id,c])=>{
+      const saldo=c.desp-c.abon;const ultAb=ultimoAbono[id];
+      const diasSinAbonar=ultAb?Math.floor((new Date()-new Date(ultAb+'T00:00:00'))/(1000*60*60*24)):999;
+      return{id,nombre:c.nombre,ciudad:c.ciudad,saldo,ultAb,diasSinAbonar};
+    }).sort((a,b)=>b.saldo-a.saldo);
+    const morosos=listaComp.filter(c=>c.saldo>0&&c.diasSinAbonar>25);
+    const alertaCont=document.getElementById('admin-ventas-alerta-morosos');
+    if(morosos.length>0){
+      alertaCont.innerHTML=`<div style="background:var(--rojo2);border:2px solid var(--rojo);border-radius:10px;padding:12px;margin-bottom:12px;font-size:13px;"><div style="font-weight:700;color:var(--rojo);margin-bottom:6px;">⚠️ ${morosos.length} comprador${morosos.length>1?'es':''} con más de 25 días sin abonar</div>${morosos.map(m=>`<div style="color:var(--rojo);padding:2px 0;">${m.nombre} (${m.ciudad}) — ${fmtPeso(m.saldo)} · ${m.diasSinAbonar} días</div>`).join('')}</div>`;
+    }else{alertaCont.innerHTML='';}
+    const listaCont=document.getElementById('admin-ventas-lista');
+    if(listaComp.length===0){listaCont.innerHTML='<p style="color:var(--gris2);font-size:14px;">Sin ventas registradas</p>';return;}
+    const LIMITE=3;
+    function renderListaVentas(expandido){
+      const vis=expandido?listaComp:listaComp.slice(0,LIMITE);
+      const html=vis.map(c=>{
+        const badge=c.saldo<=0?'badge-verde':c.diasSinAbonar>25?'badge-rojo':'badge-amarillo';
+        const badgeText=c.saldo<=0?'🟢 Al día':c.diasSinAbonar>25?'🔴 +25d':'🟡 Debe';
+        return`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--gris1);">
+          <div><div style="font-weight:600;font-size:14px;">${c.nombre}</div><div style="font-size:11px;color:var(--gris2);">${c.ciudad}${c.ultAb?' · Abono: '+c.ultAb:''}${c.saldo>0&&c.diasSinAbonar<999?' · '+c.diasSinAbonar+'d':''}</div></div>
+          <div style="text-align:right;"><div style="font-weight:700;font-size:14px;color:${c.saldo>0?'var(--rojo)':'#15803d'};">${c.saldo>0?fmtPeso(c.saldo):'$0'}</div><span class="badge ${badge}" style="font-size:10px;">${badgeText}</span></div>
+        </div>`;
+      }).join('');
+      const verBtn=listaComp.length>LIMITE?expandido?`<button onclick="window._toggleVentasDash(false)" style="margin-top:8px;background:none;border:none;color:var(--azul);font-weight:700;font-size:13px;cursor:pointer;width:100%;text-align:center;">Ver menos ▲</button>`:`<button onclick="window._toggleVentasDash(true)" style="margin-top:8px;background:none;border:none;color:var(--azul);font-weight:700;font-size:13px;cursor:pointer;width:100%;text-align:center;">Ver más (${listaComp.length-LIMITE} más) ▼</button>`:'';
+      listaCont.innerHTML=html+verBtn;
+    }
+    window._toggleVentasDash=function(exp){renderListaVentas(exp);};
+    renderListaVentas(false);
+  }catch(e){console.error('Error ventas dashboard:',e);}
+}
+
+// ══════════════════════════════════════════
+//  REPORTE VENTAS (ADMIN)
+// ══════════════════════════════════════════
+async function repVentas(de,ha){
+  const tab=document.getElementById('rep-tab-6');if(!tab)return;
+  try{
+    const snapV=await getDocs(query(collection(db,'ventas'),where('fecha','>=',de),where('fecha','<=',ha)));
+    const snapA=await getDocs(query(collection(db,'abonos'),where('fecha','>=',de),where('fecha','<=',ha)));
+    const ventas=[];snapV.forEach(d=>ventas.push({id:d.id,...d.data()}));
+    const abonos=[];snapA.forEach(d=>abonos.push({id:d.id,...d.data()}));
+    if(ventas.length===0&&abonos.length===0){tab.innerHTML='<div class="vacio"><div class="ico">🛒</div><p>Sin datos de ventas en este período</p></div>';return;}
+    const porComp={};
+    ventas.forEach(v=>{
+      if(!porComp[v.compradorId])porComp[v.compradorId]={nombre:v.compradorNombre,ciudad:v.compradorCiudad||'',canastas:0,desp:0,abon:0};
+      porComp[v.compradorId].canastas+=(v.canastas||0);porComp[v.compradorId].desp+=(v.totalVenta||0);
+    });
+    abonos.forEach(a=>{
+      if(!porComp[a.compradorId])porComp[a.compradorId]={nombre:a.compradorNombre,ciudad:a.compradorCiudad||'',canastas:0,desp:0,abon:0};
+      porComp[a.compradorId].abon+=(a.monto||0);
+    });
+    const snapVAll=await getDocs(collection(db,'ventas'));
+    const snapAAll=await getDocs(collection(db,'abonos'));
+    const saldoHist={};
+    snapVAll.forEach(d=>{const da=d.data();saldoHist[da.compradorId]=(saldoHist[da.compradorId]||0)+(da.totalVenta||0);});
+    snapAAll.forEach(d=>{const da=d.data();saldoHist[da.compradorId]=(saldoHist[da.compradorId]||0)-(da.monto||0);});
+    const totalCanastas=ventas.reduce((s,v)=>s+(v.canastas||0),0);
+    const totalDesp=ventas.reduce((s,v)=>s+(v.totalVenta||0),0);
+    const totalAbon=abonos.reduce((s,a)=>s+(a.monto||0),0);
+    let html=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;margin-bottom:14px;background:var(--crema);border-radius:12px;padding:12px;">
+      <div><div style="font-size:10px;color:var(--gris2);font-weight:600;">CANASTAS</div><div style="font-size:20px;font-weight:800;">${totalCanastas}</div></div>
+      <div><div style="font-size:10px;color:var(--gris2);font-weight:600;">DESPACHADO</div><div style="font-size:20px;font-weight:800;">${fmtPesoCorto(totalDesp)}</div></div>
+      <div><div style="font-size:10px;color:var(--gris2);font-weight:600;">ABONADO</div><div style="font-size:20px;font-weight:800;color:#15803d;">${fmtPesoCorto(totalAbon)}</div></div>
+    </div>`;
+    html+=`<div class="card" style="padding:0;overflow:hidden;"><table class="tabla"><thead><tr><th>Comprador</th><th>Ciudad</th><th>Canastas</th><th>Despachado</th><th>Abonado</th><th>Saldo actual</th></tr></thead><tbody>`;
+    const comps=Object.entries(porComp).sort((a,b)=>(saldoHist[b[0]]||0)-(saldoHist[a[0]]||0));
+    comps.forEach(([id,c])=>{
+      const saldo=saldoHist[id]||0;
+      html+=`<tr><td><strong>${c.nombre}</strong></td><td>${c.ciudad}</td><td>${c.canastas}</td><td>${fmtPeso(c.desp)}</td><td>${fmtPeso(c.abon)}</td><td style="color:${saldo>0?'var(--rojo)':'#15803d'};font-weight:700;">${fmtPeso(saldo>0?saldo:0)}</td></tr>`;
+    });
+    html+=`<tr style="font-weight:700;background:var(--verde3);"><td>TOTAL</td><td></td><td>${totalCanastas}</td><td>${fmtPeso(totalDesp)}</td><td>${fmtPeso(totalAbon)}</td><td></td></tr>`;
+    html+=`</tbody></table></div>`;
+    const porCiudad={};
+    ventas.forEach(v=>{const c=v.compradorCiudad||'Sin ciudad';if(!porCiudad[c])porCiudad[c]={canastas:0,compradores:new Set()};porCiudad[c].canastas+=(v.canastas||0);porCiudad[c].compradores.add(v.compradorNombre);});
+    html+=`<div class="card" style="margin-top:12px;"><div class="card-titulo">📍 Resumen por ciudad</div>`;
+    Object.entries(porCiudad).sort((a,b)=>b[1].canastas-a[1].canastas).forEach(([ciudad,data])=>{
+      html+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--gris1);"><div><div style="font-weight:600;">${ciudad}</div><div style="font-size:11px;color:var(--gris2);">${[...data.compradores].join(', ')}</div></div><div style="font-weight:700;color:var(--verde);">${data.canastas} canastas</div></div>`;
+    });
+    html+=`</div>`;
+    html+=`<div class="card" style="margin-top:12px;"><div class="card-titulo">📋 Detalle de cargas y abonos</div>`;
+    const todos=[...ventas.map(v=>({tipo:'carga',fecha:v.fecha,nombre:v.compradorNombre,detalle:`${v.canastas} can × 16 × ${fmtPeso(v.precioPorBloque)} = ${fmtPeso(v.totalVenta)}`,quien:v.registradoPorNombre,hora:v.hora})),...abonos.map(a=>({tipo:'abono',fecha:a.fecha,nombre:a.compradorNombre,detalle:fmtPeso(a.monto),quien:a.registradoPorNombre,hora:a.hora}))];
+    todos.sort((a,b)=>b.fecha.localeCompare(a.fecha)||((b.hora||'').localeCompare(a.hora||'')));
+    todos.forEach(t=>{
+      const ico=t.tipo==='carga'?'📦':'💰';const color=t.tipo==='carga'?'var(--verde)':'var(--azul)';
+      html+=`<div style="padding:6px 0;border-bottom:1px solid var(--gris1);font-size:13px;"><div style="display:flex;justify-content:space-between;"><span>${ico} <strong>${t.nombre}</strong></span><span style="color:${color};font-weight:700;">${t.detalle}</span></div><div style="font-size:11px;color:var(--gris2);">${t.fecha} ${t.hora||''} · ${t.quien||''}</div></div>`;
+    });
+    html+=`</div>`;
+    tab.innerHTML=html;
+  }catch(e){console.error(e);tab.innerHTML='<div class="vacio"><p>Error al cargar ventas</p></div>';}
+}
+
+function navAdmin(p,b){ir(p);document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('activo'));b.classList.add('activo');if(p==='screen-admin-dashboard')dashAdmin();if(p==='screen-admin-ganaderos')ganAdmin();if(p==='screen-admin-costos')initCostos();if(p==='screen-admin-reportes'){_cargarHistorialReportes('liq');_cargarHistorialReportes('inter');}if(p==='screen-admin-usuarios'){usuAdmin();interAdmin2();compradoresAdmin();actualizarUIHistorico();cargarHorario();}}window.navAdmin=navAdmin;
 document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')hacerLogin();});
 // iOS fix: usar tanto click como touchend
 const btnEntrar=document.getElementById('btn-entrar');
