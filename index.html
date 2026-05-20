@@ -2470,8 +2470,10 @@ function toggleNovedadesTab(tab){
   cargarNovedadesDashboard(fecha);
 }window.toggleNovedadesTab=toggleNovedadesTab;
 
+let _novedDashVer=0;
 async function cargarNovedadesDashboard(fecha){
   const cont=document.getElementById('admin-novedades-lista');if(!cont)return;
+  const mi=++_novedDashVer;
   cont.innerHTML='<div class="loading">Cargando...</div>';
   const f=fecha||hoy();
   try{
@@ -2495,6 +2497,7 @@ async function cargarNovedadesDashboard(fecha){
       // Intermediarios nuevos
       try{const sIn=await getDocs(query(collection(db,'intermediarios'),where('fechaAgregado','==',f)));
       sIn.forEach(d=>{const da=d.data();items.push({tipo:'🚚 Intermediario nuevo',descripcion:da.nombre,detalle:`Vereda: ${da.vereda||'—'} · Tel: ${da.telefono||'—'}`,autor:da.agregadoPorNombre||'',hora:'',color:'#15803d'});});}catch(e){}
+      if(mi!==_novedDashVer)return;
       if(items.length===0){cont.innerHTML='<div style="font-size:13px;color:var(--gris2);font-style:italic;padding:12px;text-align:center;">No hay novedades en esta fecha</div>';return;}
       items.sort((a,b)=>(b.hora||'').localeCompare(a.hora||''));
       const LIMITE=5;
@@ -2505,6 +2508,7 @@ async function cargarNovedadesDashboard(fecha){
     }else{
       // Eliminaciones del día
       const sE=await getDocs(query(collection(db,'eliminaciones')));
+      if(mi!==_novedDashVer)return;
       const items=[];
       sE.forEach(d=>{const da=d.data();const fechaElim=da.eliminadoEn||da.fechaEliminacion||'';if(fechaElim===f)items.push(da);});
       if(items.length===0){cont.innerHTML='<div style="font-size:13px;color:var(--gris2);font-style:italic;padding:12px;text-align:center;">No hay eliminaciones en esta fecha</div>';return;}
@@ -2527,7 +2531,7 @@ async function cargarNovedadesDashboard(fecha){
       const extra=items.length>LIMITE?`<div id="elim-dash-extra" style="display:none;">${items.slice(LIMITE).map(renderElim).join('')}</div><div style="text-align:center;margin-top:6px;"><a href="#" id="elim-dash-toggle" onclick="const x=document.getElementById('elim-dash-extra');const t=document.getElementById('elim-dash-toggle');if(x.style.display==='none'){x.style.display='block';t.textContent='Ver menos ▲';}else{x.style.display='none';t.textContent='Ver más (${items.length-LIMITE} más) ▼';}return false;" style="font-size:12px;color:var(--rojo);font-weight:700;">Ver más (${items.length-LIMITE} más) ▼</a></div>`:'';
       cont.innerHTML=`<div style="font-size:12px;color:var(--gris2);margin-bottom:6px;">${items.length} eliminacion${items.length!==1?'es':''}</div>`+visibles+extra;
     }
-  }catch(e){cont.innerHTML='<div style="font-size:13px;color:var(--rojo);padding:12px;">Error al cargar</div>';console.error('cargarNovedadesDashboard:',e);}
+  }catch(e){if(mi===_novedDashVer)cont.innerHTML='<div style="font-size:13px;color:var(--rojo);padding:12px;">Error al cargar</div>';console.error('cargarNovedadesDashboard:',e);}
 }window.cargarNovedadesDashboard=cargarNovedadesDashboard;
 
 let _modoComparacion=false;
@@ -2579,8 +2583,10 @@ async function obtenerDatosResumen(fecha){
   return r;
 }
 
+let _resumenCompVer=0;
 async function cargarResumenComparativo(){
   const cont=document.getElementById('resumen-comparativo-contenido');if(!cont)return;
+  const mi=++_resumenCompVer;
   cont.innerHTML='<div class="loading">Cargando...</div>';
   try{
     const fechaSel=document.getElementById('novedades-fecha')?.value||hoy();
@@ -2588,8 +2594,10 @@ async function cargarResumenComparativo(){
     const d=new Date(fechaSel+'T12:00:00');d.setDate(d.getDate()-1);
     const ayerStr=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     const hoyData=await obtenerDatosResumen(fechaSel);
+    if(mi!==_resumenCompVer)return;
     let ayerData=null;
     if(_modoComparacion)ayerData=await obtenerDatosResumen(ayerStr);
+    if(mi!==_resumenCompVer)return;
     const kpis=[
       {label:'🐄 Ganaderos',hoy:hoyData.ganaderos,ayer:ayerData?.ganaderos,fmt:'int'},
       {label:'🚛 Ruta',hoy:hoyData.ruta,ayer:ayerData?.ruta,fmt:'litros'},
@@ -2640,8 +2648,9 @@ async function cargarResumenComparativo(){
       });
       html+=`</div><div style="font-size:11px;color:var(--gris2);margin-top:6px;font-style:italic;">Comparando ${ayerStr} (ayer) vs ${fechaSel} (hoy). Las métricas con ⚠️ tienen caída ≥20%.</div>`;
     }
+    if(mi!==_resumenCompVer)return;
     cont.innerHTML=html;
-  }catch(e){cont.innerHTML='<div style="font-size:13px;color:var(--rojo);padding:12px;">Error al cargar resumen</div>';console.error('cargarResumenComparativo:',e);}
+  }catch(e){if(mi===_resumenCompVer)cont.innerHTML='<div style="font-size:13px;color:var(--rojo);padding:12px;">Error al cargar resumen</div>';console.error('cargarResumenComparativo:',e);}
 }window.cargarResumenComparativo=cargarResumenComparativo;
 
 async function cargarSinRecolectar(){
@@ -2718,16 +2727,20 @@ function calcularQuincenaPago(){
   if(lbl)lbl.textContent=`Quincena: ${deLabel}`;
 }
 
+let _prodHoyVer=0;
 async function cargarProduccionHoy(fechaParam){
   const el=document.getElementById('admin-produccion-hoy');if(!el)return;
   const fecha=fechaParam||hoy();
+  const mi=++_prodHoyVer;
   try{
     // Load tandas of today
     const snapT=await getDocs(query(collection(db,'tandas'),where('fecha','==',fecha)));
+    if(mi!==_prodHoyVer)return;// hubo una llamada más reciente, descartar
     const tandas=[];snapT.forEach(d=>tandas.push(d.data()));
     // Load cierre
     let cierre=null;
     try{const cDoc=await getDoc(doc(db,'cierresDia',fecha));if(cDoc.exists())cierre=cDoc.data();}catch(e){}
+    if(mi!==_prodHoyVer)return;
     if(tandas.length===0&&!cierre){el.innerHTML='<div style="font-size:13px;color:var(--gris2);">Sin producción registrada hoy</div>';return;}
     const totalLitros=tandas.reduce((s,t)=>s+(parseFloat(t.litros)||0),0);
     const totalBloques=tandas.reduce((s,t)=>s+(parseInt(t.bloques2500)||0)+(parseInt(t.bloques1000)||0)+(parseInt(t.bloques500)||0),0);
@@ -2839,6 +2852,7 @@ async function cargarProduccionHoy(fechaParam){
       if(novedades.length>3){html+=`<div id="prod-nov-extra" style="display:none;">${novedades.slice(3).map(t=>`<div style="font-size:12px;padding:3px 0;border-bottom:1px solid var(--gris1);color:#92400E;">Tanda #${t.numero} (${t.proveedorNombre}): ${t.novedad}</div>`).join('')}</div><div style="text-align:center;margin-top:4px;"><a id="prod-nov-toggle" href="#" onclick="const x=document.getElementById('prod-nov-extra');const t=document.getElementById('prod-nov-toggle');if(x.style.display==='none'){x.style.display='block';t.textContent='Ver menos ▲';}else{x.style.display='none';t.textContent='Ver más (${novedades.length-3} más) ▼';}return false;" style="font-size:12px;color:#D97706;font-weight:700;">Ver más (${novedades.length-3} más) ▼</a></div>`;}
     }
     if(!cierre&&tandas.length>0){const ahora=new Date();if(ahora.getHours()>=20){html+=`<div style="background:#FEE2E2;padding:8px;border-radius:8px;font-size:12px;color:#DC2626;font-weight:600;margin-top:8px;">🔴 ${cuajador} no ha cerrado el día</div>`;}}
+    if(mi!==_prodHoyVer)return;
     el.innerHTML=html;
   }catch(e){console.error(e);el.innerHTML='<div style="font-size:13px;color:var(--gris2);">Error al cargar</div>';}
 }
