@@ -1956,8 +1956,10 @@ async function abrirCierreDia(){
   // Auto-calculate fields
   const lecheProc=tandas.reduce((s,t)=>s+(parseFloat(t.litros)||0),0);
   const totalBloques=tandas.reduce((s,t)=>s+(parseInt(t.bloques2500)||0)+(parseInt(t.bloques1000)||0)+(parseInt(t.bloques500)||0),0);
-  // Reprocesos día = suma de bloques de reproceso + (litros÷3) (cada 3L = 1 bloque)
-  const reprocDia=tandas.reduce((s,t)=>{if(!t.reproceso)return s;const tipo=t.reprocTipo||'bloques';let b=0;if(tipo==='bloques'||tipo==='ambos')b+=(parseInt(t.reprocBloques)||0);if(tipo==='litros'||tipo==='ambos')b+=Math.floor((parseFloat(t.reprocLitros)||0)/3);return s+b;},0);
+  // Reprocesos día = bloques directos + floor(SUMA total de litros / 3) - cada 3L = 1 bloque
+  const totalReprocBloquesDir=tandas.reduce((s,t)=>{if(!t.reproceso)return s;const tipo=t.reprocTipo||'bloques';if(tipo==='bloques'||tipo==='ambos')return s+(parseInt(t.reprocBloques)||0);return s;},0);
+  const totalReprocLitros=tandas.reduce((s,t)=>{if(!t.reproceso)return s;const tipo=t.reprocTipo||'bloques';if(tipo==='litros'||tipo==='ambos')return s+(parseFloat(t.reprocLitros)||0);return s;},0);
+  const reprocDia=totalReprocBloquesDir+Math.floor(totalReprocLitros/3);
   _cuajadorAutoCalc={lecheProc,totalBloques,reprocDia};
   _cuajadorCamposEditados=new Set();
   document.getElementById('cc-lecheProc').value=lecheProc;
@@ -2559,7 +2561,9 @@ async function obtenerDatosResumen(fecha){
     r.tandas=tandas.length;
     r.lecheProc=tandas.reduce((s,t)=>s+(parseFloat(t.litros)||0),0);
     r.totalBloques=tandas.reduce((s,t)=>s+(parseInt(t.bloques2500)||0)+(parseInt(t.bloques1000)||0)+(parseInt(t.bloques500)||0),0);
-    r.reprocBloques=tandas.reduce((s,t)=>{if(!t.reproceso)return s;const tipo=t.reprocTipo||'bloques';let b=0;if(tipo==='bloques'||tipo==='ambos')b+=(parseInt(t.reprocBloques)||0);if(tipo==='litros'||tipo==='ambos')b+=Math.floor((parseFloat(t.reprocLitros)||0)/3);return s+b;},0);
+    r.reprocBloques=tandas.reduce((s,t)=>{if(!t.reproceso)return s;const tipo=t.reprocTipo||'bloques';if(tipo==='bloques'||tipo==='ambos')return s+(parseInt(t.reprocBloques)||0);return s;},0);
+    const _reprocLitrosTot=tandas.reduce((s,t)=>{if(!t.reproceso)return s;const tipo=t.reprocTipo||'bloques';if(tipo==='litros'||tipo==='ambos')return s+(parseFloat(t.reprocLitros)||0);return s;},0);
+    r.reprocBloques+=Math.floor(_reprocLitrosTot/3);
     r.bloquesReales=r.totalBloques-r.reprocBloques;
     r.promedio=r.bloquesReales>0?((r.lecheProc/r.bloquesReales)/5):0;
     tandas.forEach(t=>{if(t.novedad&&t.novedad.trim())r.novedades++;});
@@ -2727,10 +2731,12 @@ async function cargarProduccionHoy(fechaParam){
     if(tandas.length===0&&!cierre){el.innerHTML='<div style="font-size:13px;color:var(--gris2);">Sin producción registrada hoy</div>';return;}
     const totalLitros=tandas.reduce((s,t)=>s+(parseFloat(t.litros)||0),0);
     const totalBloques=tandas.reduce((s,t)=>s+(parseInt(t.bloques2500)||0)+(parseInt(t.bloques1000)||0)+(parseInt(t.bloques500)||0),0);
-    // Reprocesos día = suma de bloques de reproceso + (litros÷3) (siempre desde tandas)
-    const reprocBloquesDia=tandas.reduce((s,t)=>{if(!t.reproceso)return s;const tipo=t.reprocTipo||'bloques';let b=0;if(tipo==='bloques'||tipo==='ambos')b+=(parseInt(t.reprocBloques)||0);if(tipo==='litros'||tipo==='ambos')b+=Math.floor((parseFloat(t.reprocLitros)||0)/3);return s+b;},0);
-    // Sobrante de litros que no completan un bloque (cada 3L = 1 bloque)
-    const reprocLitrosSobrante=tandas.reduce((s,t)=>{if(!t.reproceso)return s;const tipo=t.reprocTipo||'bloques';if(tipo==='litros'||tipo==='ambos')return s+((parseFloat(t.reprocLitros)||0)%3);return s;},0);
+    // Reprocesos día = bloques directos + floor(SUMA total de litros / 3)
+    const _reprocBloquesDir=tandas.reduce((s,t)=>{if(!t.reproceso)return s;const tipo=t.reprocTipo||'bloques';if(tipo==='bloques'||tipo==='ambos')return s+(parseInt(t.reprocBloques)||0);return s;},0);
+    const _reprocLitrosTotal=tandas.reduce((s,t)=>{if(!t.reproceso)return s;const tipo=t.reprocTipo||'bloques';if(tipo==='litros'||tipo==='ambos')return s+(parseFloat(t.reprocLitros)||0);return s;},0);
+    const reprocBloquesDia=_reprocBloquesDir+Math.floor(_reprocLitrosTotal/3);
+    // Sobrante: litros que no completan un bloque tras sumar todos los reprocesos
+    const reprocLitrosSobrante=_reprocLitrosTotal%3;
     const bloquesReales=totalBloques-reprocBloquesDia;
     const promedioReal=bloquesReales>0?((totalLitros/bloquesReales)/5).toFixed(2):'—';
     const cuajador=tandas.length>0?tandas[0].cuajadorNombre:'—';
