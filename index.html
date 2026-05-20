@@ -2611,16 +2611,17 @@ async function cargarResumenComparativo(){
       {label:'🗑️ Eliminaciones',hoy:hoyData.eliminaciones,ayer:ayerData?.eliminaciones,fmt:'int',invertir:true}
     ];
     function fmtVal(v,fmt){if(v===undefined||v===null)return '—';if(fmt==='litros')return fmtL(v)+'L';if(fmt==='decimal')return (parseFloat(v)||0).toFixed(2);return String(v);}
-    function calcCambio(ayer,hoyV,invertir){
+    function fmtDif(v,fmt){if(fmt==='litros')return fmtL(Math.round(v))+'L';if(fmt==='decimal')return (parseFloat(v)||0).toFixed(2);return String(Math.round(v));}
+    function calcCambio(ayer,hoyV,invertir,fmt){
       if(ayer===undefined||ayer===null||ayer===0){if(hoyV>0)return{txt:'+nuevo',color:invertir?'#DC2626':'#15803d',alerta:false};return{txt:'—',color:'var(--gris2)',alerta:false};}
       const dif=hoyV-ayer;
       const pct=ayer!==0?((dif/ayer)*100):0;
       let color=dif===0?'var(--gris2)':(dif>0?'#15803d':'#DC2626');
       if(invertir)color=dif===0?'var(--gris2)':(dif>0?'#DC2626':'#15803d');
-      const alerta=!invertir&&pct<=-20;// caída de 20% o más en métricas positivas
+      const alerta=!invertir&&pct<=-20;
       const signo=dif>0?'+':'';
-      const pctTxt=Math.abs(pct)>=0.1?` (${signo}${pct.toFixed(1)}%)`:'';
-      return{txt:`${signo}${fmtVal(dif,'int')}${pctTxt}`,color,alerta};
+      const pctTxt=Math.abs(pct)>=0.1?`<div style="font-size:10px;opacity:0.85;">${signo}${pct.toFixed(1)}%</div>`:'';
+      return{txt:`${signo}${fmtDif(dif,fmt)}`,sub:pctTxt,color,alerta};
     }
     let html='';
     if(!_modoComparacion){
@@ -2631,19 +2632,19 @@ async function cargarResumenComparativo(){
       });
       html+='</div>';
     }else{
-      // Modo comparación: tabla AYER vs HOY
+      // Modo comparación: tabla AYER vs HOY (4 columnas con anchos fijos para no romper)
       html=`<div style="background:white;border-radius:8px;overflow:hidden;border:1px solid #fde68a;">
-        <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1.2fr;background:#fef3c7;padding:6px 8px;font-size:11px;font-weight:700;color:#92400E;">
+        <div style="display:grid;grid-template-columns:1.5fr 1fr 1fr 1.1fr;gap:4px;background:#fef3c7;padding:8px;font-size:11px;font-weight:700;color:#92400E;">
           <div>MÉTRICA</div><div style="text-align:right;">AYER</div><div style="text-align:right;">HOY</div><div style="text-align:right;">CAMBIO</div>
         </div>`;
       kpis.forEach(k=>{
-        const c=calcCambio(k.ayer,k.hoy,k.invertir);
+        const c=calcCambio(k.ayer,k.hoy,k.invertir,k.fmt);
         const bgRow=c.alerta?'background:#FEE2E2;':'';
-        html+=`<div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1.2fr;padding:6px 8px;font-size:12px;border-top:1px solid #fef3c7;${bgRow}align-items:center;">
-          <div style="font-weight:600;">${k.label}${c.alerta?' ⚠️':''}</div>
-          <div style="text-align:right;color:var(--gris2);">${fmtVal(k.ayer,k.fmt)}</div>
-          <div style="text-align:right;font-weight:800;">${fmtVal(k.hoy,k.fmt)}</div>
-          <div style="text-align:right;font-weight:700;color:${c.color};">${c.txt}</div>
+        html+=`<div style="display:grid;grid-template-columns:1.5fr 1fr 1fr 1.1fr;gap:4px;padding:8px;font-size:12px;border-top:1px solid #fef3c7;${bgRow}align-items:center;">
+          <div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;">${k.label}${c.alerta?' ⚠️':''}</div>
+          <div style="text-align:right;color:var(--gris2);word-break:break-word;">${fmtVal(k.ayer,k.fmt)}</div>
+          <div style="text-align:right;font-weight:800;word-break:break-word;">${fmtVal(k.hoy,k.fmt)}</div>
+          <div style="text-align:right;font-weight:700;color:${c.color};line-height:1.2;">${c.txt}${c.sub||''}</div>
         </div>`;
       });
       html+=`</div><div style="font-size:11px;color:var(--gris2);margin-top:6px;font-style:italic;">Comparando ${ayerStr} (ayer) vs ${fechaSel} (hoy). Las métricas con ⚠️ tienen caída ≥20%.</div>`;
