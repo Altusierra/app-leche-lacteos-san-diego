@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>🐄 Lácteos San Diego</title>
   <style>
     :root{--verde:#c2410c;--verde2:#ea580c;--verde3:#fed7aa;--crema:#fff7ed;--gris1:#f3f4f6;--gris2:#9ca3af;--gris3:#374151;--rojo:#dc2626;--rojo2:#fee2e2;--amarillo:#d97706;--amarillo2:#fef3c7;--azul:#1d4ed8;--azul2:#dbeafe;--naranja:#ea580c;--naranja2:#ffedd5;}
@@ -522,6 +522,13 @@
   <div class="header"><div><div class="sub">🐄 Lácteos San Diego</div><h1 id="admin-nombre-header">Admin</h1><div id="admin-rol-header" style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.7);margin-top:-4px;text-transform:uppercase;letter-spacing:1px;"></div></div><button class="btn-salir" onclick="cerrarSesion()">Salir</button></div>
   <div style="padding:20px;">
     <div id="admin-fecha" style="font-size:15px;color:var(--gris2);margin-bottom:16px;"></div>
+    <div class="card" id="resumen-comparativo-card" style="background:linear-gradient(135deg,#fef3c7,#fef9e7);border:2px solid #fde68a;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+        <div class="card-titulo" style="margin:0;color:#92400E;">📊 Resumen del día</div>
+        <button id="btn-comparar-toggle" class="btn btn-sm" style="border:2px solid #D97706;background:#D97706;color:white;font-weight:700;font-size:12px;padding:6px 12px;" onclick="toggleComparacion()">📊 Comparar Ayer vs Hoy</button>
+      </div>
+      <div id="resumen-comparativo-contenido"><div class="loading">Cargando...</div></div>
+    </div>
     <div class="fila">
       <div class="card" style="text-align:center;"><div class="card-titulo">Recolectado</div><div class="card-valor" id="admin-total-rec">-</div><div class="card-sub">litros ruta</div></div>
       <div class="card" style="text-align:center;"><div class="card-titulo">En planta</div><div class="card-valor" id="admin-total-planta">-</div><div class="card-sub">litros planta</div></div>
@@ -560,6 +567,17 @@
       </div>
       <div id="admin-ventas-alerta-morosos"></div>
       <div id="admin-ventas-lista"><div class="loading">Cargando...</div></div>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+        <div class="card-titulo" style="margin:0;color:#D97706;">⚠️ Novedades y Eliminaciones</div>
+        <input type="date" id="novedades-fecha" style="padding:6px 10px;border:1.5px solid var(--gris1);border-radius:8px;font-size:13px;font-weight:600;color:#D97706;" onchange="sincronizarFecha(this.value)">
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:10px;">
+        <button id="btn-nov-tab" class="btn btn-sm" style="flex:1;border:2px solid #D97706;background:#D97706;color:white;font-weight:700;" onclick="toggleNovedadesTab('nov')">⚠️ Novedades</button>
+        <button id="btn-elim-tab" class="btn btn-sm" style="flex:1;border:2px solid var(--rojo);background:transparent;color:var(--rojo);font-weight:700;" onclick="toggleNovedadesTab('elim')">🗑️ Eliminaciones</button>
+      </div>
+      <div id="admin-novedades-lista"><div class="loading">Cargando...</div></div>
     </div>
     <div class="card">
       <div class="card-titulo">📋 Historial de quincenas</div>
@@ -1002,7 +1020,7 @@ enableIndexedDbPersistence(db).catch(e=>{if(e.code==='failed-precondition')conso
 const app2=initializeApp(cfg,'secondary');const auth2=getAuth(app2);
 
 const SUPER_ADMINS=new Set(['WLPvBEGv9xeurUkJxfgZ1aWWf982','aldWRG0sMebNMjboOWb3MpPKFvn2','iTOJ7AOgNgYRG4vMSGsvAZuEeR23']);
-let UA=null,rol=null,ganList=[],regHoyGan={},_porGan={},_porRec={},_porRecPlanta={},_uidsCombinados=new Set(),precioActual=0,tabRep=0,editGanId=null,datosRep=[],datosInter=[],datosRecepciones=[],soloNovGlobal=false,modoElim=false;
+let UA=null,rol=null,ganList=[],regHoyGan={},_porGan={},_porRec={},_porRecPlanta={},_recepcionesPlanta=[],_uidsCombinados=new Set(),precioActual=0,tabRep=0,editGanId=null,datosRep=[],datosInter=[],datosRecepciones=[],soloNovGlobal=false,modoElim=false;
 let recibSeleccionado=null,ganSel=null,listaRecogedores=[],modoHistorico=false,fechaReg=null,_costosRecFilter='todos';
 let _litrosPorGanadero={},_ordenGan='az';
 let _horarioInicio='04:00',_horarioFin='18:00',_horarioOrigInicio='04:00',_horarioOrigFin='18:00';
@@ -1938,8 +1956,8 @@ async function abrirCierreDia(){
   // Auto-calculate fields
   const lecheProc=tandas.reduce((s,t)=>s+(parseFloat(t.litros)||0),0);
   const totalBloques=tandas.reduce((s,t)=>s+(parseInt(t.bloques2500)||0)+(parseInt(t.bloques1000)||0)+(parseInt(t.bloques500)||0),0);
-  // Reprocesos día = suma de bloques de reproceso (no count de tandas)
-  const reprocDia=tandas.reduce((s,t)=>{if(!t.reproceso)return s;const tipo=t.reprocTipo||'bloques';if(tipo==='bloques'||tipo==='ambos')return s+(parseInt(t.reprocBloques)||0);return s;},0);
+  // Reprocesos día = suma de bloques de reproceso + (litros÷3) (cada 3L = 1 bloque)
+  const reprocDia=tandas.reduce((s,t)=>{if(!t.reproceso)return s;const tipo=t.reprocTipo||'bloques';let b=0;if(tipo==='bloques'||tipo==='ambos')b+=(parseInt(t.reprocBloques)||0);if(tipo==='litros'||tipo==='ambos')b+=Math.floor((parseFloat(t.reprocLitros)||0)/3);return s+b;},0);
   _cuajadorAutoCalc={lecheProc,totalBloques,reprocDia};
   _cuajadorCamposEditados=new Set();
   document.getElementById('cc-lecheProc').value=lecheProc;
@@ -2122,7 +2140,40 @@ async function initAdmin(){
   ir('screen-admin-dashboard');
   dashAdmin();ganAdmin();usuAdmin();interAdmin();interAdmin2();actualizarUIHistorico();cargarHorario();
   document.getElementById('rep-desde').value=hoy();document.getElementById('rep-hasta').value=hoy();
+  const inpNov=document.getElementById('novedades-fecha');if(inpNov)inpNov.value=hoy();
+  cargarNovedadesDashboard(hoy());
+  cargarResumenComparativo();
 }
+function renderRecibidoresInfo(filtroId,esCombinada,hijosUids){
+  if(!_recepcionesPlanta||_recepcionesPlanta.length===0)return '';
+  let registros=[];
+  if(filtroId==='todos'){
+    registros=[..._recepcionesPlanta];
+  }else if(esCombinada){
+    // Combined route: show registros for combined ID and child UIDs
+    registros=_recepcionesPlanta.filter(r=>r.recogedorId===filtroId||hijosUids.includes(r.recogedorId));
+  }else{
+    registros=_recepcionesPlanta.filter(r=>r.recogedorId===filtroId);
+  }
+  if(registros.length===0)return '';
+  // Sort by hora
+  registros.sort((a,b)=>(a.hora||'').localeCompare(b.hora||''));
+  const LIMITE_R=3;
+  const renderItem=(r)=>{
+    const recibidor=r.recibidorNombre||'—';
+    const recogedor=r.recogedorNombre||'—';
+    const hora=r.hora||'—';
+    if(filtroId==='todos'){
+      return `<div style="font-size:12px;padding:5px 0;border-bottom:1px solid var(--gris1);color:var(--gris3);">📋 Recibidor: <strong>${recibidor}</strong> · Recogedor: <strong>${recogedor}</strong> · ${hora}</div>`;
+    }
+    return `<div style="font-size:12px;padding:5px 0;border-bottom:1px solid var(--gris1);color:var(--gris3);">📋 Recibidor: <strong>${recibidor}</strong> · ${hora}</div>`;
+  };
+  const visibles=registros.slice(0,LIMITE_R).map(renderItem).join('');
+  const extras=registros.length>LIMITE_R?registros.slice(LIMITE_R).map(renderItem).join(''):'';
+  const verBtn=registros.length>LIMITE_R?`<div id="recib-info-extra" style="display:none;">${extras}</div><div style="text-align:center;margin-top:4px;"><a href="#" id="recib-info-toggle" onclick="const x=document.getElementById('recib-info-extra');const t=document.getElementById('recib-info-toggle');if(x.style.display==='none'){x.style.display='block';t.textContent='Ver menos ▲';}else{x.style.display='none';t.textContent='Ver más (${registros.length-LIMITE_R} más) ▼';}return false;" style="font-size:12px;color:var(--verde);font-weight:700;">Ver más (${registros.length-LIMITE_R} más) ▼</a></div>`:'';
+  return `<div style="background:#F0F9FF;border:1px solid #BAE6FD;border-radius:10px;padding:10px;margin-bottom:8px;"><div style="font-size:11px;font-weight:700;color:#0369A1;margin-bottom:4px;">📋 REGISTROS DE PLANTA (${registros.length})</div>${visibles}${verBtn}</div>`;
+}window.renderRecibidoresInfo=renderRecibidoresInfo;
+
 function renderDesgloseAdmin(filtroId){
   const el=document.getElementById('admin-desglose-ganaderos');if(!el)return;
   // Update filter buttons
@@ -2168,6 +2219,7 @@ function renderDesgloseAdmin(filtroId){
     <div><div style="font-size:10px;color:var(--gris2);font-weight:600;">⚖️ DIFF</div><div style="font-size:18px;font-weight:800;color:${diffColor};">${diffSign}${fmtL(diff)}</div></div>
     <div><div style="font-size:10px;color:var(--gris2);font-weight:600;">🐄 GANAD.</div><div style="font-size:18px;font-weight:800;color:var(--gris3);">${ganArr.length}</div></div>
   </div>
+  ${renderRecibidoresInfo(filtroId,esCombinada,hijosUids)}
   <div style="margin-bottom:12px;"><input type="text" id="desglose-buscar" placeholder="🔍 Buscar ganadero..." oninput="filtrarDesgloseAdmin()" style="width:100%;padding:10px 12px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;"></div>
   <div id="desglose-lista">`;
   const LIMITE_DES=3;
@@ -2207,13 +2259,13 @@ async function recargarDesglose(fecha){
       porGan[da.ganaderoId].recogedores.push({nombre:da.recogedorNombre,litros:L,hora:da.hora});
     });
     const sRec=await getDocs(query(collection(db,'recepciones'),where('fecha','==',fecha)));
-    const porRecPlanta={};
-    sRec.forEach(d=>{const da=d.data();porRecPlanta[da.recogedorId]={litros:parseFloat(da.litros)||0,nombre:da.recogedorNombre};});
+    const porRecPlanta={};const recepcionesRaw=[];
+    sRec.forEach(d=>{const da=d.data();porRecPlanta[da.recogedorId]={litros:parseFloat(da.litros)||0,nombre:da.recogedorNombre};recepcionesRaw.push(da);});
     const sInter=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','==',fecha)));
     let totalInterH=0;const interHoy=[];
     sInter.forEach(d=>{const da=d.data();totalInterH+=parseFloat(da.litros)||0;interHoy.push(da);});
     // Update globals for renderDesgloseAdmin
-    _porGan=porGan;_porRec=porRec;_porRecPlanta=porRecPlanta;
+    _porGan=porGan;_porRec=porRec;_porRecPlanta=porRecPlanta;_recepcionesPlanta=recepcionesRaw;
     // Rebuild filter buttons
     const filtrosEl=document.getElementById('admin-filtros-rec');
     if(filtrosEl){
@@ -2250,8 +2302,8 @@ async function dashAdmin(){
     let totalRuta=0;const porRec={};const porGan={};
     sCol.forEach(d=>{const da=d.data();const L=parseFloat(da.litros)||0;totalRuta+=L;if(!porRec[da.recogedorId])porRec[da.recogedorId]={nombre:da.recogedorNombre,litros:0,reg:0};porRec[da.recogedorId].litros+=L;porRec[da.recogedorId].reg++;if(!porGan[da.ganaderoId])porGan[da.ganaderoId]={nombre:da.ganaderoNombre,total:0,recogedores:[]};porGan[da.ganaderoId].total+=L;porGan[da.ganaderoId].recogedores.push({nombre:da.recogedorNombre,litros:L,hora:da.hora});});
     const sRec=await getDocs(query(collection(db,'recepciones'),where('fecha','==',hoy())));
-    let totalPlanta=0;const porRecPlanta={};
-    sRec.forEach(d=>{const da=d.data();totalPlanta+=parseFloat(da.litros)||0;porRecPlanta[da.recogedorId]={litros:parseFloat(da.litros)||0,nombre:da.recogedorNombre};});
+    let totalPlanta=0;const porRecPlanta={};const recepcionesRaw=[];
+    sRec.forEach(d=>{const da=d.data();totalPlanta+=parseFloat(da.litros)||0;porRecPlanta[da.recogedorId]={litros:parseFloat(da.litros)||0,nombre:da.recogedorNombre};recepcionesRaw.push(da);});
     document.getElementById('admin-total-rec').textContent=fmtL(totalRuta);
     // totalPlanta se actualiza después de sumar intermediarios
     const _totalPlantaRec=totalPlanta;
@@ -2298,7 +2350,7 @@ async function dashAdmin(){
     const diffColorF=totalDiffF>0?'var(--naranja)':totalDiffF<0?'var(--amarillo)':'#15803d';
     const diffBadgeF=totalDiffF>0?`<span class="badge badge-naranja">⚠️ +${fmtL(totalDiffF)}L</span>`:totalDiffF<0?`<span class="badge badge-amarillo">${fmtL(totalDiffF)}L</span>`:`<span class="badge badge-verde">✅ 0L</span>`;
     // Save to globals for filter
-    _porGan=porGan;_porRec=porRec;_porRecPlanta=porRecPlanta;_uidsCombinados=uidsCombinados;
+    _porGan=porGan;_porRec=porRec;_porRecPlanta=porRecPlanta;_uidsCombinados=uidsCombinados;_recepcionesPlanta=recepcionesRaw;
     // Build filter buttons
     const filtrosEl=document.getElementById('admin-filtros-rec');
     if(filtrosEl){
@@ -2381,12 +2433,15 @@ async function sincronizarFecha(fecha){
   const inp2=document.getElementById('desglose-fecha');if(inp2)inp2.value=fecha;
   const inp3=document.getElementById('inter-fecha');if(inp3)inp3.value=fecha;
   const inp4=document.getElementById('produccion-fecha');if(inp4)inp4.value=fecha;
+  const inp5=document.getElementById('novedades-fecha');if(inp5)inp5.value=fecha;
   const lblProd=document.getElementById('admin-produccion-fecha-label');
   if(lblProd)lblProd.textContent=fecha===hoy()?'':'📅 '+fmtFecha(fecha);
   recargarTotales(fecha);
   cargarResumenSemanal(fecha);
   recargarDesglose(fecha);
   cargarProduccionHoy(fecha);
+  cargarNovedadesDashboard(fecha);
+  cargarResumenComparativo();
 }
 window.sincronizarFecha=sincronizarFecha;
 
@@ -2403,14 +2458,204 @@ async function recargarTotales(fecha){
   }catch(e){console.error('recargarTotales:',e);}
 }
 window.recargarTotales=recargarTotales;
+let _novedadesTabActual='nov';
+function toggleNovedadesTab(tab){
+  _novedadesTabActual=tab;
+  const bN=document.getElementById('btn-nov-tab');const bE=document.getElementById('btn-elim-tab');
+  if(tab==='nov'){bN.style.background='#D97706';bN.style.color='white';bE.style.background='transparent';bE.style.color='var(--rojo)';}
+  else{bE.style.background='var(--rojo)';bE.style.color='white';bN.style.background='transparent';bN.style.color='#D97706';}
+  const fechaInp=document.getElementById('novedades-fecha');const fecha=fechaInp?.value||hoy();
+  cargarNovedadesDashboard(fecha);
+}window.toggleNovedadesTab=toggleNovedadesTab;
+
+async function cargarNovedadesDashboard(fecha){
+  const cont=document.getElementById('admin-novedades-lista');if(!cont)return;
+  cont.innerHTML='<div class="loading">Cargando...</div>';
+  const f=fecha||hoy();
+  try{
+    if(_novedadesTabActual==='nov'){
+      const items=[];
+      // Tandas con novedad
+      const sT=await getDocs(query(collection(db,'tandas'),where('fecha','==',f)));
+      sT.forEach(d=>{const da=d.data();if(da.novedad&&da.novedad.trim())items.push({tipo:'🧀 Tanda',descripcion:`Tanda #${da.numero} (${da.proveedorNombre})`,detalle:da.novedad,autor:da.cuajadorNombre||'',hora:da.hora||'',color:'#92400E'});});
+      // Recolecciones con novedad
+      const sR=await getDocs(query(collection(db,'recolecciones'),where('fecha','==',f)));
+      sR.forEach(d=>{const da=d.data();if(da.novedad&&da.novedad.trim())items.push({tipo:'🚛 Recolección',descripcion:`${da.ganaderoNombre} (${parseFloat(da.litros)||0}L)`,detalle:da.novedad,autor:da.recogedorNombre||'',hora:da.hora||'',color:'#D97706'});});
+      // Recepciones con novedad
+      try{const sRec=await getDocs(query(collection(db,'recepciones'),where('fecha','==',f)));
+      sRec.forEach(d=>{const da=d.data();if(da.novedad&&da.novedad.trim())items.push({tipo:'🏭 Recepción',descripcion:`${da.recogedorNombre} (${parseFloat(da.litros)||0}L)`,detalle:da.novedad,autor:da.recibidorNombre||'',hora:da.hora||'',color:'#0369A1'});});}catch(e){}
+      // RecepcionesInter con novedad
+      try{const sI=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','==',f)));
+      sI.forEach(d=>{const da=d.data();if(da.novedad&&da.novedad.trim())items.push({tipo:'🚚 Inter.',descripcion:`${da.intermediarioNombre} (${parseFloat(da.litros)||0}L)`,detalle:da.novedad,autor:da.recibidorNombre||'',hora:da.hora||'',color:'#7c3aed'});});}catch(e){}
+      // Ganaderos nuevos
+      try{const sG=await getDocs(query(collection(db,'ganaderos'),where('fechaAgregado','==',f)));
+      sG.forEach(d=>{const da=d.data();items.push({tipo:'🐄 Ganadero nuevo',descripcion:da.nombre,detalle:`Vereda: ${da.vereda||'—'} · Tel: ${da.telefono||'—'}`,autor:da.agregadoPorNombre||'',hora:'',color:'#15803d'});});}catch(e){}
+      // Intermediarios nuevos
+      try{const sIn=await getDocs(query(collection(db,'intermediarios'),where('fechaAgregado','==',f)));
+      sIn.forEach(d=>{const da=d.data();items.push({tipo:'🚚 Intermediario nuevo',descripcion:da.nombre,detalle:`Vereda: ${da.vereda||'—'} · Tel: ${da.telefono||'—'}`,autor:da.agregadoPorNombre||'',hora:'',color:'#15803d'});});}catch(e){}
+      if(items.length===0){cont.innerHTML='<div style="font-size:13px;color:var(--gris2);font-style:italic;padding:12px;text-align:center;">No hay novedades en esta fecha</div>';return;}
+      items.sort((a,b)=>(b.hora||'').localeCompare(a.hora||''));
+      const LIMITE=5;
+      const renderItem=(it)=>`<div style="padding:8px 0;border-bottom:1px solid var(--gris1);"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;"><div style="flex:1;"><div style="font-size:12px;font-weight:700;color:${it.color};">${it.tipo}</div><div style="font-size:13px;font-weight:600;margin-top:2px;">${it.descripcion}</div><div style="font-size:12px;color:var(--gris2);margin-top:2px;">${it.detalle}</div>${it.autor||it.hora?`<div style="font-size:11px;color:var(--gris2);margin-top:2px;font-style:italic;">${it.autor}${it.hora?' · '+it.hora:''}</div>`:''}</div></div></div>`;
+      const visibles=items.slice(0,LIMITE).map(renderItem).join('');
+      const extra=items.length>LIMITE?`<div id="nov-dash-extra" style="display:none;">${items.slice(LIMITE).map(renderItem).join('')}</div><div style="text-align:center;margin-top:6px;"><a href="#" id="nov-dash-toggle" onclick="const x=document.getElementById('nov-dash-extra');const t=document.getElementById('nov-dash-toggle');if(x.style.display==='none'){x.style.display='block';t.textContent='Ver menos ▲';}else{x.style.display='none';t.textContent='Ver más (${items.length-LIMITE} más) ▼';}return false;" style="font-size:12px;color:#D97706;font-weight:700;">Ver más (${items.length-LIMITE} más) ▼</a></div>`:'';
+      cont.innerHTML=`<div style="font-size:12px;color:var(--gris2);margin-bottom:6px;">${items.length} novedad${items.length!==1?'es':''}</div>`+visibles+extra;
+    }else{
+      // Eliminaciones del día
+      const sE=await getDocs(query(collection(db,'eliminaciones')));
+      const items=[];
+      sE.forEach(d=>{const da=d.data();const fechaElim=da.eliminadoEn||da.fechaEliminacion||'';if(fechaElim===f)items.push(da);});
+      if(items.length===0){cont.innerHTML='<div style="font-size:13px;color:var(--gris2);font-style:italic;padding:12px;text-align:center;">No hay eliminaciones en esta fecha</div>';return;}
+      items.sort((a,b)=>{const hA=a.eliminadoHora||a.horaEliminacion||'';const hB=b.eliminadoHora||b.horaEliminacion||'';return hB.localeCompare(hA);});
+      const LIMITE=5;
+      const renderElim=(it)=>{
+        const tipo=it.tipo||'registro';
+        let desc='';
+        if(tipo==='tanda')desc=`Tanda · ${it.proveedorNombre||'—'} · ${it.litros||0}L`;
+        else if(tipo==='recoleccion'||tipo==='recolección')desc=`${it.ganaderoNombre||'—'} · ${it.litros||0}L`;
+        else if(tipo==='combustible')desc=`Combustible · ${it.proveedorNombre||'—'} · ${it.galones||0}gal · $${it.valor||0}`;
+        else if(tipo==='miniagricultura')desc=`MinAgricultura · ${it.ganaderoNombre||'—'} · ${it.litros||0}L`;
+        else desc=`${it.proveedorNombre||it.ganaderoNombre||''} · ${it.litros||it.valor||''}`;
+        const autor=it.eliminadoPorNombre||'';
+        const rol=it.eliminadoPorRol?` (${it.eliminadoPorRol})`:'';
+        const hora=it.eliminadoHora||it.horaEliminacion||'';
+        return `<div style="padding:8px 0;border-bottom:1px solid var(--gris1);"><div style="font-size:12px;font-weight:700;color:var(--rojo);">🗑️ ${tipo}</div><div style="font-size:13px;font-weight:600;margin-top:2px;">${desc}</div>${it.motivo?`<div style="font-size:12px;color:var(--gris2);margin-top:2px;">Motivo: ${it.motivo}</div>`:''}<div style="font-size:11px;color:var(--gris2);margin-top:2px;font-style:italic;">Por: ${autor}${rol}${hora?' · '+hora:''}</div></div>`;
+      };
+      const visibles=items.slice(0,LIMITE).map(renderElim).join('');
+      const extra=items.length>LIMITE?`<div id="elim-dash-extra" style="display:none;">${items.slice(LIMITE).map(renderElim).join('')}</div><div style="text-align:center;margin-top:6px;"><a href="#" id="elim-dash-toggle" onclick="const x=document.getElementById('elim-dash-extra');const t=document.getElementById('elim-dash-toggle');if(x.style.display==='none'){x.style.display='block';t.textContent='Ver menos ▲';}else{x.style.display='none';t.textContent='Ver más (${items.length-LIMITE} más) ▼';}return false;" style="font-size:12px;color:var(--rojo);font-weight:700;">Ver más (${items.length-LIMITE} más) ▼</a></div>`:'';
+      cont.innerHTML=`<div style="font-size:12px;color:var(--gris2);margin-bottom:6px;">${items.length} eliminacion${items.length!==1?'es':''}</div>`+visibles+extra;
+    }
+  }catch(e){cont.innerHTML='<div style="font-size:13px;color:var(--rojo);padding:12px;">Error al cargar</div>';console.error('cargarNovedadesDashboard:',e);}
+}window.cargarNovedadesDashboard=cargarNovedadesDashboard;
+
+let _modoComparacion=false;
+function toggleComparacion(){
+  _modoComparacion=!_modoComparacion;
+  const btn=document.getElementById('btn-comparar-toggle');
+  if(btn){
+    if(_modoComparacion){btn.style.background='#15803d';btn.style.borderColor='#15803d';btn.textContent='✅ Comparando Ayer vs Hoy';}
+    else{btn.style.background='#D97706';btn.style.borderColor='#D97706';btn.textContent='📊 Comparar Ayer vs Hoy';}
+  }
+  cargarResumenComparativo();
+}window.toggleComparacion=toggleComparacion;
+
+async function obtenerDatosResumen(fecha){
+  // Obtiene KPIs del día: ganaderos, ruta, planta, tandas, lecheProc, bloquesReales, promedio, reprocesos, novedades, eliminaciones
+  const r={ganaderos:0,ruta:0,planta:0,tandas:0,lecheProc:0,totalBloques:0,reprocBloques:0,bloquesReales:0,promedio:0,novedades:0,eliminaciones:0};
+  try{
+    // Ruta y ganaderos únicos
+    const sCol=await getDocs(query(collection(db,'recolecciones'),where('fecha','==',fecha)));
+    const ganSet=new Set();
+    sCol.forEach(d=>{const da=d.data();const L=parseFloat(da.litros)||0;r.ruta+=L;ganSet.add(da.ganaderoId);if(da.novedad&&da.novedad.trim())r.novedades++;});
+    r.ganaderos=ganSet.size;
+    // Planta (recepciones + recepcionesInter)
+    const sRec=await getDocs(query(collection(db,'recepciones'),where('fecha','==',fecha)));
+    sRec.forEach(d=>{const da=d.data();r.planta+=parseFloat(da.litros)||0;if(da.novedad&&da.novedad.trim())r.novedades++;});
+    try{const sI=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','==',fecha)));
+    sI.forEach(d=>{const da=d.data();r.planta+=parseFloat(da.litros)||0;if(da.novedad&&da.novedad.trim())r.novedades++;});}catch(e){}
+    // Tandas + producción
+    const sT=await getDocs(query(collection(db,'tandas'),where('fecha','==',fecha)));
+    const tandas=[];sT.forEach(d=>tandas.push(d.data()));
+    r.tandas=tandas.length;
+    r.lecheProc=tandas.reduce((s,t)=>s+(parseFloat(t.litros)||0),0);
+    r.totalBloques=tandas.reduce((s,t)=>s+(parseInt(t.bloques2500)||0)+(parseInt(t.bloques1000)||0)+(parseInt(t.bloques500)||0),0);
+    r.reprocBloques=tandas.reduce((s,t)=>{if(!t.reproceso)return s;const tipo=t.reprocTipo||'bloques';let b=0;if(tipo==='bloques'||tipo==='ambos')b+=(parseInt(t.reprocBloques)||0);if(tipo==='litros'||tipo==='ambos')b+=Math.floor((parseFloat(t.reprocLitros)||0)/3);return s+b;},0);
+    r.bloquesReales=r.totalBloques-r.reprocBloques;
+    r.promedio=r.bloquesReales>0?((r.lecheProc/r.bloquesReales)/5):0;
+    tandas.forEach(t=>{if(t.novedad&&t.novedad.trim())r.novedades++;});
+    // Eliminaciones (filtrar por fecha)
+    try{
+      const sE=await getDocs(query(collection(db,'eliminaciones')));
+      sE.forEach(d=>{const da=d.data();const fechaElim=da.eliminadoEn||da.fechaEliminacion||'';if(fechaElim===fecha)r.eliminaciones++;});
+    }catch(e){}
+    // Ganaderos nuevos + intermediarios nuevos = novedades
+    try{const sG=await getDocs(query(collection(db,'ganaderos'),where('fechaAgregado','==',fecha)));r.novedades+=sG.size;}catch(e){}
+    try{const sIn=await getDocs(query(collection(db,'intermediarios'),where('fechaAgregado','==',fecha)));r.novedades+=sIn.size;}catch(e){}
+  }catch(e){console.error('obtenerDatosResumen:',e);}
+  return r;
+}
+
+async function cargarResumenComparativo(){
+  const cont=document.getElementById('resumen-comparativo-contenido');if(!cont)return;
+  cont.innerHTML='<div class="loading">Cargando...</div>';
+  try{
+    const fechaSel=document.getElementById('novedades-fecha')?.value||hoy();
+    // Calcular ayer = fechaSel - 1 día
+    const d=new Date(fechaSel+'T12:00:00');d.setDate(d.getDate()-1);
+    const ayerStr=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const hoyData=await obtenerDatosResumen(fechaSel);
+    let ayerData=null;
+    if(_modoComparacion)ayerData=await obtenerDatosResumen(ayerStr);
+    const kpis=[
+      {label:'🐄 Ganaderos',hoy:hoyData.ganaderos,ayer:ayerData?.ganaderos,fmt:'int'},
+      {label:'🚛 Ruta',hoy:hoyData.ruta,ayer:ayerData?.ruta,fmt:'litros'},
+      {label:'🏭 Planta',hoy:hoyData.planta,ayer:ayerData?.planta,fmt:'litros'},
+      {label:'🧀 Tandas',hoy:hoyData.tandas,ayer:ayerData?.tandas,fmt:'int'},
+      {label:'🥛 Leche Proc.',hoy:hoyData.lecheProc,ayer:ayerData?.lecheProc,fmt:'litros'},
+      {label:'📦 Blq. Reales',hoy:hoyData.bloquesReales,ayer:ayerData?.bloquesReales,fmt:'int'},
+      {label:'📊 Promedio',hoy:hoyData.promedio,ayer:ayerData?.promedio,fmt:'decimal'},
+      {label:'🔄 Reprocesos',hoy:hoyData.reprocBloques,ayer:ayerData?.reprocBloques,fmt:'int',invertir:true},
+      {label:'⚠️ Novedades',hoy:hoyData.novedades,ayer:ayerData?.novedades,fmt:'int',invertir:true},
+      {label:'🗑️ Eliminaciones',hoy:hoyData.eliminaciones,ayer:ayerData?.eliminaciones,fmt:'int',invertir:true}
+    ];
+    function fmtVal(v,fmt){if(v===undefined||v===null)return '—';if(fmt==='litros')return fmtL(v)+'L';if(fmt==='decimal')return (parseFloat(v)||0).toFixed(2);return String(v);}
+    function calcCambio(ayer,hoyV,invertir){
+      if(ayer===undefined||ayer===null||ayer===0){if(hoyV>0)return{txt:'+nuevo',color:invertir?'#DC2626':'#15803d',alerta:false};return{txt:'—',color:'var(--gris2)',alerta:false};}
+      const dif=hoyV-ayer;
+      const pct=ayer!==0?((dif/ayer)*100):0;
+      let color=dif===0?'var(--gris2)':(dif>0?'#15803d':'#DC2626');
+      if(invertir)color=dif===0?'var(--gris2)':(dif>0?'#DC2626':'#15803d');
+      const alerta=!invertir&&pct<=-20;// caída de 20% o más en métricas positivas
+      const signo=dif>0?'+':'';
+      const pctTxt=Math.abs(pct)>=0.1?` (${signo}${pct.toFixed(1)}%)`:'';
+      return{txt:`${signo}${fmtVal(dif,'int')}${pctTxt}`,color,alerta};
+    }
+    let html='';
+    if(!_modoComparacion){
+      // Modo normal: solo HOY en grid compacto
+      html='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;">';
+      kpis.forEach(k=>{
+        html+=`<div style="background:white;border-radius:8px;padding:8px;text-align:center;border:1px solid #fde68a;"><div style="font-size:10px;color:var(--gris2);font-weight:600;">${k.label}</div><div style="font-size:16px;font-weight:800;color:#92400E;margin-top:2px;">${fmtVal(k.hoy,k.fmt)}</div></div>`;
+      });
+      html+='</div>';
+    }else{
+      // Modo comparación: tabla AYER vs HOY
+      html=`<div style="background:white;border-radius:8px;overflow:hidden;border:1px solid #fde68a;">
+        <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1.2fr;background:#fef3c7;padding:6px 8px;font-size:11px;font-weight:700;color:#92400E;">
+          <div>MÉTRICA</div><div style="text-align:right;">AYER</div><div style="text-align:right;">HOY</div><div style="text-align:right;">CAMBIO</div>
+        </div>`;
+      kpis.forEach(k=>{
+        const c=calcCambio(k.ayer,k.hoy,k.invertir);
+        const bgRow=c.alerta?'background:#FEE2E2;':'';
+        html+=`<div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1.2fr;padding:6px 8px;font-size:12px;border-top:1px solid #fef3c7;${bgRow}align-items:center;">
+          <div style="font-weight:600;">${k.label}${c.alerta?' ⚠️':''}</div>
+          <div style="text-align:right;color:var(--gris2);">${fmtVal(k.ayer,k.fmt)}</div>
+          <div style="text-align:right;font-weight:800;">${fmtVal(k.hoy,k.fmt)}</div>
+          <div style="text-align:right;font-weight:700;color:${c.color};">${c.txt}</div>
+        </div>`;
+      });
+      html+=`</div><div style="font-size:11px;color:var(--gris2);margin-top:6px;font-style:italic;">Comparando ${ayerStr} (ayer) vs ${fechaSel} (hoy). Las métricas con ⚠️ tienen caída ≥20%.</div>`;
+    }
+    cont.innerHTML=html;
+  }catch(e){cont.innerHTML='<div style="font-size:13px;color:var(--rojo);padding:12px;">Error al cargar resumen</div>';console.error('cargarResumenComparativo:',e);}
+}window.cargarResumenComparativo=cargarResumenComparativo;
+
 async function cargarSinRecolectar(){
   try{
     function fLocal(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
     const hoyStr=fLocal(new Date());
     const ayer=new Date();ayer.setDate(ayer.getDate()-1);const ayerStr=fLocal(ayer);
+    // Para buscar último recogedor: 14 días atrás
+    const hace14=new Date();hace14.setDate(hace14.getDate()-14);const hace14Str=fLocal(hace14);
     const snapGan=await getDocs(query(collection(db,'ganaderos'),where('activo','==',true)));
     const ganaderos=[];snapGan.forEach(d=>ganaderos.push({id:d.id,...d.data()}));
     const snap=await getDocs(query(collection(db,'recolecciones'),where('fecha','>=',ayerStr),where('fecha','<=',hoyStr)));
+    // Cargar historial para identificar último recogedor por ganadero
+    const snapHist=await getDocs(query(collection(db,'recolecciones'),where('fecha','>=',hace14Str),where('fecha','<',ayerStr)));
+    const ultimoRec={};
+    snapHist.forEach(d=>{const da=d.data();const prev=ultimoRec[da.ganaderoId];if(!prev||da.fecha>prev.fecha||(da.fecha===prev.fecha&&(da.hora||'')>(prev.hora||'')))ultimoRec[da.ganaderoId]={recogedor:da.recogedorNombre||'—',fecha:da.fecha,hora:da.hora||''};});
+    // Incluir también recolecciones de ayer/hoy en historial para detectar último (en caso de filtros mixtos)
+    snap.forEach(d=>{const da=d.data();const prev=ultimoRec[da.ganaderoId];if(!prev||da.fecha>prev.fecha||(da.fecha===prev.fecha&&(da.hora||'')>(prev.hora||'')))ultimoRec[da.ganaderoId]={recogedor:da.recogedorNombre||'—',fecha:da.fecha,hora:da.hora||''};});
     // Separar recogidos por día (excluir 0 litros SIN novedad, incluir 0 litros CON novedad como visitados)
     const recogidosAyer=new Set();const recogidosHoy=new Set();
     snap.forEach(d=>{const da=d.data();const litros=parseFloat(da.litros)||0;const tieneNovedad=(da.novedad||'').trim().length>0;if(litros>0||(litros===0&&tieneNovedad)){if(da.fecha===ayerStr)recogidosAyer.add(da.ganaderoId);if(da.fecha===hoyStr)recogidosHoy.add(da.ganaderoId);}});
@@ -2422,21 +2667,27 @@ async function cargarSinRecolectar(){
     snap.forEach(d=>{const da=d.data();const litros=parseFloat(da.litros)||0;const tieneNovedad=(da.novedad||'').trim().length>0;if(litros===0&&tieneNovedad){const gan=ganaderos.find(g=>g.id===da.ganaderoId);const nombre=gan?gan.nombre:da.ganaderoNombre;if(da.fecha===ayerStr)ceroAyer.push({nombre,novedad:da.novedad,recogedor:da.recogedorNombre||'',hora:da.hora||''});if(da.fecha===hoyStr)ceroHoy.push({nombre,novedad:da.novedad,recogedor:da.recogedorNombre||'',hora:da.hora||''});}});
     if(sinAyer.length===0&&sinHoy.length===0&&ceroAyer.length===0&&ceroHoy.length===0){cont.innerHTML='<p style="color:var(--gris2);font-size:14px;">✅ Todos los ganaderos recogidos ayer y hoy</p>';return;}
     const LIMITE=3;
+    function fmtUltimoRec(gId){
+      const u=ultimoRec[gId];
+      if(!u)return '<div style="font-size:11px;color:var(--gris2);margin-top:2px;font-style:italic;">Sin registros previos</div>';
+      return `<div style="font-size:11px;color:var(--gris2);margin-top:2px;">Último: <strong>${u.recogedor}</strong> · ${u.fecha}${u.hora?' '+u.hora:''}</div>`;
+    }
     function renderBloque(titulo,lista,color,prefijo){
       if(lista.length===0)return`<div style="margin-bottom:8px;"><div style="font-weight:700;font-size:13px;color:#15803d;margin-bottom:4px;">${titulo}</div><div style="font-size:13px;color:var(--gris2);">✅ Todos recogidos</div></div>`;
+      const renderRow=(g)=>`<div style="padding:6px 0;border-bottom:1px solid var(--gris1);"><div style="display:flex;justify-content:space-between;align-items:center;"><div style="font-weight:600;font-size:13px;">${g.nombre}</div><span class="badge badge-rojo">🔴</span></div>${fmtUltimoRec(g.id)}</div>`;
       const visibles=lista.slice(0,LIMITE);
-      const filas=visibles.map(g=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--gris1);"><div style="font-weight:600;font-size:13px;">${g.nombre}</div><span class="badge badge-rojo">🔴</span></div>`).join('');
-      const extra=lista.length>LIMITE?`<div id="${prefijo}-extra" style="display:none;">${lista.slice(LIMITE).map(g=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--gris1);"><div style="font-weight:600;font-size:13px;">${g.nombre}</div><span class="badge badge-rojo">🔴</span></div>`).join('')}</div><div style="text-align:center;"><a id="${prefijo}-toggle" href="#" onclick="const x=document.getElementById('${prefijo}-extra');const t=document.getElementById('${prefijo}-toggle');if(x.style.display==='none'){x.style.display='block';t.textContent='Ver menos ▲';}else{x.style.display='none';t.textContent='Ver más (${lista.length-LIMITE} más) ▼';}return false;" style="font-size:12px;color:var(--verde);font-weight:700;">Ver más (${lista.length-LIMITE} más) ▼</a></div>`:'';
+      const filas=visibles.map(renderRow).join('');
+      const extra=lista.length>LIMITE?`<div id="${prefijo}-extra" style="display:none;">${lista.slice(LIMITE).map(renderRow).join('')}</div><div style="text-align:center;"><a id="${prefijo}-toggle" href="#" onclick="const x=document.getElementById('${prefijo}-extra');const t=document.getElementById('${prefijo}-toggle');if(x.style.display==='none'){x.style.display='block';t.textContent='Ver menos ▲';}else{x.style.display='none';t.textContent='Ver más (${lista.length-LIMITE} más) ▼';}return false;" style="font-size:12px;color:var(--verde);font-weight:700;">Ver más (${lista.length-LIMITE} más) ▼</a></div>`:'';
       return`<div style="margin-bottom:12px;"><div style="font-weight:700;font-size:13px;color:${color};margin-bottom:4px;">${titulo} (${lista.length})</div>${filas}${extra}</div>`;
     }
     function renderBloqueCero(titulo,lista,color,prefijo){
-      if(lista.length===0)return'';
+      if(lista.length===0)return`<div style="margin-bottom:12px;"><div style="font-weight:700;font-size:13px;color:${color};margin-bottom:4px;">${titulo}</div><div style="font-size:13px;color:var(--gris2);font-style:italic;">No hay reportes</div></div>`;
       const visibles=lista.slice(0,LIMITE);
       const filas=visibles.map(g=>`<div style="padding:6px 0;border-bottom:1px solid var(--gris1);"><div style="font-weight:600;font-size:13px;">${g.nombre}</div><div style="font-size:12px;color:var(--gris2);margin-top:2px;">📝 ${g.novedad}${g.recogedor?' — '+g.recogedor:''}${g.hora?', '+g.hora:''}</div></div>`).join('');
       const extra=lista.length>LIMITE?`<div id="${prefijo}-extra" style="display:none;">${lista.slice(LIMITE).map(g=>`<div style="padding:6px 0;border-bottom:1px solid var(--gris1);"><div style="font-weight:600;font-size:13px;">${g.nombre}</div><div style="font-size:12px;color:var(--gris2);margin-top:2px;">📝 ${g.novedad}${g.recogedor?' — '+g.recogedor:''}${g.hora?', '+g.hora:''}</div></div>`).join('')}</div><div style="text-align:center;"><a id="${prefijo}-toggle" href="#" onclick="const x=document.getElementById('${prefijo}-extra');const t=document.getElementById('${prefijo}-toggle');if(x.style.display==='none'){x.style.display='block';t.textContent='Ver menos ▲';}else{x.style.display='none';t.textContent='Ver más (${lista.length-LIMITE} más) ▼';}return false;" style="font-size:12px;color:var(--verde);font-weight:700;">Ver más (${lista.length-LIMITE} más) ▼</a></div>`:'';
       return`<div style="margin-bottom:12px;"><div style="font-weight:700;font-size:13px;color:${color};margin-bottom:4px;">${titulo} (${lista.length})</div>${filas}${extra}</div>`;
     }
-    cont.innerHTML=renderBloque('🔴 Sin recolectar AYER',sinAyer,'#DC2626','sinrec-ayer')+renderBloque('⚠️ Sin recolectar HOY',sinHoy,'#D97706','sinrec-hoy')+renderBloqueCero('📝 Con 0 litros AYER',ceroAyer,'#7c3aed','cero-ayer')+renderBloqueCero('📝 Con 0 litros HOY',ceroHoy,'#7c3aed','cero-hoy');
+    cont.innerHTML=renderBloque('🔴 Sin recolectar AYER',sinAyer,'#DC2626','sinrec-ayer')+renderBloque('⚠️ Sin recolectar HOY',sinHoy,'#D97706','sinrec-hoy')+renderBloqueCero('📝 Con 0 litros HOY',ceroHoy,'#7c3aed','cero-hoy')+renderBloqueCero('📝 Con 0 litros AYER',ceroAyer,'#7c3aed','cero-ayer');
   }catch(e){}
 }
 
@@ -2476,8 +2727,10 @@ async function cargarProduccionHoy(fechaParam){
     if(tandas.length===0&&!cierre){el.innerHTML='<div style="font-size:13px;color:var(--gris2);">Sin producción registrada hoy</div>';return;}
     const totalLitros=tandas.reduce((s,t)=>s+(parseFloat(t.litros)||0),0);
     const totalBloques=tandas.reduce((s,t)=>s+(parseInt(t.bloques2500)||0)+(parseInt(t.bloques1000)||0)+(parseInt(t.bloques500)||0),0);
-    // Reprocesos día = suma de bloques de reproceso (siempre desde tandas)
-    const reprocBloquesDia=tandas.reduce((s,t)=>{if(!t.reproceso)return s;const tipo=t.reprocTipo||'bloques';if(tipo==='bloques'||tipo==='ambos')return s+(parseInt(t.reprocBloques)||0);return s;},0);
+    // Reprocesos día = suma de bloques de reproceso + (litros÷3) (siempre desde tandas)
+    const reprocBloquesDia=tandas.reduce((s,t)=>{if(!t.reproceso)return s;const tipo=t.reprocTipo||'bloques';let b=0;if(tipo==='bloques'||tipo==='ambos')b+=(parseInt(t.reprocBloques)||0);if(tipo==='litros'||tipo==='ambos')b+=Math.floor((parseFloat(t.reprocLitros)||0)/3);return s+b;},0);
+    // Sobrante de litros que no completan un bloque (cada 3L = 1 bloque)
+    const reprocLitrosSobrante=tandas.reduce((s,t)=>{if(!t.reproceso)return s;const tipo=t.reprocTipo||'bloques';if(tipo==='litros'||tipo==='ambos')return s+((parseFloat(t.reprocLitros)||0)%3);return s;},0);
     const bloquesReales=totalBloques-reprocBloquesDia;
     const promedioReal=bloquesReales>0?((totalLitros/bloquesReales)/5).toFixed(2):'—';
     const cuajador=tandas.length>0?tandas[0].cuajadorNombre:'—';
@@ -2547,12 +2800,12 @@ async function cargarProduccionHoy(fechaParam){
       html+=`<div style="font-size:12px;font-weight:700;color:var(--verde);margin-top:10px;margin-bottom:4px;">🧀 Ventas en planta (${cierre.ventasPlanta.length})</div>`;
       html+=cierre.ventasPlanta.map(v=>`<div style="font-size:12px;padding:3px 0;border-bottom:1px solid var(--gris1);">${v.nombre||'—'} · ${v.unidades} blq ${v.tamano} · <span style="color:${v.tipo==='fiado'?'var(--rojo)':'#15803d'};font-weight:600;">${v.tipo}</span></div>`).join('');
     }
-    // Promedio por tanda (con bloques reales por tanda)
-    const tandasProm=tandas.map(t=>{const b=(parseInt(t.bloques2500)||0)+(parseInt(t.bloques1000)||0)+(parseInt(t.bloques500)||0);const l=parseFloat(t.litros)||0;const repB=t.reproceso?(parseInt(t.reprocBloques)||0):0;const bReal=b-repB;const prom=bReal>0?((l/bReal)/5).toFixed(2):'—';return{numero:t.numero,prov:t.proveedorNombre,litros:l,bloques:b,bloquesReales:bReal,repB,prom};});
+    // Promedio por tanda (con bloques reales por tanda - resta bloques reproc + litros÷3)
+    const tandasProm=tandas.map(t=>{const b=(parseInt(t.bloques2500)||0)+(parseInt(t.bloques1000)||0)+(parseInt(t.bloques500)||0);const l=parseFloat(t.litros)||0;const tipo=t.reprocTipo||'bloques';let repB=0;let repBfromL=0;if(t.reproceso){if(tipo==='bloques'||tipo==='ambos')repB=(parseInt(t.reprocBloques)||0);if(tipo==='litros'||tipo==='ambos')repBfromL=Math.floor((parseFloat(t.reprocLitros)||0)/3);}const totalRest=repB+repBfromL;const bReal=b-totalRest;const prom=bReal>0?((l/bReal)/5).toFixed(2):'—';return{numero:t.numero,prov:t.proveedorNombre,litros:l,bloques:b,bloquesReales:bReal,repB,repBfromL,totalRest,prom};});
     if(tandasProm.length>0){
       html+=`<div style="font-size:12px;font-weight:700;color:var(--verde);margin-top:10px;margin-bottom:4px;">📊 Promedio por tanda (L÷BR÷5)</div>`;
-      html+=tandasProm.slice(0,3).map(tp=>`<div style="font-size:12px;padding:3px 0;border-bottom:1px solid var(--gris1);">Tanda #${tp.numero} (${tp.prov}): ${fmtL(tp.litros)}L ÷ ${tp.bloquesReales}BR${tp.repB?` (${tp.bloques}-${tp.repB})`:''} = <strong>${tp.prom}</strong></div>`).join('');
-      if(tandasProm.length>3){html+=`<div id="prod-prom-extra" style="display:none;">${tandasProm.slice(3).map(tp=>`<div style="font-size:12px;padding:3px 0;border-bottom:1px solid var(--gris1);">Tanda #${tp.numero} (${tp.prov}): ${fmtL(tp.litros)}L ÷ ${tp.bloquesReales}BR${tp.repB?` (${tp.bloques}-${tp.repB})`:''} = <strong>${tp.prom}</strong></div>`).join('')}</div><div style="text-align:center;margin-top:4px;"><a id="prod-prom-toggle" href="#" onclick="const x=document.getElementById('prod-prom-extra');const t=document.getElementById('prod-prom-toggle');if(x.style.display==='none'){x.style.display='block';t.textContent='Ver menos ▲';}else{x.style.display='none';t.textContent='Ver más (${tandasProm.length-3} más) ▼';}return false;" style="font-size:12px;color:var(--verde);font-weight:700;">Ver más (${tandasProm.length-3} más) ▼</a></div>`;}
+      html+=tandasProm.slice(0,3).map(tp=>`<div style="font-size:12px;padding:3px 0;border-bottom:1px solid var(--gris1);">Tanda #${tp.numero} (${tp.prov}): ${fmtL(tp.litros)}L ÷ ${tp.bloquesReales}BR${tp.totalRest?` (${tp.bloques}-${tp.totalRest})`:''} = <strong>${tp.prom}</strong></div>`).join('');
+      if(tandasProm.length>3){html+=`<div id="prod-prom-extra" style="display:none;">${tandasProm.slice(3).map(tp=>`<div style="font-size:12px;padding:3px 0;border-bottom:1px solid var(--gris1);">Tanda #${tp.numero} (${tp.prov}): ${fmtL(tp.litros)}L ÷ ${tp.bloquesReales}BR${tp.totalRest?` (${tp.bloques}-${tp.totalRest})`:''} = <strong>${tp.prom}</strong></div>`).join('')}</div><div style="text-align:center;margin-top:4px;"><a id="prod-prom-toggle" href="#" onclick="const x=document.getElementById('prod-prom-extra');const t=document.getElementById('prod-prom-toggle');if(x.style.display==='none'){x.style.display='block';t.textContent='Ver menos ▲';}else{x.style.display='none';t.textContent='Ver más (${tandasProm.length-3} más) ▼';}return false;" style="font-size:12px;color:var(--verde);font-weight:700;">Ver más (${tandasProm.length-3} más) ▼</a></div>`;}
     }
     // Reprocesos detallados
     const reprocs=tandas.filter(t=>t.reproceso);
@@ -2563,6 +2816,13 @@ async function cargarProduccionHoy(fechaParam){
       html+=repLines.slice(0,3).join('');
       if(repLines.length>3){html+=`<div id="prod-reproc-extra" style="display:none;">${repLines.slice(3).join('')}</div><div style="text-align:center;margin-top:4px;"><a id="prod-reproc-toggle" href="#" onclick="const x=document.getElementById('prod-reproc-extra');const t=document.getElementById('prod-reproc-toggle');if(x.style.display==='none'){x.style.display='block';t.textContent='Ver menos ▲';}else{x.style.display='none';t.textContent='Ver más (${repLines.length-3} más) ▼';}return false;" style="font-size:12px;color:#D97706;font-weight:700;">Ver más (${repLines.length-3} más) ▼</a></div>`;}
       let totalTxt='';if(totalRepB>0)totalTxt+='Bloques: '+totalRepB;if(totalRepL>0)totalTxt+=(totalTxt?' · ':'')+'Litros: '+totalRepL;
+      // Nota informativa: bloques generados desde litros + sobrante
+      const blqFromLitros=Math.floor(totalRepL/3);
+      const sobrante=totalRepL%3;
+      if(totalRepL>0){
+        totalTxt+=` → <strong>${blqFromLitros} bloques</strong> de litros`;
+        if(sobrante>0)totalTxt+=` <span style="color:#92400E;opacity:0.7;">(+${sobrante}L sobrante, no completan bloque)</span>`;
+      }
       html+=`<div style="font-size:12px;font-weight:700;color:#92400E;padding:4px 0;">Total: ${totalTxt}</div>`;
     }
     // Novedades
