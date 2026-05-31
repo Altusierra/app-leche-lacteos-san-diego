@@ -3622,38 +3622,64 @@ window._togglePagado=async function(gid,nombre){
   }catch(e){console.error('Error guardando pagado:',e);}
 };
 // ── Reportes guardados (historial) ──
+function _repGuardadosLeer(){try{return JSON.parse(localStorage.getItem('lsd_rep_guardados')||'[]');}catch(e){return [];}}
+function _repGuardadosEscribir(arr){
+  try{localStorage.setItem('lsd_rep_guardados',JSON.stringify(arr));return true;}catch(e){}
+  let a=arr.slice().sort((x,y)=>(x.ts||0)-(y.ts||0));
+  while(a.length>0){a.shift();try{localStorage.setItem('lsd_rep_guardados',JSON.stringify(a));return true;}catch(e){}}
+  return false;
+}
+function _renderListaReportes(tipo,cont,lista){
+  if(!lista||lista.length===0){cont.innerHTML='';return;}
+  lista=lista.slice().sort((a,b)=>(b.fechaGen||'').localeCompare(a.fechaGen||'')||(b.horaGen||'').localeCompare(a.horaGen||''));
+  const color=tipo==='liq'?'var(--verde)':'var(--naranja)';
+  const emoji=tipo==='liq'?'💰':'🚚';
+  cont.innerHTML=`<div class="card" style="margin-top:12px;"><div class="card-titulo">${emoji} Reportes guardados (${lista.length})</div>${lista.map(r=>`<div onclick="window._abrirReporteGuardado('${tipo}','${r.de}','${r.ha}',${r.precio},'${r.key}')" style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--gris1);cursor:pointer;"><div><div style="font-weight:700;font-size:13px;color:${color};">${r.de} al ${r.ha} · ${fmtPeso(r.precio)}/L ${r.html?'📲':''}</div><div style="font-size:11px;color:var(--gris2);">${r.diasConDatos} días · ${r.generadoPor||''} · ${r.fechaGen} ${r.horaGen||''}</div></div><span style="color:${color};font-size:18px;">›</span></div>`).join('')}</div>`;
+}
 async function _guardarReporteHistorial(tipo,de,ha,precio,diasConDatos){
+  const key=`${tipo}_${de}_${ha}_${precio}_${diasConDatos}`;
+  const tabEl=document.getElementById(tipo==='liq'?'rep-tab-0':'rep-tab-1');
+  const html=tabEl?tabEl.innerHTML:'';
+  const fechaGen=hoy(),horaGen=horaAhora(),generadoPor=UA.nombre||UA.email;
+  // Copia en el teléfono (funciona sin conexión)
+  try{let arr=_repGuardadosLeer().filter(r=>r.key!==key);arr.push({key,tipo,de,ha,precio,diasConDatos,generadoPor,fechaGen,horaGen,ts:Date.now(),html});_repGuardadosEscribir(arr);}catch(e){}
+  // Respaldo en internet
   try{
-    const key=`${tipo}_${de}_${ha}_${precio}_${diasConDatos}`;
     const colName=tipo==='liq'?'reportesLiq':'reportesInter';
-    await setDoc(doc(db,colName,key),{tipo,de,ha,precio,diasConDatos,generadoPor:UA.nombre||UA.email,fechaGen:hoy(),horaGen:horaAhora(),timestamp:serverTimestamp()},{merge:true});
-    _cargarHistorialReportes(tipo);
+    await setDoc(doc(db,colName,key),{tipo,de,ha,precio,diasConDatos,generadoPor,fechaGen,horaGen,timestamp:serverTimestamp()},{merge:true});
   }catch(e){console.error('Error guardando historial:',e);}
+  _cargarHistorialReportes(tipo);
 }
 async function _cargarHistorialReportes(tipo){
   const contId=tipo==='liq'?'rep-tab-0-historial':'rep-tab-1-historial';
   const cont=document.getElementById(contId);if(!cont)return;
-  try{
-    const colName=tipo==='liq'?'reportesLiq':'reportesInter';
-    const snap=await getDocs(query(collection(db,colName),orderBy('timestamp','desc')));
-    const lista=[];snap.forEach(d=>lista.push({id:d.id,...d.data()}));
-    if(lista.length===0){cont.innerHTML='';return;}
-    const color=tipo==='liq'?'var(--verde)':'var(--naranja)';
-    const emoji=tipo==='liq'?'💰':'🚚';
-    cont.innerHTML=`<div class="card" style="margin-top:12px;"><div class="card-titulo">${emoji} Reportes guardados (${lista.length})</div>${lista.map(r=>`<div onclick="window._abrirReporteGuardado('${tipo}','${r.de}','${r.ha}',${r.precio})" style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--gris1);cursor:pointer;"><div><div style="font-weight:700;font-size:13px;color:${color};">${r.de} al ${r.ha} · ${fmtPeso(r.precio)}/L</div><div style="font-size:11px;color:var(--gris2);">${r.diasConDatos} días con datos · ${r.generadoPor} · ${r.fechaGen} ${r.horaGen||''}</div></div><span style="color:${color};font-size:18px;">›</span></div>`).join('')}</div>`;
-  }catch(e){}
+  // 1) Mostrar lo guardado en el teléfono (sin conexión)
+  let lista=_repGuardadosLeer().filter(r=>r.tipo===tipo);
+  _renderListaReportes(tipo,cont,lista);
+  // 2) Si hay internet, traer respaldo y combinar los que no estén en el teléfono
+  if(navigator.onLine){
+    try{
+      const colName=tipo==='liq'?'reportesLiq':'reportesInter';
+      const snap=await getDocs(query(collection(db,colName),orderBy('timestamp','desc')));
+      const claves=new Set(lista.map(r=>r.key));
+      snap.forEach(d=>{const r=d.data();if(!claves.has(d.id))lista.push({key:d.id,tipo,de:r.de,ha:r.ha,precio:r.precio,diasConDatos:r.diasConDatos,generadoPor:r.generadoPor,fechaGen:r.fechaGen,horaGen:r.horaGen,ts:0,html:''});});
+      _renderListaReportes(tipo,cont,lista);
+    }catch(e){}
+  }
 }
-window._abrirReporteGuardado=async function(tipo,de,ha,precio){
+window._abrirReporteGuardado=async function(tipo,de,ha,precio,key){
+  if(tipo==='liq')cambiarTabReporte(0,document.querySelector('.tab'));
+  else cambiarTabReporte(1,document.querySelectorAll('.tab')[1]);
   document.getElementById('rep-desde').value=de;
   document.getElementById('rep-hasta').value=ha;
-  if(tipo==='liq'){
-    document.getElementById('rep-precio-liq').value=precio;
-    cambiarTabReporte(0,document.querySelector('.tab'));
-  }else{
-    document.getElementById('rep-precio-inter').value=precio;
-    cambiarTabReporte(1,document.querySelectorAll('.tab')[1]);
-  }
-  await generarReporte();
+  if(tipo==='liq')document.getElementById('rep-precio-liq').value=precio;
+  else document.getElementById('rep-precio-inter').value=precio;
+  if(navigator.onLine){await generarReporte();return;}
+  // Sin conexión: mostrar la copia guardada en el teléfono
+  const snap=_repGuardadosLeer().find(r=>r.key===key);
+  const tabEl=document.getElementById(tipo==='liq'?'rep-tab-0':'rep-tab-1');
+  if(snap&&snap.html&&tabEl){tabEl.innerHTML=`<div style="background:#fef3c7;border:1px solid #d97706;border-radius:10px;padding:10px;margin-bottom:10px;font-size:12px;color:#92400E;font-weight:600;">📋 Copia guardada del ${snap.fechaGen} ${snap.horaGen||''} · sin conexión</div>`+snap.html;}
+  else if(tabEl){tabEl.innerHTML='<div class="vacio"><div class="ico">📵</div><p>Sin conexión y sin copia guardada de este reporte</p></div>';}
 };
 function repDetalle(datos,de,ha,interDatos){
   // Combinar ganaderos + intermediarios en una sola lista
