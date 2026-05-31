@@ -2535,6 +2535,7 @@ async function cargarNovedadesDashboard(fecha){
 }window.cargarNovedadesDashboard=cargarNovedadesDashboard;
 
 let _modoComparacion=false;
+let _precioBloqueComp=0,_precioLitroComp=0,_compHoyData=null,_compAyerData=null;
 function toggleComparacion(){
   _modoComparacion=!_modoComparacion;
   const btn=document.getElementById('btn-comparar-toggle');
@@ -2648,11 +2649,74 @@ async function cargarResumenComparativo(){
         </div>`;
       });
       html+=`</div><div style="font-size:11px;color:var(--gris2);margin-top:6px;font-style:italic;">Comparando ${ayerStr} (ayer) vs ${fechaSel} (hoy). Las métricas con ⚠️ tienen caída ≥20%.</div>`;
+      _compHoyData=hoyData;_compAyerData=ayerData;
+      const _vb=_precioBloqueComp>0?'$'+_precioBloqueComp.toLocaleString('es-CO'):'';
+      const _vl=_precioLitroComp>0?'$'+_precioLitroComp.toLocaleString('es-CO'):'';
+      html+=`<div style="background:white;border-radius:8px;border:1px solid #fde68a;padding:12px;margin-top:12px;">
+        <div style="font-weight:700;font-size:13px;color:#92400E;margin-bottom:10px;">💰 Análisis financiero</div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <div style="flex:1;"><label style="font-size:11px;color:var(--gris2);display:block;margin-bottom:3px;">Precio 1 bloque</label>
+          <input id="comp-precio-bloque" inputmode="numeric" placeholder="$0" value="${_vb}" oninput="calcularAnalisisFinanciero()" style="width:100%;padding:8px;border:1px solid #fde68a;border-radius:6px;font-size:14px;font-weight:700;box-sizing:border-box;"></div>
+          <div style="flex:1;"><label style="font-size:11px;color:var(--gris2);display:block;margin-bottom:3px;">Precio 1 litro</label>
+          <input id="comp-precio-litro" inputmode="numeric" placeholder="$0" value="${_vl}" oninput="calcularAnalisisFinanciero()" style="width:100%;padding:8px;border:1px solid #fde68a;border-radius:6px;font-size:14px;font-weight:700;box-sizing:border-box;"></div>
+        </div>
+        <div id="analisis-fin-resultado"></div>
+      </div>`;
     }
     if(mi!==_resumenCompVer)return;
     cont.innerHTML=html;
+    if(_modoComparacion)calcularAnalisisFinanciero();
   }catch(e){if(mi===_resumenCompVer)cont.innerHTML='<div style="font-size:13px;color:var(--rojo);padding:12px;">Error al cargar resumen</div>';console.error('cargarResumenComparativo:',e);}
 }window.cargarResumenComparativo=cargarResumenComparativo;
+
+function calcularAnalisisFinanciero(){
+  const cont=document.getElementById('analisis-fin-resultado');if(!cont||!_compHoyData)return;
+  const inpB=document.getElementById('comp-precio-bloque'),inpL=document.getElementById('comp-precio-litro');
+  [inpB,inpL].forEach(inp=>{if(!inp)return;const d=inp.value.replace(/\D/g,'');inp.value=d?'$'+parseInt(d).toLocaleString('es-CO'):'';});
+  _precioBloqueComp=inpB?(parseInt(inpB.value.replace(/\D/g,''))||0):0;
+  _precioLitroComp=inpL?(parseInt(inpL.value.replace(/\D/g,''))||0):0;
+  const pb=_precioBloqueComp,pl=_precioLitroComp;
+  if(pb<=0&&pl<=0){cont.innerHTML='<div style="font-size:11px;color:var(--gris2);text-align:center;padding:8px;">Ingresa los precios para ver el análisis</div>';return;}
+  const H=_compHoyData,A=_compAyerData;
+  const ingH=H.bloquesReales*pb,gasH=H.planta*pl,ganH=ingH-gasH;
+  const ingA=A?A.bloquesReales*pb:0,gasA=A?A.planta*pl:0,ganA=ingA-gasA;
+  function tarjeta(tit,ing,gas,gan,blq,lit){return `<div style="border:1px solid #fde68a;border-radius:8px;padding:10px;">
+    <div style="text-align:center;font-weight:700;font-size:12px;color:var(--gris2);margin-bottom:8px;">${tit}</div>
+    <div style="font-size:10px;color:var(--gris2);">Ingresos</div>
+    <div style="font-size:12px;font-weight:700;color:#15803d;">${fmtPeso(ing)}</div>
+    <div style="font-size:9px;color:var(--gris2);margin-bottom:6px;">${blq} blq × ${fmtPeso(pb)}</div>
+    <div style="font-size:10px;color:var(--gris2);">Gastos leche</div>
+    <div style="font-size:12px;font-weight:700;color:#DC2626;">${fmtPeso(gas)}</div>
+    <div style="font-size:9px;color:var(--gris2);margin-bottom:6px;">${fmtL(lit)}L × ${fmtPeso(pl)}</div>
+    <div style="border-top:1px solid #fde68a;padding-top:6px;"><div style="font-size:10px;color:var(--gris2);">Ganancia</div>
+    <div style="font-size:15px;font-weight:800;color:${gan>=0?'#15803d':'#DC2626'};">${fmtPeso(gan)}</div></div></div>`;}
+  let h='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">';
+  h+=tarjeta('AYER',ingA,gasA,ganA,A?A.bloquesReales:0,A?A.planta:0);
+  h+=tarjeta('HOY',ingH,gasH,ganH,H.bloquesReales,H.planta);
+  h+='</div>';
+  const difCent=A?Math.round((A.promedio-H.promedio)*100):0;
+  const bloquesImp=difCent*2;
+  const impPesos=bloquesImp*pb;
+  h+=`<div style="border:1px solid #fde68a;border-radius:8px;padding:10px;margin-bottom:10px;">
+    <div style="font-weight:700;font-size:12px;color:#92400E;margin-bottom:6px;">📈 Impacto por eficiencia</div>
+    <div style="font-size:11px;color:var(--gris2);line-height:1.8;">
+      Promedio ayer <b style="color:#374151;">${A?A.promedio.toFixed(2):'—'}</b> → hoy <b style="color:#374151;">${H.promedio.toFixed(2)}</b><br>
+      Diferencia: <b style="color:#374151;">${difCent}</b> centésimas × 2 = <b style="color:#374151;">${bloquesImp} bloques</b><br>
+      ${bloquesImp} × ${fmtPeso(pb)} = <b style="color:${impPesos>=0?'#15803d':'#DC2626'};font-size:14px;">${fmtPeso(impPesos)}</b>
+    </div>
+    <div style="margin-top:8px;background:${impPesos>=0?'#dcfce7':'#FEE2E2'};border-radius:6px;padding:8px;text-align:center;">
+      <div style="font-size:11px;color:var(--gris2);">${impPesos>=0?'Hoy mejoró la eficiencia':'Hoy bajó la eficiencia'}</div>
+      <div style="font-size:16px;font-weight:800;color:${impPesos>=0?'#15803d':'#DC2626'};">${impPesos>=0?'+':''}${fmtPeso(impPesos)}</div>
+    </div>
+  </div>`;
+  const difGan=ganH-ganA;
+  h+=`<div style="background:${difGan>=0?'#dcfce7':'#FEE2E2'};border-radius:8px;padding:12px;text-align:center;">
+    <div style="font-size:11px;color:var(--gris2);">Ganancia hoy vs ayer</div>
+    <div style="font-size:20px;font-weight:800;color:${difGan>=0?'#15803d':'#DC2626'};">${difGan>=0?'▲ +':'▼ '}${fmtPeso(difGan)}</div>
+    <div style="font-size:11px;color:var(--gris2);margin-top:2px;">${difGan>=0?'Hoy se ganó más que ayer':'Hoy se ganó menos que ayer'}</div>
+  </div>`;
+  cont.innerHTML=h;
+}window.calcularAnalisisFinanciero=calcularAnalisisFinanciero;
 
 async function cargarSinRecolectar(){
   try{
