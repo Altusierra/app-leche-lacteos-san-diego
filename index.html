@@ -3830,9 +3830,10 @@ function repInter(datos,de,ha,precio){
   window._interState={datos,de,ha,precio,fechas,inters,intMap,celda,totalFila,totalColL,intRecDia,intRecSet,colorMap,recsUnicos,recNombresArr,quincenaId,diasConDatos,filtroRec:'todos',searchText:'',pagados:{},intNovedades,expandedNov:{}};
   getDoc(doc(db,'liquidacionesInter',quincenaId)).then(snap=>{
     if(snap.exists()&&snap.data().pagados)window._interState.pagados=snap.data().pagados;
+  }).catch(()=>{}).finally(()=>{
     _renderInterMatriz();
     _guardarReporteHistorial('inter',de,ha,precio,diasConDatos);
-  }).catch(()=>_renderInterMatriz());
+  });
 }
 function _renderInterMatriz(){
   const s=window._interState;if(!s)return;
