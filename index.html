@@ -738,6 +738,7 @@
       <div class="alerta alerta-rojo" id="nomina-error"></div>
       <div class="alerta alerta-verde" id="nomina-ok"></div>
       <div id="costos-nominas-alertas"></div>
+      <button class="btn btn-verde" style="font-size:14px;padding:12px;margin-bottom:12px;" onclick="agregarPersonaNomina()">➕ Agregar persona a nómina</button>
       <div id="costos-nominas-lista"><div class="loading">Cargando...</div></div>
       <div style="margin-top:16px;font-size:12px;font-weight:700;color:var(--gris2);margin-bottom:6px;">Historial de cambios</div>
       <div id="costos-nominas-historial"><div style="font-size:13px;color:var(--gris2);">Sin cambios aún</div></div>
@@ -4256,9 +4257,13 @@ async function cargarNominas(){
     const usuarios=[];snap.forEach(d=>{const dat=d.data();if(dat.rol!=='admin')usuarios.push({id:d.id,...dat});});
     const rolOrden={recogedor:0,recibidor:1,cuajador:2};
     usuarios.sort((a,b)=>(rolOrden[a.rol]??99)-(rolOrden[b.rol]??99)||(a.nombre||'').localeCompare(b.nombre||''));
+    // Colaboradores solo nómina (no entran a la app)
+    let colaboradores=[];
+    try{const snapCol=await getDocs(collection(db,'colaboradoresNomina'));snapCol.forEach(d=>{const dat=d.data();if(dat.activo!==false)colaboradores.push({id:d.id,...dat});});}catch(e){}
+    colaboradores.sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||''));
     // Alertas de nómina pendiente
     const alertEl=document.getElementById('costos-nominas-alertas');
-    const sinNomina=usuarios.filter(u=>!u.nominaActual);
+    const sinNomina=[...usuarios,...colaboradores].filter(u=>!u.nominaActual);
     if(alertEl){
       if(sinNomina.length>0){alertEl.innerHTML=sinNomina.map(u=>`<div style="background:#FEE2E2;border:1px solid #DC2626;border-radius:10px;padding:10px;margin-bottom:8px;font-size:13px;color:#DC2626;font-weight:600;">⚠️ ${u.nombre||u.email} — Sin nómina asignada</div>`).join('');}
       else{alertEl.innerHTML='';}
@@ -4266,14 +4271,26 @@ async function cargarNominas(){
     // Lista
     const el=document.getElementById('costos-nominas-lista');if(!el)return;
     const badgeRol=r=>r==='recogedor'?'badge-verde':r==='recibidor'?'badge-naranja':'badge-verde';
-    el.innerHTML=usuarios.length===0?'<p style="color:var(--gris2);font-size:14px;">Sin usuarios</p>':
-      usuarios.map(u=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--gris1);">
+    let listaHtml=usuarios.map(u=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--gris1);">
         <div><div style="font-weight:700;font-size:14px;">${u.nombre||u.email} <span class="badge ${badgeRol(u.rol)}" style="font-size:10px;">${u.rol}</span></div>
         <div style="font-size:13px;color:${u.nominaActual?'#15803d':'var(--rojo)'};">${u.nominaActual?fmtPeso(u.nominaActual)+'/mes':'Sin asignar'}</div></div>
         <button class="btn btn-sm" style="background:${u.nominaActual?'#15803d':'var(--rojo)'};color:white;" data-nomuid="${u.id}" data-nomnombre="${(u.nombre||'').replace(/"/g,'&quot;')}">💰 ${u.nominaActual?'Cambiar':'Asignar'}</button>
       </div>`).join('');
+    listaHtml+=colaboradores.map(c=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--gris1);">
+        <div><div style="font-weight:700;font-size:14px;">${c.nombre||''} <span class="badge badge-naranja" style="font-size:10px;">${c.rol||'—'}</span> <span style="background:#e5e7eb;color:#6b7280;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;">solo nómina</span></div>
+        <div style="font-size:13px;color:${c.nominaActual?'#15803d':'var(--rojo)'};">${c.nominaActual?fmtPeso(c.nominaActual)+'/mes':'Sin asignar'}</div></div>
+        <div style="display:flex;gap:6px;"><button class="btn btn-sm" style="background:${c.nominaActual?'#15803d':'var(--rojo)'};color:white;" data-colabid="${c.id}" data-colabnombre="${(c.nombre||'').replace(/"/g,'&quot;')}">💰</button>
+        <button class="btn btn-sm" style="background:#fee2e2;color:#DC2626;" data-colabdel="${c.id}" data-colabdelnombre="${(c.nombre||'').replace(/"/g,'&quot;')}">🗑️</button></div>
+      </div>`).join('');
+    el.innerHTML=(usuarios.length===0&&colaboradores.length===0)?'<p style="color:var(--gris2);font-size:14px;">Sin personas en nómina</p>':listaHtml;
     el.querySelectorAll('[data-nomuid]').forEach(btn=>{
       btn.addEventListener('click',function(){cambiarNominaCostos(this.dataset.nomuid);});
+    });
+    el.querySelectorAll('[data-colabid]').forEach(btn=>{
+      btn.addEventListener('click',function(){cambiarNominaColab(this.dataset.colabid,this.dataset.colabnombre);});
+    });
+    el.querySelectorAll('[data-colabdel]').forEach(btn=>{
+      btn.addEventListener('click',function(){eliminarPersonaNomina(this.dataset.colabdel,this.dataset.colabdelnombre);});
     });
     await cargarHistorialNominas();
   }catch(e){console.error('Error cargar nóminas:',e);}
@@ -4293,6 +4310,43 @@ async function cambiarNominaCostos(uid){
     await cargarNominas();
   }catch(e){alerta('nomina-error','Error al guardar nómina','rojo');}
 }window.cambiarNominaCostos=cambiarNominaCostos;
+async function agregarPersonaNomina(){
+  try{
+    const nombre=await modalPrompt('👤 Nombre de la persona:');
+    if(nombre===null)return;
+    if(!nombre.trim()){await modalAlert('El nombre no puede estar vacío');return;}
+    const rol=await modalPrompt('💼 Rol o cargo (ej: cocina, vigilante):');
+    if(rol===null)return;
+    const valorStr=await modalPromptPesos(`💰 Nómina mensual de ${nombre.trim()} (en pesos):`);
+    let precio=0;
+    if(valorStr&&valorStr.trim()){precio=parseFloat(valorStr.trim());if(isNaN(precio)||precio<0)precio=0;}
+    const ref=await addDoc(collection(db,'colaboradoresNomina'),{nombre:nombre.trim(),rol:(rol||'').trim(),nominaActual:precio>0?precio:null,activo:true,fechaAgregado:hoy(),agregadoPor:UA.nombre||UA.email});
+    if(precio>0)await addDoc(collection(db,'historialNomina'),{userId:ref.id,userName:nombre.trim(),precio,fechaDesde:hoy(),adminId:UA.uid,adminNombre:UA.nombre||UA.email,timestamp:serverTimestamp()});
+    alerta('nomina-ok',`✅ ${nombre.trim()} agregado a nómina`,'verde');
+    await cargarNominas();
+  }catch(e){alerta('nomina-error','Error al agregar persona','rojo');}
+}window.agregarPersonaNomina=agregarPersonaNomina;
+async function cambiarNominaColab(id,nombre){
+  try{
+    const valorStr=await modalPromptPesos(`💰 Nómina mensual de ${nombre} (en pesos):`);
+    if(!valorStr||!valorStr.trim())return;
+    const precio=parseFloat(valorStr.trim());
+    if(isNaN(precio)||precio<=0){alerta('nomina-error','Valor no válido','rojo');return;}
+    await addDoc(collection(db,'historialNomina'),{userId:id,userName:nombre,precio,fechaDesde:hoy(),adminId:UA.uid,adminNombre:UA.nombre||UA.email,timestamp:serverTimestamp()});
+    await updateDoc(doc(db,'colaboradoresNomina',id),{nominaActual:precio});
+    alerta('nomina-ok',`✅ Nómina de ${nombre}: ${fmtPeso(precio)}/mes`,'verde');
+    await cargarNominas();
+  }catch(e){alerta('nomina-error','Error al guardar nómina','rojo');}
+}window.cambiarNominaColab=cambiarNominaColab;
+async function eliminarPersonaNomina(id,nombre){
+  try{
+    const ok=await modalConfirm(`¿Eliminar a ${nombre} de la nómina?`);
+    if(!ok)return;
+    await deleteDoc(doc(db,'colaboradoresNomina',id));
+    alerta('nomina-ok',`✅ ${nombre} eliminado de nómina`,'verde');
+    await cargarNominas();
+  }catch(e){alerta('nomina-error','Error al eliminar','rojo');}
+}window.eliminarPersonaNomina=eliminarPersonaNomina;
 async function cargarHistorialNominas(){
   const el=document.getElementById('costos-nominas-historial');if(!el)return;
   try{
