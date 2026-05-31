@@ -3653,6 +3653,7 @@ async function _guardarReporteHistorial(tipo,de,ha,precio,diasConDatos){
 async function _cargarHistorialReportes(tipo){
   const contId=tipo==='liq'?'rep-tab-0-historial':'rep-tab-1-historial';
   const cont=document.getElementById(contId);if(!cont)return;
+  cont.style.display=((tipo==='liq'&&tabRep===0)||(tipo==='inter'&&tabRep===1))?'block':'none';
   // 1) Mostrar lo guardado en el teléfono (sin conexión)
   let lista=_repGuardadosLeer().filter(r=>r.tipo===tipo);
   _renderListaReportes(tipo,cont,lista);
