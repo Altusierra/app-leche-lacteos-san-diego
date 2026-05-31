@@ -885,6 +885,21 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="modal-colab-nomina">
+  <div class="modal">
+    <div class="modal-titulo">💰 Nueva persona de nómina</div>
+    <div style="background:var(--amarillo2);border:1px solid var(--amarillo);border-radius:10px;padding:12px;margin-bottom:16px;font-size:13px;color:var(--amarillo);font-weight:600;">ℹ️ Esta persona NO entra a la app, solo cuenta para la nómina</div>
+    <div class="alerta alerta-rojo" id="m-colab-error"></div>
+    <div class="campo"><label>Nombre *</label><input type="text" id="m-colab-nombre" placeholder="Ej: María" autocomplete="off"></div>
+    <div class="campo"><label>Rol / cargo</label><input type="text" id="m-colab-rol" placeholder="Ej: cocina, vigilante" autocomplete="off"></div>
+    <div class="campo"><label>Nómina mensual (opcional)</label><input type="text" id="m-colab-nomina" inputmode="numeric" placeholder="$0" oninput="this.value=this.value.replace(/\D/g,'')?'$'+parseInt(this.value.replace(/\D/g,'')).toLocaleString('es-CO'):''"></div>
+    <div class="fila" style="margin-top:8px;">
+      <button class="btn btn-gris" onclick="cerrarModal('modal-colab-nomina')">Cancelar</button>
+      <button class="btn btn-verde" onclick="guardarPersonaNomina()">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-eliminar-inter">
   <div class="modal">
     <div class="modal-titulo">🗑️ Eliminar Registro Intermediario</div>
@@ -4311,21 +4326,27 @@ async function cambiarNominaCostos(uid){
   }catch(e){alerta('nomina-error','Error al guardar nómina','rojo');}
 }window.cambiarNominaCostos=cambiarNominaCostos;
 async function agregarPersonaNomina(){
-  try{
-    const nombre=await modalPrompt('👤 Nombre de la persona:');
-    if(nombre===null)return;
-    if(!nombre.trim()){await modalAlert('El nombre no puede estar vacío');return;}
-    const rol=await modalPrompt('💼 Rol o cargo (ej: cocina, vigilante):');
-    if(rol===null)return;
-    const valorStr=await modalPromptPesos(`💰 Nómina mensual de ${nombre.trim()} (en pesos):`);
-    let precio=0;
-    if(valorStr&&valorStr.trim()){precio=parseFloat(valorStr.trim());if(isNaN(precio)||precio<0)precio=0;}
-    const ref=await addDoc(collection(db,'colaboradoresNomina'),{nombre:nombre.trim(),rol:(rol||'').trim(),nominaActual:precio>0?precio:null,activo:true,fechaAgregado:hoy(),agregadoPor:UA.nombre||UA.email});
-    if(precio>0)await addDoc(collection(db,'historialNomina'),{userId:ref.id,userName:nombre.trim(),precio,fechaDesde:hoy(),adminId:UA.uid,adminNombre:UA.nombre||UA.email,timestamp:serverTimestamp()});
-    alerta('nomina-ok',`✅ ${nombre.trim()} agregado a nómina`,'verde');
-    await cargarNominas();
-  }catch(e){alerta('nomina-error','Error al agregar persona','rojo');}
+  document.getElementById('m-colab-nombre').value='';
+  document.getElementById('m-colab-rol').value='';
+  document.getElementById('m-colab-nomina').value='';
+  ocult('m-colab-error');
+  abrirModal('modal-colab-nomina');
 }window.agregarPersonaNomina=agregarPersonaNomina;
+async function guardarPersonaNomina(){
+  const nombre=(document.getElementById('m-colab-nombre').value||'').trim();
+  const rol=(document.getElementById('m-colab-rol').value||'').trim();
+  const nominaStr=(document.getElementById('m-colab-nomina').value||'').replace(/\D/g,'');
+  if(!nombre){alerta('m-colab-error','Escribe el nombre','rojo');return;}
+  let precio=nominaStr?parseInt(nominaStr):0;
+  if(isNaN(precio)||precio<0)precio=0;
+  try{
+    const ref=await addDoc(collection(db,'colaboradoresNomina'),{nombre,rol,nominaActual:precio>0?precio:null,activo:true,fechaAgregado:hoy(),agregadoPor:UA.nombre||UA.email});
+    if(precio>0)await addDoc(collection(db,'historialNomina'),{userId:ref.id,userName:nombre,precio,fechaDesde:hoy(),adminId:UA.uid,adminNombre:UA.nombre||UA.email,timestamp:serverTimestamp()});
+    cerrarModal('modal-colab-nomina');
+    alerta('nomina-ok',`✅ ${nombre} agregado a nómina`,'verde');
+    await cargarNominas();
+  }catch(e){alerta('m-colab-error','Error al guardar','rojo');}
+}window.guardarPersonaNomina=guardarPersonaNomina;
 async function cambiarNominaColab(id,nombre){
   try{
     const valorStr=await modalPromptPesos(`💰 Nómina mensual de ${nombre} (en pesos):`);
