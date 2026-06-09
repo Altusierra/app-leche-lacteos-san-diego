@@ -1116,6 +1116,7 @@ function abrirModal(id){document.getElementById(id).classList.add('show');}
 function hoy(){const n=new Date();return`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;}
 function getFechaReg(){return fechaReg||hoy();}
 function horaAhora(){const n=new Date();return`${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;}
+function fmtHora12(h){if(!h)return'';const p=String(h).split(':');let H=parseInt(p[0],10);const M=p[1]||'00';if(isNaN(H))return'';const ap=H>=12?'PM':'AM';H=H%12;if(H===0)H=12;return`${H}:${M} ${ap}`;}
 function fmtL(v){const n=parseFloat(v)||0;return n%1===0?String(Math.round(n)):n.toFixed(1);}
 function fmtFecha(f){return new Date(f+'T00:00:00').toLocaleDateString('es-CO',{weekday:'long',day:'numeric',month:'long'});}
 function fmtFechaCorta(f){const d=new Date(f+'T00:00:00');return`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;}
@@ -3410,13 +3411,14 @@ async function repLiqMatriz(datos,de,ha,precio,recepciones){
     const esComb=rutasCombinadas.some(([cid])=>cid===id);
     filtroButtons.push({id,nombre,esComb});
   });
-  const celda={};const totalFila={};const totalColL={};
+  const celda={};const totalFila={};const totalColL={};const celdaHora={};
   gans.forEach(([gid])=>{celda[gid]={};totalColL[gid]=0;});
   fechas.forEach(f=>{totalFila[f]=0;});
   datos.forEach(d=>{
     const gid=d.ganaderoId;const f=d.fecha;const L=parseFloat(d.litros)||0;
     if(!celda[gid])celda[gid]={};
     celda[gid][f]=(celda[gid][f]||0)+L;
+    if(d.hora){if(!celdaHora[gid])celdaHora[gid]={};if(!celdaHora[gid][f]||d.hora<celdaHora[gid][f])celdaHora[gid][f]=d.hora;}
     totalFila[f]=(totalFila[f]||0)+L;
     totalColL[gid]=(totalColL[gid]||0)+L;
   });
@@ -3435,7 +3437,7 @@ async function repLiqMatriz(datos,de,ha,precio,recepciones){
     Object.entries(recDias).forEach(([id,days])=>{if(days>maxDays){maxDays=days;maxId=id;}});
     ganPrimary[gid]=maxId;
   });
-  window._liqState={datos,de,ha,precio,fechas,gans,ganMap,celda,totalFila,totalColL,ganRecDia,ganRecSet,colorMap,recsUnicos,filtroButtons,quincenaId,reportKey,diasConDatos,filtroRec:'todos',searchText:'',pagados:{},ganNovedades,expandedNov:{},recogidoPorIdDia,recibidoPorIdDia,rutasCombinadas,uidsCombinados,ganPrimary};
+  window._liqState={datos,de,ha,precio,fechas,gans,ganMap,celda,celdaHora,totalFila,totalColL,ganRecDia,ganRecSet,colorMap,recsUnicos,filtroButtons,quincenaId,reportKey,diasConDatos,filtroRec:'todos',searchText:'',pagados:{},ganNovedades,expandedNov:{},recogidoPorIdDia,recibidoPorIdDia,rutasCombinadas,uidsCombinados,ganPrimary};
   getDoc(doc(db,'liquidaciones',quincenaId)).then(snap=>{
     if(snap.exists()&&snap.data().pagados)window._liqState.pagados=snap.data().pagados;
     _renderLiqMatriz();
@@ -3445,7 +3447,7 @@ async function repLiqMatriz(datos,de,ha,precio,recepciones){
 function _renderLiqMatriz(){
   const s=window._liqState;if(!s)return;
   const tab=document.getElementById('rep-tab-0');if(!tab)return;
-  const {de,ha,precio,fechas,gans,celda,totalFila,totalColL,ganRecDia,ganRecSet,colorMap,recsUnicos,filtroButtons,filtroRec,searchText,pagados,ganNovedades,expandedNov,recogidoPorIdDia,recibidoPorIdDia,rutasCombinadas,uidsCombinados,ganPrimary}=s;
+  const {de,ha,precio,fechas,gans,celda,celdaHora,totalFila,totalColL,ganRecDia,ganRecSet,colorMap,recsUnicos,filtroButtons,filtroRec,searchText,pagados,ganNovedades,expandedNov,recogidoPorIdDia,recibidoPorIdDia,rutasCombinadas,uidsCombinados,ganPrimary}=s;
   // Determinar si filtro es ruta combinada o sub-filtro (hijo individual de ruta combinada)
   const esFiltroCombi=filtroRec!=='todos'&&rutasCombinadas.some(([cid])=>cid===filtroRec);
   const esSubFiltro=filtroRec!=='todos'&&uidsCombinados.has(filtroRec);
@@ -3474,7 +3476,9 @@ function _renderLiqMatriz(){
       if(!L)return'<td class="vacio" style="text-align:center;">—</td>';
       const recId=ganRecDia[gid]?ganRecDia[gid][f]:'';
       const col=recId&&colorMap[recId]?colorMap[recId]:{bg:'',border:''};
-      return`<td style="text-align:center;background:${col.bg||''};border-left:3px solid ${col.border||'transparent'};">${fmtL(L)}</td>`;
+      const hr=celdaHora&&celdaHora[gid]?celdaHora[gid][f]:'';
+      const hrTxt=hr?`<div style="font-size:10px;color:var(--gris2);font-weight:400;margin-top:2px;line-height:1.1;">${fmtHora12(hr)}</div>`:'';
+      return`<td style="text-align:center;background:${col.bg||''};border-left:3px solid ${col.border||'transparent'};">${fmtL(L)}${hrTxt}</td>`;
     }).join('');
     const totL=totalColL[gid];const isPagado=pagados[gid]&&pagados[gid].pagado;
     const novs=ganNovedades[gid]||[];const novCount=novs.length;
