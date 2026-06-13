@@ -119,6 +119,32 @@
     .mc-input:focus{outline:none;border-color:var(--verde2);}
     .mc-btns{display:flex;gap:10px;}.mc-btns .btn{flex:1;padding:14px;font-size:15px;}
     #btn-entrar{touch-action:manipulation;-webkit-user-select:none;user-select:none;}
+/* ══ MEJORAS: filtros de fecha, ayuda y scroll horizontal (solo clases nuevas, no modifica nada existente) ══ */
+.filtro-fechas-mini{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:8px 0 12px 0;background:#F9FAFB;border:1px solid var(--gris1);border-radius:10px;padding:8px;}
+.filtro-fechas-mini input[type=date]{padding:7px 6px;border:1.5px solid var(--gris1);border-radius:8px;font-size:12px;font-weight:600;color:var(--gris3);min-width:0;flex:1 1 96px;max-width:130px;}
+.ffm-lbl{font-size:11px;font-weight:700;color:var(--gris2);white-space:nowrap;}
+.ffm-limpiar{border:1.5px solid var(--gris1);background:white;color:#DC2626;font-weight:700;font-size:11px;border-radius:8px;padding:7px 10px;cursor:pointer;white-space:nowrap;}
+.ayuda-btn{width:22px;height:22px;min-width:22px;border-radius:50%;border:1.5px solid var(--gris1);background:white;color:var(--gris2);font-weight:800;font-size:12px;cursor:pointer;line-height:1;padding:0;}
+.ayuda-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:center;justify-content:center;padding:24px;}
+.ayuda-overlay.activa{display:flex;}
+.ayuda-pop{background:white;border-radius:16px;padding:20px;max-width:340px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,0.25);}
+.ayuda-pop .ap-titulo{font-weight:800;font-size:16px;margin-bottom:8px;color:var(--gris3);}
+.ayuda-pop .ap-texto{font-size:14px;line-height:1.6;color:var(--gris3);}
+.ayuda-pop .ap-cerrar{margin-top:14px;width:100%;padding:10px;border:none;border-radius:10px;background:var(--verde);color:white;font-weight:700;font-size:14px;cursor:pointer;}
+.scroll-x{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.mini-tabla-reg{display:inline-flex;gap:0;border:1px solid var(--gris1);border-radius:8px;overflow:hidden;}
+.mini-tabla-reg .mtr-col{min-width:84px;text-align:center;border-right:1px solid var(--gris1);}
+.mini-tabla-reg .mtr-col:last-child{border-right:none;}
+.mini-tabla-reg .mtr-fecha{font-size:10px;font-weight:700;color:var(--gris2);background:#F9FAFB;padding:4px 6px;white-space:nowrap;border-bottom:1px solid var(--gris1);}
+.mini-tabla-reg .mtr-litros{font-size:12px;font-weight:800;color:var(--verde);padding:4px 6px;white-space:nowrap;}
+.tabla-rango-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;background:white;border-radius:8px;border:1px solid #fde68a;}
+.tabla-rango{border-collapse:collapse;min-width:100%;}
+.tabla-rango th,.tabla-rango td{padding:7px 8px;font-size:11px;text-align:right;white-space:nowrap;border-top:1px solid #fef3c7;}
+.tabla-rango thead th{background:#fef3c7;color:#92400E;font-weight:700;border-top:none;}
+.tabla-rango .col-fija{position:sticky;left:0;background:white;text-align:left;font-weight:600;z-index:2;box-shadow:2px 0 3px rgba(0,0,0,0.06);max-width:110px;overflow:hidden;text-overflow:ellipsis;}
+.tabla-rango thead .col-fija{background:#fef3c7;z-index:3;}
+.tarjetas-dias-scroll{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;}
+.tarjetas-dias-scroll>div{flex:0 0 auto;}
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
@@ -524,41 +550,82 @@
     <div id="admin-fecha" style="font-size:15px;color:var(--gris2);margin-bottom:16px;"></div>
     <div class="card" id="resumen-comparativo-card" style="background:linear-gradient(135deg,#fef3c7,#fef9e7);border:2px solid #fde68a;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
-        <div class="card-titulo" style="margin:0;color:#92400E;">📊 Resumen del día</div>
+        <div style="display:flex;align-items:center;gap:6px;"><div class="card-titulo" style="margin:0;color:#92400E;">📊 Resumen del día</div><button class="ayuda-btn" onclick="mostrarAyuda('📊 Resumen del día','Los números más importantes del día. Toca el botón naranja para comparar contra ayer: 🟢 verde = mejoró, 🔴 rojo = empeoró, ⚠️ = cayó 20% o más. Si eliges Desde y Hasta, ves una columna por cada día (desliza con el dedo) y cada día se compara con el anterior. Abajo puedes elegir 2 días para compararlos cara a cara con análisis de plata.')">?</button></div>
         <button id="btn-comparar-toggle" class="btn btn-sm" style="border:2px solid #D97706;background:#D97706;color:white;font-weight:700;font-size:12px;padding:6px 12px;" onclick="toggleComparacion()">📊 Comparar Ayer vs Hoy</button>
+      </div>
+      <div class="filtro-fechas-mini" style="background:rgba(255,255,255,0.6);">
+        <span class="ffm-lbl">📅 Rango — Desde:</span><input type="date" id="comp-rango-de" onchange="cargarComparativoRango()">
+        <span class="ffm-lbl">→ Hasta:</span><input type="date" id="comp-rango-ha" onchange="cargarComparativoRango()">
+        <button class="ffm-limpiar" onclick="cargarResumenComparativo()">✕ Limpiar</button>
       </div>
       <div id="resumen-comparativo-contenido"><div class="loading">Cargando...</div></div>
     </div>
     <div class="fila">
-      <div class="card" style="text-align:center;"><div class="card-titulo">Recolectado</div><div class="card-valor" id="admin-total-rec">-</div><div class="card-sub">litros ruta</div></div>
-      <div class="card" style="text-align:center;"><div class="card-titulo">En planta</div><div class="card-valor" id="admin-total-planta">-</div><div class="card-sub">litros planta</div></div>
+      <div class="card" style="text-align:center;border-top:4px solid #15803d;"><div style="display:flex;align-items:center;justify-content:center;gap:6px;"><div class="card-titulo" style="margin:0;">Recolectado</div><button class="ayuda-btn" onclick="mostrarAyuda('🚛 Recolectado','La leche que los recogedores declararon haber recogido HOY en las fincas (la suma de todas las rutas). Es lo que viene en camino o ya llegó.')">?</button></div><div class="card-valor" id="admin-total-rec">-</div><div class="card-sub">litros ruta</div></div>
+      <div class="card" style="text-align:center;border-top:4px solid #15803d;"><div style="display:flex;align-items:center;justify-content:center;gap:6px;"><div class="card-titulo" style="margin:0;">En planta</div><button class="ayuda-btn" onclick="mostrarAyuda('🏭 En planta','La leche que de verdad llegó y se pesó en la planta HOY (ganaderos + intermediarios). Si este número es distinto al de Recolectado, abajo aparece una ALERTA explicando la diferencia.')">?</button></div><div class="card-valor" id="admin-total-planta">-</div><div class="card-sub">litros planta</div></div>
     </div>
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><div class="card-titulo" style="margin:0;">📅 Hoy y 2 días anteriores</div><input type="date" id="semana-fecha-ref" style="padding:6px 10px;border:1.5px solid var(--gris1);border-radius:8px;font-size:13px;font-weight:600;color:var(--verde);" onchange="sincronizarFecha(this.value)"></div>
+    <div class="card" style="border-top:4px solid var(--verde);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><div style="display:flex;align-items:center;gap:6px;"><div class="card-titulo" style="margin:0;">📅 Hoy y 2 días anteriores</div><button class="ayuda-btn" onclick="mostrarAyuda('📅 Hoy y 2 días anteriores','Una tarjetita por día: 🚛 ruta (lo que declararon los recogedores), 🏭 planta (lo que llegó), inter (intermediarios), total y diff (planta menos ruta del mismo día). Si eliges Desde y Hasta, ves todos los días del rango y los deslizas con el dedo →.')">?</button></div><input type="date" id="semana-fecha-ref" style="padding:6px 10px;border:1.5px solid var(--gris1);border-radius:8px;font-size:13px;font-weight:600;color:var(--verde);" onchange="sincronizarFecha(this.value)"></div>
+      <div class="filtro-fechas-mini">
+        <span class="ffm-lbl">📅 Rango — Desde:</span><input type="date" id="semana-rango-de" onchange="cargarSemanaRango()">
+        <span class="ffm-lbl">→ Hasta:</span><input type="date" id="semana-rango-ha" onchange="cargarSemanaRango()">
+        <button class="ffm-limpiar" onclick="limpiarSemanaRango()">✕ Limpiar</button>
+      </div>
       <div id="admin-semana"><div class="loading">Cargando...</div></div>
     </div>
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><div class="card-titulo" style="margin:0;">🐄 Desglose ganaderos</div><input type="date" id="desglose-fecha" style="padding:6px 10px;border:1.5px solid var(--gris1);border-radius:8px;font-size:13px;font-weight:600;color:var(--verde);" onchange="sincronizarFecha(this.value)"></div>
+    <div class="card" style="border-top:4px solid var(--verde);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><div style="display:flex;align-items:center;gap:6px;"><div class="card-titulo" style="margin:0;">🐄 Desglose ganaderos</div><button class="ayuda-btn" onclick="mostrarAyuda('🐄 Desglose ganaderos','Cuánta leche entregó cada ganadero y qué recogedor la recogió. Los botones de arriba filtran por recogedor. Si eliges Desde y Hasta, ves el total del período de cada ganadero, cuántos días entregó y el detalle día por día (desliza la tablita con el dedo →). El rango también cambia la tarjeta de Intermediarios de abajo.')">?</button></div><input type="date" id="desglose-fecha" style="padding:6px 10px;border:1.5px solid var(--gris1);border-radius:8px;font-size:13px;font-weight:600;color:var(--verde);" onchange="sincronizarFecha(this.value)"></div>
+      <div class="filtro-fechas-mini">
+        <span class="ffm-lbl">📅 Rango — Desde:</span><input type="date" id="desglose-rango-de" onchange="sincronizarRangoDesglose('des')">
+        <span class="ffm-lbl">→ Hasta:</span><input type="date" id="desglose-rango-ha" onchange="sincronizarRangoDesglose('des')">
+        <button class="ffm-limpiar" onclick="limpiarRangoDesglose()">✕ Limpiar</button>
+      </div>
       <div id="admin-filtros-rec" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;"></div>
       <div id="admin-desglose-ganaderos"><div class="loading">Cargando...</div></div>
     </div>
-    <div id="admin-inter-card" class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><div class="card-titulo" style="margin:0;color:var(--naranja);">🚚 Intermediarios</div><input type="date" id="inter-fecha" style="padding:6px 10px;border:1.5px solid var(--gris1);border-radius:8px;font-size:13px;font-weight:600;color:var(--naranja);" onchange="sincronizarFecha(this.value)"></div>
+    <div id="admin-inter-card" class="card" style="border-top:4px solid var(--naranja);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><div style="display:flex;align-items:center;gap:6px;"><div class="card-titulo" style="margin:0;color:var(--naranja);">🚚 Intermediarios</div><button class="ayuda-btn" onclick="mostrarAyuda('🚚 Intermediarios','La leche que trajeron los intermediarios a la planta y quién la recibió. Si eliges Desde y Hasta (aquí o en Desglose ganaderos, están conectadas), ves el total del período de cada intermediario, cuántos días entregó y el detalle día por día.')">?</button></div><input type="date" id="inter-fecha" style="padding:6px 10px;border:1.5px solid var(--gris1);border-radius:8px;font-size:13px;font-weight:600;color:var(--naranja);" onchange="sincronizarFecha(this.value)"></div>
+      <div class="filtro-fechas-mini">
+        <span class="ffm-lbl">📅 Rango — Desde:</span><input type="date" id="interrng-de" onchange="sincronizarRangoDesglose('int')">
+        <span class="ffm-lbl">→ Hasta:</span><input type="date" id="interrng-ha" onchange="sincronizarRangoDesglose('int')">
+        <button class="ffm-limpiar" onclick="limpiarRangoDesglose()">✕ Limpiar</button>
+      </div>
       <div id="admin-inter-hoy"></div>
       <div id="admin-inter-fecha-label" style="font-size:14px;font-weight:700;color:var(--naranja);margin-top:8px;"></div>
     </div>
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><div class="card-titulo" style="margin:0;color:var(--verde);">🧀 Producción</div><input type="date" id="produccion-fecha" style="padding:6px 10px;border:1.5px solid var(--gris1);border-radius:8px;font-size:13px;font-weight:600;color:var(--verde);" onchange="sincronizarFecha(this.value)"></div>
+    <div class="card" style="border-top:4px solid #D97706;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><div style="display:flex;align-items:center;gap:6px;"><div class="card-titulo" style="margin:0;color:var(--verde);">🧀 Producción</div><button class="ayuda-btn" onclick="mostrarAyuda('🧀 Producción','Lo que se produjo: tandas, leche procesada, bloques y el promedio (litros que cuesta cada queso ÷ 5). BLQ. REALES = bloques menos reprocesos. Si eliges Desde y Hasta, ves las SUMAS de todos los días del rango, cuántos días se cerraron y el detalle de tandas y reprocesos agrupado por día. El reproceso se calcula día por día (litros del día ÷ 3) y se suman los resultados.')">?</button></div><input type="date" id="produccion-fecha" style="padding:6px 10px;border:1.5px solid var(--gris1);border-radius:8px;font-size:13px;font-weight:600;color:var(--verde);" onchange="sincronizarFecha(this.value)"></div>
+      <div class="filtro-fechas-mini">
+        <span class="ffm-lbl">📅 Rango — Desde:</span><input type="date" id="prod-rango-de" onchange="cargarProduccionRango()">
+        <span class="ffm-lbl">→ Hasta:</span><input type="date" id="prod-rango-ha" onchange="cargarProduccionRango()">
+        <button class="ffm-limpiar" onclick="limpiarProduccionRango()">✕ Limpiar</button>
+      </div>
       <div id="admin-produccion-fecha-label" style="font-size:14px;font-weight:700;color:var(--verde);margin-bottom:8px;"></div>
       <div id="admin-produccion-hoy"><div class="loading">Cargando...</div></div>
     </div>
-    <div class="card">
-      <div class="card-titulo">🔴 Ganaderos sin recolectar (1+ día)</div>
+    <div class="card" style="border-top:4px solid #DC2626;">
+      <div style="display:flex;align-items:center;gap:6px;"><div class="card-titulo" style="margin:0;">🔴 Ganaderos sin recolectar (1+ día)</div><button class="ayuda-btn" onclick="mostrarAyuda('🔴 Ganaderos sin recolectar','Aquí ves a los ganaderos a los que NO se les recogió leche. 🔴 Rojo = falta. Por defecto muestra AYER y HOY. Si eliges un día, ves los que faltaron ese día. Si eliges Desde y Hasta, ves cuántos días falló cada uno en ese período.')">?</button></div>
+      <div class="filtro-fechas-mini">
+        <span class="ffm-lbl">📅 Un día:</span><input type="date" id="sinrec-dia" onchange="aplicarFiltroSinRec('dia')">
+        <span class="ffm-lbl">o Desde:</span><input type="date" id="sinrec-de" onchange="aplicarFiltroSinRec('rango')">
+        <span class="ffm-lbl">→ Hasta:</span><input type="date" id="sinrec-ha" onchange="aplicarFiltroSinRec('rango')">
+        <button class="ffm-limpiar" onclick="limpiarFiltroSinRec()">✕ Limpiar</button>
+      </div>
       <div id="admin-sin-recolectar"><div class="loading">Cargando...</div></div>
     </div>
+    <div class="card" style="border-top:4px solid var(--naranja);">
+      <div style="display:flex;align-items:center;gap:6px;"><div class="card-titulo" style="margin:0;color:var(--naranja);">🚚 Intermediarios sin entregar (1+ día)</div><button class="ayuda-btn" onclick="mostrarAyuda('🚚 Intermediarios sin entregar','Aquí ves a los intermediarios que NO trajeron leche a la planta. 🔴 Rojo = no entregó. Por defecto muestra AYER y HOY. Si eliges un día, ves los que faltaron ese día. Si eliges Desde y Hasta, ves cuántos días falló cada uno.')">?</button></div>
+      <div class="filtro-fechas-mini">
+        <span class="ffm-lbl">📅 Un día:</span><input type="date" id="intersin-dia" onchange="aplicarFiltroInterSin('dia')">
+        <span class="ffm-lbl">o Desde:</span><input type="date" id="intersin-de" onchange="aplicarFiltroInterSin('rango')">
+        <span class="ffm-lbl">→ Hasta:</span><input type="date" id="intersin-ha" onchange="aplicarFiltroInterSin('rango')">
+        <button class="ffm-limpiar" onclick="limpiarFiltroInterSin()">✕ Limpiar</button>
+      </div>
+      <div id="admin-inter-sin-entregar"><div class="loading">Cargando...</div></div>
+    </div>
     <div id="admin-alertas-container"></div>
-    <div class="card">
-      <div class="card-titulo" style="color:var(--azul);">💰 Ventas y Deudas</div>
+    <div class="card" style="border-top:4px solid var(--azul);">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;"><div class="card-titulo" style="margin:0;color:var(--azul);">💰 Ventas y Deudas</div><button class="ayuda-btn" onclick="mostrarAyuda('💰 Ventas y Deudas','El dinero del queso vendido: 📦 canastas despachadas, 💵 cuánto se despachó en plata, ✅ cuánto ya pagaron y 💰 cuánto deben todavía. Si PENDIENTE está en rojo, hay clientes que deben.')">?</button></div>
       <div id="admin-ventas-cards" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:center;margin-bottom:12px;">
         <div style="background:var(--crema);border-radius:10px;padding:10px;"><div style="font-size:10px;color:var(--gris2);font-weight:600;">📦 CANASTAS</div><div id="admin-vt-canastas" style="font-size:20px;font-weight:800;">-</div></div>
         <div style="background:var(--crema);border-radius:10px;padding:10px;"><div style="font-size:10px;color:var(--gris2);font-weight:600;">💵 DESPACHADO</div><div id="admin-vt-despachado" style="font-size:20px;font-weight:800;">-</div></div>
@@ -568,9 +635,9 @@
       <div id="admin-ventas-alerta-morosos"></div>
       <div id="admin-ventas-lista"><div class="loading">Cargando...</div></div>
     </div>
-    <div class="card">
+    <div class="card" style="border-top:4px solid #D97706;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
-        <div class="card-titulo" style="margin:0;color:#D97706;">⚠️ Novedades y Eliminaciones</div>
+        <div style="display:flex;align-items:center;gap:6px;"><div class="card-titulo" style="margin:0;color:#D97706;">⚠️ Novedades y Eliminaciones</div><button class="ayuda-btn" onclick="mostrarAyuda('⚠️ Novedades y Eliminaciones','⚠️ Novedades: cosas que pasaron en el día (ganaderos nuevos, reportes de los recogedores). 🗑️ Eliminaciones: registros que alguien borró, con quién lo borró y por qué. Cambia la fecha para ver otros días.')">?</button></div>
         <input type="date" id="novedades-fecha" style="padding:6px 10px;border:1.5px solid var(--gris1);border-radius:8px;font-size:13px;font-weight:600;color:#D97706;" onchange="sincronizarFecha(this.value)">
       </div>
       <div style="display:flex;gap:6px;margin-bottom:10px;">
@@ -1025,6 +1092,13 @@
 
 <button id="btn-volver-admin" style="display:none;position:fixed;top:12px;right:12px;z-index:9000;background:#0ea5e9;color:white;border:none;border-radius:12px;padding:10px 16px;font-size:14px;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,0.3);cursor:pointer;" onclick="volverAAdmin()">← Volver a Admin</button>
 
+<div class="ayuda-overlay" id="ayuda-overlay" onclick="if(event.target===this)this.classList.remove('activa')">
+  <div class="ayuda-pop">
+    <div class="ap-titulo" id="ayuda-titulo"></div>
+    <div class="ap-texto" id="ayuda-texto"></div>
+    <button class="ap-cerrar" onclick="document.getElementById('ayuda-overlay').classList.remove('activa')">Entendido 👍</button>
+  </div>
+</div>
 <script type="module">
 import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import{getAuth,signInWithEmailAndPassword,signOut,createUserWithEmailAndPassword,onAuthStateChanged,sendPasswordResetEmail}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
@@ -2267,6 +2341,9 @@ function filtrarDesgloseAdmin(){
 
 async function recargarDesglose(fecha){
   if(!fecha)return;
+  // M5: al volver a modo día se desactiva el modo rango
+  ++_desRangoVer;
+  ['desglose-rango-de','desglose-rango-ha','interrng-de','interrng-ha'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   try{
     const sCol=await getDocs(query(collection(db,'recolecciones'),where('fecha','==',fecha)));
     const porRec={};const porGan={};
@@ -2348,7 +2425,7 @@ async function dashAdmin(){
       }
       if(rv.litros>rutaL)alertas.push({nombre:rv.nombre,recibido:rv.litros,ruta:rutaL,dif:rv.litros-rutaL});
     });
-    document.getElementById('admin-alertas-container').innerHTML=alertas.map(a=>`<div class="alerta-grande naranja"><div style="font-weight:800;color:var(--naranja);margin-bottom:4px;">⚠️ ALERTA — ${a.nombre}</div><div style="color:var(--naranja);font-size:14px;">Planta: ${fmtL(a.recibido)}L · Ruta: ${fmtL(a.ruta)}L · Diferencia: +${fmtL(a.dif)}L</div></div>`).join('');
+    document.getElementById('admin-alertas-container').innerHTML=alertas.map(a=>`<div class="alerta-grande naranja"><div style="font-weight:800;color:var(--naranja);margin-bottom:4px;">⚠️ ALERTA — ${a.nombre}</div><div style="color:var(--naranja);font-size:14px;">Planta: ${fmtL(a.recibido)}L · Ruta: ${fmtL(a.ruta)}L · Diferencia: +${fmtL(a.dif)}L</div><div style="font-size:12px;color:#92400E;margin-top:3px;font-weight:600;">Llegaron ${fmtL(a.dif)}L más a la planta de los que la ruta declaró</div></div>`).join('');
     // UIDs that are part of a combined route (hide individually)
     const uidsCombinados=new Set(rutasCombinadas.flatMap(([,u])=>u.combinaUids||[]));
     // Build filas: skip individual UIDs that are in a combined route
@@ -2412,6 +2489,8 @@ async function dashAdmin(){
     await cargarResumenSemanal();
     // Ganaderos sin recolectar
     await cargarSinRecolectar();
+    // Intermediarios sin entregar (M1)
+    await cargarInterSinEntregar();
     // Producción cuajador
     await cargarProduccionHoy();
     // Dashboard ventas
@@ -2423,6 +2502,10 @@ async function dashAdmin(){
 
 async function cargarResumenSemanal(fechaRef){
   try{
+    // M4: al volver a modo día se desactiva el modo rango
+    const _srd=document.getElementById('semana-rango-de');if(_srd)_srd.value='';
+    const _srh=document.getElementById('semana-rango-ha');if(_srh)_srh.value='';
+    ++_semanaRangoVer;
     // Usar fecha LOCAL no UTC
     function fechaLocal(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
     const hoyD=fechaRef?new Date(fechaRef+'T12:00:00'):new Date();
@@ -2604,6 +2687,10 @@ async function obtenerDatosResumen(fecha){
 let _resumenCompVer=0;
 async function cargarResumenComparativo(){
   const cont=document.getElementById('resumen-comparativo-contenido');if(!cont)return;
+  // M3: al volver a modo día se desactiva el modo rango
+  window._compRangoActivo=null;window._compLabelA=null;window._compLabelB=null;
+  const _crd=document.getElementById('comp-rango-de');if(_crd)_crd.value='';
+  const _crh=document.getElementById('comp-rango-ha');if(_crh)_crh.value='';
   const mi=++_resumenCompVer;
   cont.innerHTML='<div class="loading">Cargando...</div>';
   try{
@@ -2695,6 +2782,9 @@ function calcularAnalisisFinanciero(){
   const pb=_precioBloqueComp,pl=_precioLitroComp;
   if(pb<=0&&pl<=0){cont.innerHTML='<div style="font-size:11px;color:var(--gris2);text-align:center;padding:8px;">Ingresa los precios para ver el análisis</div>';return;}
   const H=_compHoyData,A=_compAyerData;
+  // M3: etiquetas dinámicas (por defecto ayer/hoy, en modo rango son las fechas elegidas)
+  const _lblA=window._compLabelA||'ayer';const _lblB=window._compLabelB||'hoy';
+  const _capL=s=>s.charAt(0).toUpperCase()+s.slice(1);
   const ingH=H.bloquesReales*pb,gasH=H.planta*pl,ganH=ingH-gasH;
   const ingA=A?A.bloquesReales*pb:0,gasA=A?A.planta*pl:0,ganA=ingA-gasA;
   function tarjeta(tit,ing,gas,gan,blq,lit){return `<div style="border:1px solid #fde68a;border-radius:8px;padding:10px;">
@@ -2708,8 +2798,8 @@ function calcularAnalisisFinanciero(){
     <div style="border-top:1px solid #fde68a;padding-top:6px;"><div style="font-size:10px;color:var(--gris2);">Ganancia</div>
     <div style="font-size:15px;font-weight:800;color:${gan>=0?'#15803d':'#DC2626'};">${fmtPeso(gan)}</div></div></div>`;}
   let h='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">';
-  h+=tarjeta('AYER',ingA,gasA,ganA,A?A.bloquesReales:0,A?A.planta:0);
-  h+=tarjeta('HOY',ingH,gasH,ganH,H.bloquesReales,H.planta);
+  h+=tarjeta(_lblA.toUpperCase(),ingA,gasA,ganA,A?A.bloquesReales:0,A?A.planta:0);
+  h+=tarjeta(_lblB.toUpperCase(),ingH,gasH,ganH,H.bloquesReales,H.planta);
   h+='</div>';
   const difCent=A?Math.round((A.promedio-H.promedio)*100):0;
   const bloquesImp=difCent*2;
@@ -2717,20 +2807,20 @@ function calcularAnalisisFinanciero(){
   h+=`<div style="border:1px solid #fde68a;border-radius:8px;padding:10px;margin-bottom:10px;">
     <div style="font-weight:700;font-size:12px;color:#92400E;margin-bottom:6px;">📈 Impacto por eficiencia</div>
     <div style="font-size:11px;color:var(--gris2);line-height:1.8;">
-      Promedio ayer <b style="color:#374151;">${A?A.promedio.toFixed(2):'—'}</b> → hoy <b style="color:#374151;">${H.promedio.toFixed(2)}</b><br>
+      Promedio ${_lblA} <b style="color:#374151;">${A?A.promedio.toFixed(2):'—'}</b> → ${_lblB} <b style="color:#374151;">${H.promedio.toFixed(2)}</b><br>
       Diferencia: <b style="color:#374151;">${difCent}</b> centésimas × 2 = <b style="color:#374151;">${bloquesImp} bloques</b><br>
       ${bloquesImp} × ${fmtPeso(pb)} = <b style="color:${impPesos>=0?'#15803d':'#DC2626'};font-size:14px;">${fmtPeso(impPesos)}</b>
     </div>
     <div style="margin-top:8px;background:${impPesos>=0?'#dcfce7':'#FEE2E2'};border-radius:6px;padding:8px;text-align:center;">
-      <div style="font-size:11px;color:var(--gris2);">${impPesos>=0?'Hoy mejoró la eficiencia':'Hoy bajó la eficiencia'}</div>
+      <div style="font-size:11px;color:var(--gris2);">${impPesos>=0?_capL(_lblB)+' mejoró la eficiencia':_capL(_lblB)+' bajó la eficiencia'}</div>
       <div style="font-size:16px;font-weight:800;color:${impPesos>=0?'#15803d':'#DC2626'};">${impPesos>=0?'+':''}${fmtPeso(impPesos)}</div>
     </div>
   </div>`;
   const difGan=ganH-ganA;
   h+=`<div style="background:${difGan>=0?'#dcfce7':'#FEE2E2'};border-radius:8px;padding:12px;text-align:center;">
-    <div style="font-size:11px;color:var(--gris2);">Ganancia hoy vs ayer</div>
+    <div style="font-size:11px;color:var(--gris2);">Ganancia ${_lblB} vs ${_lblA}</div>
     <div style="font-size:20px;font-weight:800;color:${difGan>=0?'#15803d':'#DC2626'};">${difGan>=0?'▲ +':'▼ '}${fmtPeso(difGan)}</div>
-    <div style="font-size:11px;color:var(--gris2);margin-top:2px;">${difGan>=0?'Hoy se ganó más que ayer':'Hoy se ganó menos que ayer'}</div>
+    <div style="font-size:11px;color:var(--gris2);margin-top:2px;">${difGan>=0?_capL(_lblB)+' se ganó más que '+_lblA:_capL(_lblB)+' se ganó menos que '+_lblA}</div>
   </div>`;
   cont.innerHTML=h;
 }window.calcularAnalisisFinanciero=calcularAnalisisFinanciero;
@@ -2812,6 +2902,9 @@ function calcularQuincenaPago(){
 let _prodHoyVer=0;
 async function cargarProduccionHoy(fechaParam){
   const el=document.getElementById('admin-produccion-hoy');if(!el)return;
+  // M6: al volver a modo día se desactiva el modo rango
+  const _prd=document.getElementById('prod-rango-de');if(_prd)_prd.value='';
+  const _prh=document.getElementById('prod-rango-ha');if(_prh)_prh.value='';
   const fecha=fechaParam||hoy();
   const mi=++_prodHoyVer;
   try{
@@ -2882,6 +2975,7 @@ async function cargarProduccionHoy(fechaParam){
         html+=`<div style="background:${difOk?'#F3E8FF':'#FEF3C7'};padding:8px;border-radius:8px;font-size:12px;margin-top:6px;margin-bottom:6px;">
           <div style="font-weight:700;color:${difOk?'#9333EA':'#92400E'};margin-bottom:4px;">${difOk?'✅':'📊'} Diferencia leche</div>
           <div style="color:${difOk?'#9333EA':'#92400E'};">Procesada: ${fmtL(totalLitros)}L · Recibidor: ${fmtL(lechePlatRecibidor)}L · <strong>Dif: ${difLeche>0?'+':''}${fmtL(difLeche)}L</strong></div>
+          <div style="font-size:11px;margin-top:3px;color:${difOk?'#9333EA':difLeche>0?'#15803d':'#DC2626'};font-weight:600;">${difOk?'Las cuentas cuadran':difLeche>0?'✅ Se procesó más leche de la que reportó el recibidor':'🔴 Se procesó menos leche de la que llegó — revisar'}</div>
         </div>`;
         // Comparación leche plataforma recibidor vs cuajador (si hay cierre)
         if(cierre&&cierre.lechePlataforma){
@@ -5112,6 +5206,663 @@ btnEntrar.addEventListener('touchend',function(e){e.preventDefault();hacerLogin(
   };
   window.hacerLogin=hacerLogin;
 })();
+
+/* ════════════════════════════════════════════════════════════════
+   MEJORAS JUNIO 2026 — bloque nuevo, 100% aditivo.
+   M1: Intermediarios sin entregar · M2: filtros fecha sin recolectar
+   M7: ayuda contextual
+   ════════════════════════════════════════════════════════════════ */
+
+// ── M7: Ayuda contextual ──
+function mostrarAyuda(titulo,texto){
+  const ov=document.getElementById('ayuda-overlay');if(!ov)return;
+  document.getElementById('ayuda-titulo').textContent=titulo;
+  document.getElementById('ayuda-texto').textContent=texto;
+  ov.classList.add('activa');
+}window.mostrarAyuda=mostrarAyuda;
+
+// ── Helpers compartidos de las mejoras ──
+function _mejFechasEntre(de,ha){
+  const dias=[];const d=new Date(de+'T12:00:00');const fin=new Date(ha+'T12:00:00');
+  while(d<=fin){dias.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);d.setDate(d.getDate()+1);}
+  return dias;
+}
+function _mejValidarRango(de,ha,contId){
+  if(!de||!ha)return null;
+  if(ha<de){const c=document.getElementById(contId);if(c)c.innerHTML='<div style="font-size:13px;color:#DC2626;padding:8px;">⚠️ La fecha "Hasta" no puede ser menor que "Desde"</div>';return null;}
+  const dias=_mejFechasEntre(de,ha);
+  if(dias.length>15){const c=document.getElementById(contId);if(c)c.innerHTML='<div style="font-size:13px;color:#DC2626;padding:8px;">⚠️ Máximo 15 días por rango. Elegiste '+dias.length+' días.</div>';return null;}
+  return dias;
+}
+function _mejRenderListaColapsable(filasHtml,prefijo,limite,colorVer){
+  limite=limite||3;colorVer=colorVer||'var(--verde)';
+  if(filasHtml.length<=limite)return filasHtml.join('');
+  const vis=filasHtml.slice(0,limite).join('');
+  const ext=filasHtml.slice(limite).join('');
+  return vis+`<div id="${prefijo}-extra" style="display:none;">${ext}</div><div style="text-align:center;margin-top:4px;"><a id="${prefijo}-toggle" href="#" onclick="const x=document.getElementById('${prefijo}-extra');const t=document.getElementById('${prefijo}-toggle');if(x.style.display==='none'){x.style.display='block';t.textContent='Ver menos ▲';}else{x.style.display='none';t.textContent='Ver más (${filasHtml.length-limite} más) ▼';}return false;" style="font-size:12px;color:${colorVer};font-weight:700;">Ver más (${filasHtml.length-limite} más) ▼</a></div>`;
+}
+
+// ── M1: Intermediarios sin entregar (AYER/HOY por defecto) ──
+let _interSinVer=0;
+async function cargarInterSinEntregar(){
+  const cont=document.getElementById('admin-inter-sin-entregar');if(!cont)return;
+  const mi=++_interSinVer;
+  try{
+    function fLocal(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+    const hoyStr=fLocal(new Date());
+    const ayer=new Date();ayer.setDate(ayer.getDate()-1);const ayerStr=fLocal(ayer);
+    const hace14=new Date();hace14.setDate(hace14.getDate()-14);const hace14Str=fLocal(hace14);
+    const snapInt=await getDocs(query(collection(db,'intermediarios'),where('activo','==',true)));
+    if(mi!==_interSinVer)return;
+    const inters=[];snapInt.forEach(d=>inters.push({id:d.id,...d.data()}));
+    const snap=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','>=',ayerStr),where('fecha','<=',hoyStr)));
+    const snapHist=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','>=',hace14Str),where('fecha','<',ayerStr)));
+    if(mi!==_interSinVer)return;
+    const ultimoEnt={};
+    function regUlt(d){const da=d.data();const prev=ultimoEnt[da.intermediarioId];if(!prev||da.fecha>prev.fecha||(da.fecha===prev.fecha&&(da.hora||'')>(prev.hora||'')))ultimoEnt[da.intermediarioId]={recibidor:da.recibidorNombre||'—',fecha:da.fecha,hora:da.hora||''};}
+    snapHist.forEach(regUlt);snap.forEach(regUlt);
+    const entAyer=new Set();const entHoy=new Set();
+    snap.forEach(d=>{const da=d.data();const L=parseFloat(da.litros)||0;if(L>0){if(da.fecha===ayerStr)entAyer.add(da.intermediarioId);if(da.fecha===hoyStr)entHoy.add(da.intermediarioId);}});
+    const sinAyer=inters.filter(i=>!entAyer.has(i.id));
+    const sinHoy=inters.filter(i=>!entHoy.has(i.id));
+    if(inters.length===0){cont.innerHTML='<p style="color:var(--gris2);font-size:14px;">No hay intermediarios activos</p>';return;}
+    if(sinAyer.length===0&&sinHoy.length===0){cont.innerHTML='<p style="color:var(--gris2);font-size:14px;">✅ Todos los intermediarios entregaron ayer y hoy</p>';return;}
+    function fmtUltimoEnt(iId){
+      const u=ultimoEnt[iId];
+      if(!u)return '<div style="font-size:11px;color:var(--gris2);margin-top:2px;font-style:italic;">Sin entregas previas</div>';
+      return `<div style="font-size:11px;color:var(--gris2);margin-top:2px;">Último: <strong>${u.recibidor}</strong> · ${u.fecha}${u.hora?' '+u.hora:''}</div>`;
+    }
+    function bloqueInt(titulo,lista,color,prefijo){
+      if(lista.length===0)return`<div style="margin-bottom:8px;"><div style="font-weight:700;font-size:13px;color:#15803d;margin-bottom:4px;">${titulo}</div><div style="font-size:13px;color:var(--gris2);">✅ Todos entregaron</div></div>`;
+      const filas=lista.map(i=>`<div style="padding:6px 0;border-bottom:1px solid var(--gris1);"><div style="display:flex;justify-content:space-between;align-items:center;"><div style="font-weight:600;font-size:13px;">${i.nombre}</div><span class="badge badge-rojo">🔴</span></div>${fmtUltimoEnt(i.id)}</div>`);
+      return`<div style="margin-bottom:12px;"><div style="font-weight:700;font-size:13px;color:${color};margin-bottom:4px;">${titulo} (${lista.length})</div>${_mejRenderListaColapsable(filas,prefijo,3,'var(--naranja)')}</div>`;
+    }
+    if(mi!==_interSinVer)return;
+    cont.innerHTML=bloqueInt('🔴 Sin entregar AYER',sinAyer,'#DC2626','intersin-ayer')+bloqueInt('⚠️ Sin entregar HOY',sinHoy,'#D97706','intersin-hoy');
+  }catch(e){console.error('cargarInterSinEntregar:',e);}
+}window.cargarInterSinEntregar=cargarInterSinEntregar;
+
+// ── M2: filtros de fecha — GANADEROS sin recolectar ──
+let _interSinVerG=0;
+async function aplicarFiltroSinRec(modo){
+  const cont=document.getElementById('admin-sin-recolectar');if(!cont)return;
+  const mi=++_interSinVerG;
+  try{
+    const snapGan=await getDocs(query(collection(db,'ganaderos'),where('activo','==',true)));
+    if(mi!==_interSinVerG)return;
+    const ganaderos=[];snapGan.forEach(d=>ganaderos.push({id:d.id,...d.data()}));
+    if(modo==='dia'){
+      const f=document.getElementById('sinrec-dia')?.value;if(!f)return;
+      document.getElementById('sinrec-de').value='';document.getElementById('sinrec-ha').value='';
+      cont.innerHTML='<div class="loading">Cargando...</div>';
+      const snap=await getDocs(query(collection(db,'recolecciones'),where('fecha','==',f)));
+      if(mi!==_interSinVerG)return;
+      const recogidos=new Set();
+      snap.forEach(d=>{const da=d.data();const L=parseFloat(da.litros)||0;const nov=(da.novedad||'').trim().length>0;if(L>0||(L===0&&nov))recogidos.add(da.ganaderoId);});
+      const sin=ganaderos.filter(g=>!recogidos.has(g.id));
+      if(sin.length===0){cont.innerHTML=`<p style="color:#15803d;font-size:14px;font-weight:600;">✅ Todos los ganaderos recogidos el ${fmtFecha(f)}</p>`;return;}
+      const filas=sin.map(g=>`<div style="padding:6px 0;border-bottom:1px solid var(--gris1);"><div style="display:flex;justify-content:space-between;align-items:center;"><div style="font-weight:600;font-size:13px;">${g.nombre}</div><span class="badge badge-rojo">🔴</span></div></div>`);
+      cont.innerHTML=`<div style="font-weight:700;font-size:13px;color:#DC2626;margin-bottom:4px;">🔴 Sin recolectar el ${fmtFecha(f)} (${sin.length})</div>`+_mejRenderListaColapsable(filas,'sinrec-dia-lst',3);
+    }else{
+      const de=document.getElementById('sinrec-de')?.value;const ha=document.getElementById('sinrec-ha')?.value;
+      if(!de||!ha)return;
+      document.getElementById('sinrec-dia').value='';
+      cont.innerHTML='<div class="loading">Cargando...</div>';
+      const dias=_mejValidarRango(de,ha,'admin-sin-recolectar');if(!dias)return;
+      const snap=await getDocs(query(collection(db,'recolecciones'),where('fecha','>=',de),where('fecha','<=',ha)));
+      if(mi!==_interSinVerG)return;
+      const porGanDias={};
+      snap.forEach(d=>{const da=d.data();const L=parseFloat(da.litros)||0;const nov=(da.novedad||'').trim().length>0;if(L>0||(L===0&&nov)){if(!porGanDias[da.ganaderoId])porGanDias[da.ganaderoId]=new Set();porGanDias[da.ganaderoId].add(da.fecha);}});
+      const totalDias=dias.length;
+      const conFallo=ganaderos.map(g=>{const entrego=(porGanDias[g.id]||new Set()).size;return{nombre:g.nombre,entrego,fallo:totalDias-entrego};}).filter(x=>x.fallo>0);
+      conFallo.sort((a,b)=>b.fallo-a.fallo||a.nombre.localeCompare(b.nombre,'es'));
+      if(conFallo.length===0){cont.innerHTML=`<p style="color:#15803d;font-size:14px;font-weight:600;">✅ Ningún ganadero falló entre ${fmtFechaCorta(de)} y ${fmtFechaCorta(ha)}</p>`;return;}
+      const filas=conFallo.map(x=>`<div style="padding:6px 0;border-bottom:1px solid var(--gris1);display:flex;justify-content:space-between;align-items:center;"><div style="font-weight:600;font-size:13px;">${x.nombre}</div><span class="badge ${x.fallo>=Math.ceil(totalDias/2)?'badge-rojo':'badge-amarillo'}" style="white-space:nowrap;">falló ${x.fallo} de ${totalDias}</span></div>`);
+      cont.innerHTML=`<div style="font-weight:700;font-size:13px;color:#DC2626;margin-bottom:4px;">🔴 Fallaron del ${fmtFechaCorta(de)} al ${fmtFechaCorta(ha)} (${conFallo.length})</div>`+_mejRenderListaColapsable(filas,'sinrec-rng-lst',3);
+    }
+  }catch(e){console.error('aplicarFiltroSinRec:',e);}
+}window.aplicarFiltroSinRec=aplicarFiltroSinRec;
+function limpiarFiltroSinRec(){
+  ++_interSinVerG;
+  const a=document.getElementById('sinrec-dia');if(a)a.value='';
+  const b=document.getElementById('sinrec-de');if(b)b.value='';
+  const c=document.getElementById('sinrec-ha');if(c)c.value='';
+  cargarSinRecolectar();
+}window.limpiarFiltroSinRec=limpiarFiltroSinRec;
+
+// ── M2: filtros de fecha — INTERMEDIARIOS sin entregar ──
+let _interSinVerI=0;
+async function aplicarFiltroInterSin(modo){
+  const cont=document.getElementById('admin-inter-sin-entregar');if(!cont)return;
+  const mi=++_interSinVerI;
+  try{
+    const snapInt=await getDocs(query(collection(db,'intermediarios'),where('activo','==',true)));
+    if(mi!==_interSinVerI)return;
+    const inters=[];snapInt.forEach(d=>inters.push({id:d.id,...d.data()}));
+    if(modo==='dia'){
+      const f=document.getElementById('intersin-dia')?.value;if(!f)return;
+      document.getElementById('intersin-de').value='';document.getElementById('intersin-ha').value='';
+      cont.innerHTML='<div class="loading">Cargando...</div>';
+      const snap=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','==',f)));
+      if(mi!==_interSinVerI)return;
+      const ent=new Set();
+      snap.forEach(d=>{const da=d.data();if((parseFloat(da.litros)||0)>0)ent.add(da.intermediarioId);});
+      const sin=inters.filter(i=>!ent.has(i.id));
+      if(sin.length===0){cont.innerHTML=`<p style="color:#15803d;font-size:14px;font-weight:600;">✅ Todos los intermediarios entregaron el ${fmtFecha(f)}</p>`;return;}
+      const filas=sin.map(i=>`<div style="padding:6px 0;border-bottom:1px solid var(--gris1);"><div style="display:flex;justify-content:space-between;align-items:center;"><div style="font-weight:600;font-size:13px;">${i.nombre}</div><span class="badge badge-rojo">🔴</span></div></div>`);
+      cont.innerHTML=`<div style="font-weight:700;font-size:13px;color:#DC2626;margin-bottom:4px;">🔴 Sin entregar el ${fmtFecha(f)} (${sin.length})</div>`+_mejRenderListaColapsable(filas,'intersin-dia-lst',3,'var(--naranja)');
+    }else{
+      const de=document.getElementById('intersin-de')?.value;const ha=document.getElementById('intersin-ha')?.value;
+      if(!de||!ha)return;
+      document.getElementById('intersin-dia').value='';
+      cont.innerHTML='<div class="loading">Cargando...</div>';
+      const dias=_mejValidarRango(de,ha,'admin-inter-sin-entregar');if(!dias)return;
+      const snap=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','>=',de),where('fecha','<=',ha)));
+      if(mi!==_interSinVerI)return;
+      const porIntDias={};
+      snap.forEach(d=>{const da=d.data();if((parseFloat(da.litros)||0)>0){if(!porIntDias[da.intermediarioId])porIntDias[da.intermediarioId]=new Set();porIntDias[da.intermediarioId].add(da.fecha);}});
+      const totalDias=dias.length;
+      const conFallo=inters.map(i=>{const entrego=(porIntDias[i.id]||new Set()).size;return{nombre:i.nombre,entrego,fallo:totalDias-entrego};}).filter(x=>x.fallo>0);
+      conFallo.sort((a,b)=>b.fallo-a.fallo||a.nombre.localeCompare(b.nombre,'es'));
+      if(conFallo.length===0){cont.innerHTML=`<p style="color:#15803d;font-size:14px;font-weight:600;">✅ Ningún intermediario falló entre ${fmtFechaCorta(de)} y ${fmtFechaCorta(ha)}</p>`;return;}
+      const filas=conFallo.map(x=>`<div style="padding:6px 0;border-bottom:1px solid var(--gris1);display:flex;justify-content:space-between;align-items:center;"><div style="font-weight:600;font-size:13px;">${x.nombre}</div><span class="badge ${x.fallo>=Math.ceil(totalDias/2)?'badge-rojo':'badge-amarillo'}" style="white-space:nowrap;">falló ${x.fallo} de ${totalDias}</span></div>`);
+      cont.innerHTML=`<div style="font-weight:700;font-size:13px;color:#DC2626;margin-bottom:4px;">🔴 Fallaron del ${fmtFechaCorta(de)} al ${fmtFechaCorta(ha)} (${conFallo.length})</div>`+_mejRenderListaColapsable(filas,'intersin-rng-lst',3,'var(--naranja)');
+    }
+  }catch(e){console.error('aplicarFiltroInterSin:',e);}
+}window.aplicarFiltroInterSin=aplicarFiltroInterSin;
+function limpiarFiltroInterSin(){
+  ++_interSinVerI;
+  const a=document.getElementById('intersin-dia');if(a)a.value='';
+  const b=document.getElementById('intersin-de');if(b)b.value='';
+  const c=document.getElementById('intersin-ha');if(c)c.value='';
+  cargarInterSinEntregar();
+}window.limpiarFiltroInterSin=limpiarFiltroInterSin;
+
+// ── M3: Comparativo con RANGO de fechas (máx 15 días, comparación en cadena) ──
+let _compRangoDatos=null;
+async function cargarComparativoRango(){
+  const cont=document.getElementById('resumen-comparativo-contenido');if(!cont)return;
+  const de=document.getElementById('comp-rango-de')?.value;
+  const ha=document.getElementById('comp-rango-ha')?.value;
+  if(!de||!ha)return;
+  const dias=_mejValidarRango(de,ha,'resumen-comparativo-contenido');if(!dias)return;
+  const mi=++_resumenCompVer;
+  window._compRangoActivo={de,ha};
+  cont.innerHTML='<div class="loading">Cargando '+dias.length+' días...</div>';
+  try{
+    const datos=[];
+    for(const f of dias){
+      const d=await obtenerDatosResumen(f);
+      if(mi!==_resumenCompVer)return;
+      datos.push({fecha:f,data:d});
+    }
+    _compRangoDatos=datos;
+    const kpisDef=[
+      {key:'ganaderos',label:'🐄 Ganaderos',fmt:'int'},
+      {key:'ruta',label:'🚛 Ruta',fmt:'litros'},
+      {key:'planta',label:'🏭 Planta',fmt:'litros'},
+      {key:'tandas',label:'🧀 Tandas',fmt:'int'},
+      {key:'lecheProc',label:'🥛 Leche Proc.',fmt:'litros'},
+      {key:'bloquesReales',label:'📦 Blq. Reales',fmt:'int'},
+      {key:'promedio',label:'📊 Promedio',fmt:'decimal'},
+      {key:'reprocBloques',label:'🔄 Reprocesos',fmt:'int',invertir:true},
+      {key:'novedades',label:'⚠️ Novedades',fmt:'int',invertir:true},
+      {key:'eliminaciones',label:'🗑️ Eliminaciones',fmt:'int',invertir:true}
+    ];
+    function fVal(v,fmt){if(v===undefined||v===null)return '—';if(fmt==='litros')return fmtL(v)+'L';if(fmt==='decimal')return (parseFloat(v)||0).toFixed(2);return String(v);}
+    function fDif(v,fmt){if(fmt==='litros')return fmtL(Math.round(v))+'L';if(fmt==='decimal')return (parseFloat(v)||0).toFixed(2);return String(Math.round(v));}
+    let html=`<div class="tabla-rango-wrap"><table class="tabla-rango"><thead><tr><th class="col-fija">MÉTRICA</th>`;
+    dias.forEach(f=>{html+=`<th>${fmtFechaCorta(f)}</th>`;});
+    html+=`</tr></thead><tbody>`;
+    kpisDef.forEach(k=>{
+      html+=`<tr><td class="col-fija">${k.label}</td>`;
+      datos.forEach((d,i)=>{
+        const v=d.data[k.key];
+        let celda=`<div style="font-weight:800;">${fVal(v,k.fmt)}</div>`;
+        if(i>0){
+          const prev=datos[i-1].data[k.key];
+          const dif=v-prev;
+          const pct=prev!==0?((dif/prev)*100):(v>0?100:0);
+          let color=dif===0?'var(--gris2)':(dif>0?'#15803d':'#DC2626');
+          if(k.invertir)color=dif===0?'var(--gris2)':(dif>0?'#DC2626':'#15803d');
+          const alerta=!k.invertir&&prev!==0&&pct<=-20;
+          if(dif!==0)celda+=`<div style="font-size:10px;font-weight:700;color:${color};">${alerta?'⚠️ ':''}${dif>0?'+':''}${fDif(dif,k.fmt)} ${Math.abs(pct)>=0.1?(dif>0?'+':'')+pct.toFixed(1)+'%':''}</div>`;
+          else celda+=`<div style="font-size:10px;color:var(--gris2);">—</div>`;
+        }
+        html+=`<td>${celda}</td>`;
+      });
+      html+=`</tr>`;
+    });
+    html+=`</tbody></table></div>`;
+    html+=`<div style="font-size:11px;color:var(--gris2);margin-top:6px;font-style:italic;">📅 Rango ${fmtFechaCorta(de)} al ${fmtFechaCorta(ha)} (${dias.length} días). Cada día se compara con el día anterior. Desliza la tabla con el dedo →. ⚠️ = caída ≥20%.</div>`;
+    // Comparar dos días del rango
+    const opts=dias.map(f=>`<option value="${f}">${fmtFechaCorta(f)}</option>`).join('');
+    html+=`<div style="background:white;border-radius:8px;border:1px solid #fde68a;padding:12px;margin-top:12px;">
+      <div style="font-weight:700;font-size:13px;color:#92400E;margin-bottom:8px;">🔍 Comparar dos días del rango</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <select id="comp-dia-a" onchange="compararDosDias()" style="flex:1;min-width:90px;padding:9px;border:1.5px solid #fde68a;border-radius:8px;font-size:14px;font-weight:700;">${opts}</select>
+        <span style="font-weight:800;color:#92400E;">vs</span>
+        <select id="comp-dia-b" onchange="compararDosDias()" style="flex:1;min-width:90px;padding:9px;border:1.5px solid #fde68a;border-radius:8px;font-size:14px;font-weight:700;">${opts}</select>
+      </div>
+      <div id="comp-dosdias-resultado" style="margin-top:10px;"></div>
+    </div>`;
+    if(mi!==_resumenCompVer)return;
+    cont.innerHTML=html;
+    const selB=document.getElementById('comp-dia-b');if(selB)selB.value=dias[dias.length-1];
+    compararDosDias();
+  }catch(e){if(mi===_resumenCompVer)cont.innerHTML='<div style="font-size:13px;color:var(--rojo);padding:12px;">Error al cargar el rango</div>';console.error('cargarComparativoRango:',e);}
+}window.cargarComparativoRango=cargarComparativoRango;
+
+function compararDosDias(){
+  const res=document.getElementById('comp-dosdias-resultado');if(!res||!_compRangoDatos)return;
+  const fa=document.getElementById('comp-dia-a')?.value;
+  const fb=document.getElementById('comp-dia-b')?.value;
+  if(!fa||!fb)return;
+  if(fa===fb){res.innerHTML='<div style="font-size:12px;color:var(--gris2);text-align:center;padding:8px;">Elige dos días diferentes</div>';return;}
+  const A=_compRangoDatos.find(d=>d.fecha===fa)?.data;
+  const B=_compRangoDatos.find(d=>d.fecha===fb)?.data;
+  if(!A||!B)return;
+  const kpis=[
+    {label:'🐄 Ganaderos',a:A.ganaderos,b:B.ganaderos,fmt:'int'},
+    {label:'🚛 Ruta',a:A.ruta,b:B.ruta,fmt:'litros'},
+    {label:'🏭 Planta',a:A.planta,b:B.planta,fmt:'litros'},
+    {label:'🧀 Tandas',a:A.tandas,b:B.tandas,fmt:'int'},
+    {label:'🥛 Leche Proc.',a:A.lecheProc,b:B.lecheProc,fmt:'litros'},
+    {label:'📦 Blq. Reales',a:A.bloquesReales,b:B.bloquesReales,fmt:'int'},
+    {label:'📊 Promedio',a:A.promedio,b:B.promedio,fmt:'decimal'},
+    {label:'🔄 Reprocesos',a:A.reprocBloques,b:B.reprocBloques,fmt:'int',invertir:true},
+    {label:'⚠️ Novedades',a:A.novedades,b:B.novedades,fmt:'int',invertir:true},
+    {label:'🗑️ Eliminaciones',a:A.eliminaciones,b:B.eliminaciones,fmt:'int',invertir:true}
+  ];
+  function fVal(v,fmt){if(v===undefined||v===null)return '—';if(fmt==='litros')return fmtL(v)+'L';if(fmt==='decimal')return (parseFloat(v)||0).toFixed(2);return String(v);}
+  function fDif(v,fmt){if(fmt==='litros')return fmtL(Math.round(v))+'L';if(fmt==='decimal')return (parseFloat(v)||0).toFixed(2);return String(Math.round(v));}
+  const la=fmtFechaCorta(fa),lb=fmtFechaCorta(fb);
+  let h=`<div style="background:white;border-radius:8px;overflow:hidden;border:1px solid #fde68a;">
+    <div style="display:grid;grid-template-columns:1.5fr 1fr 1fr 1.1fr;gap:4px;background:#fef3c7;padding:8px;font-size:11px;font-weight:700;color:#92400E;">
+      <div>MÉTRICA</div><div style="text-align:right;">${la}</div><div style="text-align:right;">${lb}</div><div style="text-align:right;">CAMBIO</div>
+    </div>`;
+  kpis.forEach(k=>{
+    const dif=k.b-k.a;
+    const pct=k.a!==0?((dif/k.a)*100):(k.b>0?100:0);
+    let color=dif===0?'var(--gris2)':(dif>0?'#15803d':'#DC2626');
+    if(k.invertir)color=dif===0?'var(--gris2)':(dif>0?'#DC2626':'#15803d');
+    const alerta=!k.invertir&&k.a!==0&&pct<=-20;
+    const bgRow=alerta?'background:#FEE2E2;':'';
+    const pctTxt=Math.abs(pct)>=0.1?`<div style="font-size:10px;opacity:0.85;">${dif>0?'+':''}${pct.toFixed(1)}%</div>`:'';
+    h+=`<div style="display:grid;grid-template-columns:1.5fr 1fr 1fr 1.1fr;gap:4px;padding:8px;font-size:12px;border-top:1px solid #fef3c7;${bgRow}align-items:center;">
+      <div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;">${k.label}${alerta?' ⚠️':''}</div>
+      <div style="text-align:right;color:var(--gris2);word-break:break-word;">${fVal(k.a,k.fmt)}</div>
+      <div style="text-align:right;font-weight:800;word-break:break-word;">${fVal(k.b,k.fmt)}</div>
+      <div style="text-align:right;font-weight:700;color:${color};line-height:1.2;">${dif===0?'—':(dif>0?'+':'')+fDif(dif,k.fmt)}${pctTxt}</div>
+    </div>`;
+  });
+  h+=`</div>`;
+  // Análisis financiero entre los dos días elegidos (reutiliza la lógica existente)
+  _compAyerData=A;_compHoyData=B;
+  window._compLabelA=la;window._compLabelB=lb;
+  const _vb=_precioBloqueComp>0?'$'+_precioBloqueComp.toLocaleString('es-CO'):'';
+  const _vl=_precioLitroComp>0?'$'+_precioLitroComp.toLocaleString('es-CO'):'';
+  h+=`<div style="background:white;border-radius:8px;border:1px solid #fde68a;padding:12px;margin-top:12px;">
+    <div style="font-weight:700;font-size:13px;color:#92400E;margin-bottom:10px;">💰 Análisis financiero (${la} vs ${lb})</div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <div style="flex:1;"><label style="font-size:11px;color:var(--gris2);display:block;margin-bottom:3px;">Precio 1 bloque</label>
+      <input id="comp-precio-bloque" inputmode="numeric" placeholder="$0" value="${_vb}" oninput="calcularAnalisisFinanciero()" style="width:100%;padding:8px;border:1px solid #fde68a;border-radius:6px;font-size:14px;font-weight:700;box-sizing:border-box;"></div>
+      <div style="flex:1;"><label style="font-size:11px;color:var(--gris2);display:block;margin-bottom:3px;">Precio 1 litro</label>
+      <input id="comp-precio-litro" inputmode="numeric" placeholder="$0" value="${_vl}" oninput="calcularAnalisisFinanciero()" style="width:100%;padding:8px;border:1px solid #fde68a;border-radius:6px;font-size:14px;font-weight:700;box-sizing:border-box;"></div>
+    </div>
+    <div id="analisis-fin-resultado"></div>
+  </div>`;
+  res.innerHTML=h;
+  calcularAnalisisFinanciero();
+}window.compararDosDias=compararDosDias;
+
+// ── M4: "Hoy y 2 días anteriores" con RANGO (tarjetita por día, scroll horizontal) ──
+let _semanaRangoVer=0;
+async function cargarSemanaRango(){
+  const cont=document.getElementById('admin-semana');if(!cont)return;
+  const de=document.getElementById('semana-rango-de')?.value;
+  const ha=document.getElementById('semana-rango-ha')?.value;
+  if(!de||!ha)return;
+  const dias=_mejValidarRango(de,ha,'admin-semana');if(!dias)return;
+  const mi=++_semanaRangoVer;
+  cont.innerHTML='<div class="loading">Cargando '+dias.length+' días...</div>';
+  try{
+    const snap=await getDocs(query(collection(db,'recolecciones'),where('fecha','>=',de),where('fecha','<=',ha)));
+    if(mi!==_semanaRangoVer)return;
+    const porDia={};dias.forEach(d=>{porDia[d]=0;});
+    snap.forEach(d=>{const da=d.data();if(porDia[da.fecha]!==undefined)porDia[da.fecha]+=parseFloat(da.litros)||0;});
+    const snapP=await getDocs(query(collection(db,'recepciones'),where('fecha','>=',de),where('fecha','<=',ha)));
+    if(mi!==_semanaRangoVer)return;
+    const porDiaP={};dias.forEach(d=>{porDiaP[d]=0;});
+    snapP.forEach(d=>{const da=d.data();if(porDiaP[da.fecha]!==undefined)porDiaP[da.fecha]+=parseFloat(da.litros)||0;});
+    const snapI=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','>=',de),where('fecha','<=',ha)));
+    if(mi!==_semanaRangoVer)return;
+    const porDiaI={};dias.forEach(d=>{porDiaI[d]=0;});
+    snapI.forEach(d=>{const da=d.data();if(porDiaI[da.fecha]!==undefined)porDiaI[da.fecha]+=parseFloat(da.litros)||0;});
+    const nomDiaSem=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+    const hoyStr=hoy();
+    const tarjetas=dias.map(d=>{
+      const diaSem=new Date(d+'T12:00:00').getDay();
+      const L=porDia[d]||0;const P=porDiaP[d]||0;const I=porDiaI[d]||0;const T=P+I;
+      const esHoy=d===hoyStr;
+      const bg=esHoy?'var(--verde)':'var(--verde3)';
+      const colorT=esHoy?'white':'var(--verde)';
+      const colorP=esHoy?'rgba(255,255,255,0.8)':'var(--naranja)';
+      const colorI=esHoy?'rgba(255,255,255,0.7)':'#7c3aed';
+      const colorTot=esHoy?'white':'var(--gris3)';
+      return`<div style="width:88px;text-align:center;padding:8px 4px;border-radius:10px;background:${bg};"><div style="font-size:10px;font-weight:700;color:${colorT};">${nomDiaSem[diaSem]} ${fmtFechaCorta(d)}</div><div style="font-size:9px;color:${colorT};opacity:0.8;">ruta</div><div style="font-size:13px;font-weight:800;color:${colorT};">${L>0?L.toFixed(0):'—'}</div><div style="font-size:9px;color:${colorP};opacity:0.8;">planta</div><div style="font-size:12px;font-weight:700;color:${colorP};">${P>0?P.toFixed(0):'—'}</div><div style="font-size:9px;color:${colorI};opacity:0.8;">inter</div><div style="font-size:12px;font-weight:700;color:${colorI};">${I>0?I.toFixed(0):'—'}</div><div style="border-top:1px solid rgba(255,255,255,0.3);margin-top:3px;padding-top:3px;font-size:9px;color:${colorTot};opacity:0.8;">total</div><div style="font-size:12px;font-weight:800;color:${colorTot};">${T>0?T.toFixed(0):'—'}</div>${L>0||P>0?`<div style="font-size:9px;color:${colorTot};opacity:0.7;">diff</div><div style="font-size:11px;font-weight:800;color:${esHoy?'white':P-L>0?'#dc2626':P-L<0?'#15803d':colorTot};">${P-L>0?'+':''}${P-L>0||P-L<0?(P-L).toFixed(0):''}</div>`:''}</div>`;
+    }).join('');
+    if(mi!==_semanaRangoVer)return;
+    cont.innerHTML=`<div class="tarjetas-dias-scroll">${tarjetas}</div><div style="font-size:11px;color:var(--gris2);margin-top:4px;font-style:italic;">📅 ${fmtFechaCorta(de)} al ${fmtFechaCorta(ha)} (${dias.length} días) · desliza con el dedo →</div>`;
+  }catch(e){console.error('cargarSemanaRango:',e);}
+}window.cargarSemanaRango=cargarSemanaRango;
+function limpiarSemanaRango(){
+  const a=document.getElementById('semana-rango-de');if(a)a.value='';
+  const b=document.getElementById('semana-rango-ha');if(b)b.value='';
+  const ref=document.getElementById('semana-fecha-ref')?.value;
+  cargarResumenSemanal(ref||undefined);
+}window.limpiarSemanaRango=limpiarSemanaRango;
+
+// ── M5: Desglose ganaderos + Intermediarios con RANGO sincronizado (doble vía) ──
+let _desRangoVer=0;
+let _rngCtx=null;// contexto del rango cargado {de,ha,dias,porGan,porRec,porRecPlanta,inter}
+function sincronizarRangoDesglose(origen){
+  const dd=document.getElementById('desglose-rango-de'),dh=document.getElementById('desglose-rango-ha');
+  const id_=document.getElementById('interrng-de'),ih=document.getElementById('interrng-ha');
+  if(!dd||!dh||!id_||!ih)return;
+  if(origen==='des'){id_.value=dd.value;ih.value=dh.value;}
+  else{dd.value=id_.value;dh.value=ih.value;}
+  if(dd.value&&dh.value)cargarDesgloseRango(dd.value,dh.value);
+}window.sincronizarRangoDesglose=sincronizarRangoDesglose;
+
+function limpiarRangoDesglose(){
+  ++_desRangoVer;_rngCtx=null;
+  ['desglose-rango-de','desglose-rango-ha','interrng-de','interrng-ha'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const f=document.getElementById('desglose-fecha')?.value||hoy();
+  recargarDesglose(f);
+}window.limpiarRangoDesglose=limpiarRangoDesglose;
+
+function _rngMiniTabla(registros){
+  const cols=registros.map(r=>`<div class="mtr-col"><div class="mtr-fecha">${fmtFechaCorta(r.fecha)}${r.hora?' '+r.hora:''}</div><div class="mtr-litros">${fmtL(r.litros)}L</div></div>`).join('');
+  return`<div class="scroll-x" style="margin-top:6px;"><div class="mini-tabla-reg">${cols}</div></div>`;
+}
+
+async function cargarDesgloseRango(de,ha){
+  const elG=document.getElementById('admin-desglose-ganaderos');if(!elG)return;
+  const dias=_mejValidarRango(de,ha,'admin-desglose-ganaderos');if(!dias)return;
+  const mi=++_desRangoVer;
+  elG.innerHTML='<div class="loading">Cargando '+dias.length+' días...</div>';
+  const elI=document.getElementById('admin-inter-hoy');if(elI)elI.innerHTML='<div class="loading">Cargando...</div>';
+  try{
+    const sCol=await getDocs(query(collection(db,'recolecciones'),where('fecha','>=',de),where('fecha','<=',ha)));
+    if(mi!==_desRangoVer)return;
+    const porGan={};const porRec={};
+    sCol.forEach(d=>{const da=d.data();const L=parseFloat(da.litros)||0;
+      if(!porGan[da.ganaderoId])porGan[da.ganaderoId]={nombre:da.ganaderoNombre,registros:[]};
+      porGan[da.ganaderoId].registros.push({fecha:da.fecha,hora:da.hora||'',litros:L,recogedorId:da.recogedorId,recogedorNombre:da.recogedorNombre||''});
+      if(!porRec[da.recogedorId])porRec[da.recogedorId]={nombre:da.recogedorNombre,litros:0};
+      porRec[da.recogedorId].litros+=L;
+    });
+    const sRec=await getDocs(query(collection(db,'recepciones'),where('fecha','>=',de),where('fecha','<=',ha)));
+    if(mi!==_desRangoVer)return;
+    const porRecPlanta={};
+    sRec.forEach(d=>{const da=d.data();const L=parseFloat(da.litros)||0;
+      if(!porRecPlanta[da.recogedorId])porRecPlanta[da.recogedorId]={nombre:da.recogedorNombre,registros:[]};
+      porRecPlanta[da.recogedorId].registros.push({fecha:da.fecha,hora:da.hora||'',litros:L});
+    });
+    const sInter=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','>=',de),where('fecha','<=',ha)));
+    if(mi!==_desRangoVer)return;
+    const porInter={};
+    sInter.forEach(d=>{const da=d.data();const L=parseFloat(da.litros)||0;
+      if(!porInter[da.intermediarioId])porInter[da.intermediarioId]={nombre:da.intermediarioNombre,registros:[]};
+      porInter[da.intermediarioId].registros.push({fecha:da.fecha,hora:da.hora||'',litros:L});
+    });
+    _rngCtx={de,ha,dias,porGan,porRec,porRecPlanta,porInter};
+    // Botones de filtro por recogedor (incluye rutas combinadas si existen)
+    const filtrosEl=document.getElementById('admin-filtros-rec');
+    if(filtrosEl){
+      const recsVisibles=Object.entries(porRec);
+      (window._rutasCombinadas||[]).forEach(([cid,cu])=>recsVisibles.push([cid,{nombre:cu.nombre||cu.email,litros:0}]));
+      filtrosEl.innerHTML=`<button class="btn btn-sm filtro-rec-btn" data-recid="todos" style="border:2px solid var(--verde);background:var(--verde);color:white;font-weight:700;" onclick="renderDesgloseRango('todos')">Todos</button>`+
+        recsVisibles.map(([id,rv])=>`<button class="btn btn-sm filtro-rec-btn" data-recid="${id}" style="border:2px solid var(--verde);background:transparent;color:var(--verde);font-weight:700;" onclick="renderDesgloseRango('${id}')">${rv.nombre}</button>`).join('');
+    }
+    renderDesgloseRango('todos');
+    renderInterRango();
+  }catch(e){console.error('cargarDesgloseRango:',e);}
+}window.cargarDesgloseRango=cargarDesgloseRango;
+
+function renderDesgloseRango(filtroId){
+  const el=document.getElementById('admin-desglose-ganaderos');if(!el||!_rngCtx)return;
+  const {de,ha,dias,porGan,porRec,porRecPlanta}=_rngCtx;
+  document.querySelectorAll('.filtro-rec-btn').forEach(b=>{
+    b.style.background=b.dataset.recid===filtroId?'var(--verde)':'transparent';
+    b.style.color=b.dataset.recid===filtroId?'white':'var(--verde)';
+  });
+  const esCombinada=filtroId!=='todos'&&!porRec[filtroId];
+  const hijos=esCombinada?((window._rutasCombinadas||[]).find(([cid])=>cid===filtroId)?.[1]?.combinaUids||[]):[];
+  function matchReg(r){
+    if(filtroId==='todos')return true;
+    if(esCombinada)return hijos.includes(r.recogedorId);
+    return r.recogedorId===filtroId;
+  }
+  const totalDias=dias.length;
+  const ganArr=Object.entries(porGan).map(([gid,g])=>{
+    const regs=g.registros.filter(matchReg).sort((a,b)=>(a.fecha+a.hora).localeCompare(b.fecha+b.hora));
+    if(regs.length===0)return null;
+    const total=regs.reduce((s,r)=>s+r.litros,0);
+    const diasEnt=new Set(regs.map(r=>r.fecha)).size;
+    return{nombre:g.nombre,regs,total,diasEnt};
+  }).filter(Boolean).sort((a,b)=>b.total-a.total);
+  const rutaFiltro=ganArr.reduce((s,g)=>s+g.total,0);
+  let plantaRegs=[];
+  Object.entries(porRecPlanta).forEach(([rid,rp])=>{
+    const pasa=filtroId==='todos'||(esCombinada?rid===filtroId:rid===filtroId);
+    if(pasa)plantaRegs.push([rid,rp]);
+  });
+  const plantaFiltro=plantaRegs.reduce((s,[,rp])=>s+rp.registros.reduce((x,r)=>x+r.litros,0),0);
+  const diff=plantaFiltro-rutaFiltro;
+  const diffColor=diff>0?'var(--naranja)':diff<0?'var(--amarillo)':'#15803d';
+  const kpis=`<div style="font-size:14px;font-weight:700;color:var(--verde);margin-bottom:8px;">📅 Del ${fmtFechaCorta(de)} al ${fmtFechaCorta(ha)} · ${totalDias} días</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;text-align:center;background:var(--crema);border-radius:12px;padding:12px;margin-bottom:8px;">
+    <div><div style="font-size:10px;color:var(--gris2);font-weight:600;">🚛 RUTA</div><div style="font-size:18px;font-weight:800;color:var(--gris3);">${fmtL(rutaFiltro)}</div></div>
+    <div><div style="font-size:10px;color:var(--gris2);font-weight:600;">🏭 PLANTA</div><div style="font-size:18px;font-weight:800;color:var(--gris3);">${fmtL(plantaFiltro)}</div></div>
+    <div><div style="font-size:10px;color:var(--gris2);font-weight:600;">⚖️ DIFF</div><div style="font-size:18px;font-weight:800;color:${diffColor};">${diff>=0?'+':''}${fmtL(diff)}</div></div>
+    <div><div style="font-size:10px;color:var(--gris2);font-weight:600;">🐄 GANAD.</div><div style="font-size:18px;font-weight:800;color:var(--gris3);">${ganArr.length}</div></div>
+  </div>`;
+  // Registros de planta agrupados por recogedor
+  const regPlantaFilas=plantaRegs.map(([rid,rp])=>{
+    const regs=rp.registros.sort((a,b)=>(a.fecha+a.hora).localeCompare(b.fecha+b.hora));
+    const diasReg=new Set(regs.map(r=>r.fecha)).size;
+    const tot=regs.reduce((s,r)=>s+r.litros,0);
+    return`<div style="padding:8px 0;border-bottom:1px solid #BAE6FD;"><div style="display:flex;justify-content:space-between;align-items:center;"><div style="font-weight:700;font-size:13px;color:#0369A1;">🚛 ${rp.nombre||'—'}</div><span class="badge badge-verde">Total: ${fmtL(tot)}L</span></div><div style="font-size:12px;color:#0369A1;margin-top:2px;">registró ${diasReg} de ${totalDias} días</div>${_rngMiniTabla(regs)}</div>`;
+  });
+  const regPlantaBloque=plantaRegs.length>0?`<div style="background:#F0F9FF;border:1px solid #BAE6FD;border-radius:10px;padding:10px;margin-bottom:8px;"><div style="font-size:11px;font-weight:700;color:#0369A1;margin-bottom:4px;">📋 REGISTROS DE PLANTA</div>${_mejRenderListaColapsable(regPlantaFilas,'rng-planta',3,'#0369A1')}</div>`:'';
+  const buscador=`<div style="margin-bottom:12px;"><input type="text" id="desglose-buscar-rng" placeholder="🔍 Buscar ganadero..." oninput="filtrarDesgloseRango()" style="width:100%;padding:10px 12px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;"></div>`;
+  window._rngGanArr=ganArr;window._rngTotalDias=totalDias;
+  el.innerHTML=ganArr.length===0?kpis+'<p style="color:var(--gris2);font-size:14px;">Sin datos para este recogedor en el rango</p>':
+    kpis+regPlantaBloque+buscador+`<div id="desglose-lista-rng"></div>`;
+  if(ganArr.length>0)_renderListaGanRango(ganArr);
+}window.renderDesgloseRango=renderDesgloseRango;
+
+function _filaGanRango(g,totalDias){
+  return`<div style="padding:12px 0;border-bottom:1px solid var(--gris1);">
+    <div style="display:flex;justify-content:space-between;align-items:center;"><div style="font-weight:700;font-size:15px;">${g.nombre}</div><span class="badge badge-verde">Total: ${fmtL(g.total)}L</span></div>
+    <div style="font-size:13px;color:var(--gris2);margin-top:2px;">entregó ${g.diasEnt} de ${totalDias} días</div>
+    ${_rngMiniTabla(g.regs)}
+  </div>`;
+}
+function _renderListaGanRango(ganArr){
+  const lista=document.getElementById('desglose-lista-rng');if(!lista)return;
+  const totalDias=window._rngTotalDias||1;
+  const filas=ganArr.map(g=>_filaGanRango(g,totalDias));
+  lista.innerHTML=_mejRenderListaColapsable(filas,'rng-gan',3);
+}
+function filtrarDesgloseRango(){
+  const t=(document.getElementById('desglose-buscar-rng')?.value||'').toLowerCase();
+  const gan=window._rngGanArr||[];
+  const lista=document.getElementById('desglose-lista-rng');if(!lista)return;
+  const filtrado=t?gan.filter(g=>g.nombre.toLowerCase().includes(t)):gan;
+  if(t){lista.innerHTML=filtrado.length===0?'<p style="color:var(--gris2);font-size:14px;">Sin resultados</p>':filtrado.map(g=>_filaGanRango(g,window._rngTotalDias||1)).join('');}
+  else{_renderListaGanRango(gan);}
+}window.filtrarDesgloseRango=filtrarDesgloseRango;
+
+function renderInterRango(){
+  const elI=document.getElementById('admin-inter-hoy');if(!elI||!_rngCtx)return;
+  const {de,ha,dias,porInter}=_rngCtx;
+  const lbl=document.getElementById('admin-inter-fecha-label');
+  if(lbl)lbl.textContent=`📅 Del ${fmtFechaCorta(de)} al ${fmtFechaCorta(ha)} · ${dias.length} días`;
+  const arr=Object.values(porInter).map(i=>{
+    const regs=i.registros.sort((a,b)=>(a.fecha+a.hora).localeCompare(b.fecha+b.hora));
+    const total=regs.reduce((s,r)=>s+r.litros,0);
+    const diasEnt=new Set(regs.map(r=>r.fecha)).size;
+    return{nombre:i.nombre,regs,total,diasEnt};
+  }).sort((a,b)=>b.total-a.total);
+  if(arr.length===0){elI.innerHTML='<p style="color:var(--gris2);font-size:14px;">Sin intermediarios en este rango</p>';return;}
+  const totalRango=arr.reduce((s,i)=>s+i.total,0);
+  const filas=arr.map(i=>`<div style="padding:12px 0;border-bottom:1px solid var(--gris1);">
+    <div style="display:flex;justify-content:space-between;align-items:center;"><div style="font-weight:700;font-size:15px;">${i.nombre}</div><span style="color:var(--naranja);font-weight:700;">Total: ${fmtL(i.total)}L</span></div>
+    <div style="font-size:13px;color:var(--gris2);margin-top:2px;">entregó ${i.diasEnt} de ${dias.length} días</div>
+    ${_rngMiniTabla(i.regs)}
+  </div>`);
+  elI.innerHTML=`<div style="font-size:13px;font-weight:700;color:var(--naranja);margin-bottom:8px;">Total: ${fmtL(totalRango)}L</div>`+_mejRenderListaColapsable(filas,'rng-int',3,'var(--naranja)');
+}
+
+// ── M6: PRODUCCIÓN con RANGO (sumas, reproceso día a día, promedio ponderado) ──
+async function cargarProduccionRango(){
+  const el=document.getElementById('admin-produccion-hoy');if(!el)return;
+  const de=document.getElementById('prod-rango-de')?.value;
+  const ha=document.getElementById('prod-rango-ha')?.value;
+  if(!de||!ha)return;
+  const dias=_mejValidarRango(de,ha,'admin-produccion-hoy');if(!dias)return;
+  const mi=++_prodHoyVer;
+  el.innerHTML='<div class="loading">Cargando '+dias.length+' días...</div>';
+  const lblProd=document.getElementById('admin-produccion-fecha-label');
+  if(lblProd)lblProd.textContent=`📅 Del ${fmtFechaCorta(de)} al ${fmtFechaCorta(ha)} · ${dias.length} días`;
+  try{
+    const snapT=await getDocs(query(collection(db,'tandas'),where('fecha','>=',de),where('fecha','<=',ha)));
+    if(mi!==_prodHoyVer)return;
+    const tandasPorDia={};dias.forEach(f=>tandasPorDia[f]=[]);
+    snapT.forEach(d=>{const t=d.data();if(tandasPorDia[t.fecha])tandasPorDia[t.fecha].push(t);});
+    // Cierres por día (id determinista = fecha)
+    const cierres={};
+    for(const f of dias){
+      try{const cDoc=await getDoc(doc(db,'cierresDia',f));if(cDoc.exists())cierres[f]=cDoc.data();}catch(e){}
+      if(mi!==_prodHoyVer)return;
+    }
+    // Leche recibidor del rango (recepciones + intermediarios)
+    let lecheRecibidor=0;
+    const sRecP=await getDocs(query(collection(db,'recepciones'),where('fecha','>=',de),where('fecha','<=',ha)));
+    if(mi!==_prodHoyVer)return;
+    sRecP.forEach(d=>{lecheRecibidor+=parseFloat(d.data().litros)||0;});
+    const sIntP=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','>=',de),where('fecha','<=',ha)));
+    if(mi!==_prodHoyVer)return;
+    sIntP.forEach(d=>{lecheRecibidor+=parseFloat(d.data().litros)||0;});
+    // Acumuladores (REGLA SAGRADA: reproceso se calcula POR DÍA y se suman los resultados)
+    let totTandas=0,totLitros=0,totBloques=0,totReproc=0,totCanastas=0,totUnidades=0,lechePlatCuaj=0,diasConCierre=0,diasConActividad=0;
+    const lineasDiasCerrados=[];const lineasTandas=[];const lineasReproc=[];
+    dias.forEach(f=>{
+      const tandas=tandasPorDia[f]||[];const cierre=cierres[f]||null;
+      if(tandas.length===0&&!cierre){lineasDiasCerrados.push(`<div style="font-size:11px;color:var(--gris2);padding:2px 0;">${fmtFechaCorta(f)}: — sin producción</div>`);return;}
+      diasConActividad++;
+      const litrosDia=tandas.reduce((s,t)=>s+(parseFloat(t.litros)||0),0);
+      const bloquesDia=tandas.reduce((s,t)=>s+(parseInt(t.bloques2500)||0)+(parseInt(t.bloques1000)||0)+(parseInt(t.bloques500)||0),0);
+      const repDir=tandas.reduce((s,t)=>{if(!t.reproceso)return s;const tipo=t.reprocTipo||'bloques';if(tipo==='bloques'||tipo==='ambos')return s+(parseInt(t.reprocBloques)||0);return s;},0);
+      const repLit=tandas.reduce((s,t)=>{if(!t.reproceso)return s;const tipo=t.reprocTipo||'bloques';if(tipo==='litros'||tipo==='ambos')return s+(parseFloat(t.reprocLitros)||0);return s;},0);
+      const reprocDia=repDir+Math.floor(repLit/3);
+      const blqRealesDia=bloquesDia-reprocDia;
+      totTandas+=tandas.length;totLitros+=litrosDia;totBloques+=bloquesDia;totReproc+=reprocDia;
+      // Canastas/unidades del día con la MISMA lógica del modo día (cierre + ventas 2500g)
+      const _cFC=cierre?parseInt(cierre.canastasFC)||0:0;
+      const _uFC=cierre?parseInt(cierre.unidadesFC)||0:0;
+      let v2500=0;if(cierre&&cierre.ventasPlanta){cierre.ventasPlanta.forEach(v=>{if(v.tamano==='2500g')v2500+=parseInt(v.unidades)||0;});}
+      const bParaCan=blqRealesDia-v2500;
+      const canProd=Math.floor(bParaCan/16);
+      let canDia=canProd+_cFC;let uniDia=(bParaCan-canProd*16)+_uFC;
+      if(uniDia>=16){canDia+=Math.floor(uniDia/16);uniDia=uniDia%16;}
+      totCanastas+=canDia;totUnidades+=uniDia;
+      if(cierre){diasConCierre++;if(cierre.lechePlataforma)lechePlatCuaj+=parseFloat(cierre.lechePlataforma)||0;}
+      const cuaj=tandas.length>0?(tandas[0].cuajadorNombre||'—'):'—';
+      lineasDiasCerrados.push(`<div style="font-size:11px;color:${cierre?'#15803d':'#D97706'};padding:2px 0;">${fmtFechaCorta(f)}: ${cuaj} ${cierre?'✅ cerrado':'⏳ sin cerrar'}</div>`);
+      // Detalle de tandas del día (promedio por tanda)
+      if(tandas.length>0){
+        lineasTandas.push(`<div style="font-size:11px;font-weight:800;color:var(--verde);background:var(--crema);border-radius:6px;padding:3px 6px;margin-top:4px;">📅 ${fmtFechaCorta(f)}</div>`);
+        tandas.sort((a,b)=>(parseInt(a.numero)||0)-(parseInt(b.numero)||0)).forEach(t=>{
+          const b=(parseInt(t.bloques2500)||0)+(parseInt(t.bloques1000)||0)+(parseInt(t.bloques500)||0);
+          const l=parseFloat(t.litros)||0;const tipo=t.reprocTipo||'bloques';
+          let repB=0,repBL=0;
+          if(t.reproceso){if(tipo==='bloques'||tipo==='ambos')repB=(parseInt(t.reprocBloques)||0);if(tipo==='litros'||tipo==='ambos')repBL=Math.floor((parseFloat(t.reprocLitros)||0)/3);}
+          const rest=repB+repBL;const bR=b-rest;
+          const prom=bR>0?((l/bR)/5).toFixed(2):'—';
+          lineasTandas.push(`<div style="font-size:12px;padding:3px 0;border-bottom:1px solid var(--gris1);">Tanda #${t.numero} (${t.proveedorNombre}): ${fmtL(l)}L ÷ ${bR}BR${rest?` (${b}-${rest})`:''} = <strong>${prom}</strong></div>`);
+          if(t.reproceso){
+            let det='';if(tipo==='bloques')det='Bloques: '+(t.reprocBloques||t.reprocCant||0);else if(tipo==='litros')det='Litros: '+(t.reprocLitros||t.reprocCant||0);else det='Bloques: '+(t.reprocBloques||0)+' · Litros: '+(t.reprocLitros||0);
+            lineasReproc.push(`<div style="font-size:12px;padding:3px 0;border-bottom:1px solid var(--gris1);color:#92400E;">🔄 ${fmtFechaCorta(f)} · Tanda #${t.numero} (${t.proveedorNombre}): ${det}</div>`);
+          }
+        });
+      }
+    });
+    const blqReales=totBloques-totReproc;
+    const promedio=blqReales>0?((totLitros/blqReales)/5).toFixed(2):'—';
+    if(totTandas===0&&diasConCierre===0){if(mi===_prodHoyVer)el.innerHTML='<div style="font-size:13px;color:var(--gris2);">Sin producción registrada en este rango</div>';return;}
+    let html=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:6px;text-align:center;margin-bottom:10px;">
+      <div><div style="font-size:9px;color:var(--gris2);font-weight:600;">TANDAS</div><div style="font-size:18px;font-weight:800;">${totTandas}</div></div>
+      <div><div style="font-size:8px;color:var(--gris2);font-weight:600;">LECHE PROC.</div><div style="font-size:18px;font-weight:800;">${fmtL(totLitros)}</div></div>
+      <div><div style="font-size:9px;color:var(--gris2);font-weight:600;">BLOQUES</div><div style="font-size:18px;font-weight:800;">${totBloques}</div></div>
+      <div><div style="font-size:8px;color:#15803d;font-weight:600;">BLQ. REALES</div><div style="font-size:18px;font-weight:800;color:#15803d;">${blqReales}</div></div>
+      <div><div style="font-size:9px;color:var(--gris2);font-weight:600;">PROMEDIO</div><div style="font-size:18px;font-weight:800;">${promedio}</div></div>
+    </div>`;
+    html+=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;margin-bottom:10px;background:#DCFCE7;border-radius:10px;padding:10px;">
+      <div><div style="font-size:9px;color:#15803d;font-weight:600;">CANASTAS</div><div style="font-size:20px;font-weight:800;color:#15803d;">${totCanastas}</div></div>
+      <div><div style="font-size:9px;color:#15803d;font-weight:600;">UNIDADES</div><div style="font-size:20px;font-weight:800;color:#15803d;">${totUnidades}</div></div>
+      <div><div style="font-size:9px;color:#15803d;font-weight:600;">REPROC.</div><div style="font-size:20px;font-weight:800;color:#D97706;">${totReproc}</div></div>
+    </div>`;
+    // Días cerrados
+    html+=`<div style="background:var(--crema);border-radius:8px;padding:8px;margin-bottom:8px;">
+      <div style="font-size:13px;font-weight:700;color:${diasConCierre===diasConActividad?'#15803d':'#D97706'};">✅ ${diasConCierre} de ${dias.length} días cerrados</div>
+      ${lineasDiasCerrados.join('')}
+    </div>`;
+    // Diferencia leche (sumas del rango) — con texto que habla solo
+    if(lecheRecibidor>0){
+      const difLeche=totLitros-lecheRecibidor;
+      const difOk=Math.abs(difLeche)<1;
+      html+=`<div style="background:${difOk?'#F3E8FF':'#FEF3C7'};padding:8px;border-radius:8px;font-size:12px;margin-bottom:6px;">
+        <div style="font-weight:700;color:${difOk?'#9333EA':'#92400E'};margin-bottom:4px;">${difOk?'✅':'📊'} Diferencia leche (rango)</div>
+        <div style="color:${difOk?'#9333EA':'#92400E'};">Procesada: ${fmtL(totLitros)}L · Recibidor: ${fmtL(lecheRecibidor)}L · <strong>Dif: ${difLeche>0?'+':''}${fmtL(difLeche)}L</strong></div>
+        <div style="font-size:11px;margin-top:3px;color:${difOk?'#9333EA':difLeche>0?'#15803d':'#DC2626'};font-weight:600;">${difOk?'Las cuentas cuadran':difLeche>0?'✅ Se procesó más leche de la que reportó el recibidor':'🔴 Se procesó menos leche de la que llegó — revisar'}</div>
+      </div>`;
+      if(lechePlatCuaj>0){
+        const diffPlat=lecheRecibidor-lechePlatCuaj;
+        const coincide=Math.abs(diffPlat)<1;
+        html+=`<div style="background:${coincide?'#DCFCE7':'#FEF3C7'};padding:8px;border-radius:8px;font-size:12px;margin-bottom:6px;">
+          <div style="font-weight:700;color:${coincide?'#15803d':'#92400E'};margin-bottom:4px;">${coincide?'✅':'⚠️'} Leche plataforma (rango)</div>
+          <div style="color:${coincide?'#15803d':'#92400E'};">Cuajador: ${fmtL(lechePlatCuaj)}L · Recibidor: ${fmtL(lecheRecibidor)}L${coincide?'':` · Dif: ${diffPlat>0?'+':''}${fmtL(diffPlat)}L`}</div>
+        </div>`;
+      }
+    }
+    // Promedio por tanda agrupado por día
+    if(lineasTandas.length>0){
+      html+=`<div style="font-size:12px;font-weight:700;color:var(--verde);margin-top:10px;margin-bottom:4px;">📊 Promedio por tanda (L÷BR÷5) — por día</div>`;
+      html+=_mejRenderListaColapsable(lineasTandas,'prodrng-tandas',5);
+    }
+    // Reprocesos agrupados por día
+    if(lineasReproc.length>0){
+      html+=`<div style="font-size:12px;font-weight:700;color:#D97706;margin-top:10px;margin-bottom:4px;">🔄 Reprocesos del rango (${lineasReproc.length})</div>`;
+      html+=_mejRenderListaColapsable(lineasReproc,'prodrng-reproc',3,'#D97706');
+      html+=`<div style="font-size:12px;font-weight:700;color:#92400E;padding:4px 0;">Total rango: ${totReproc} bloques de reproceso (calculados día por día)</div>`;
+    }
+    if(mi!==_prodHoyVer)return;
+    el.innerHTML=html;
+  }catch(e){console.error('cargarProduccionRango:',e);if(mi===_prodHoyVer)el.innerHTML='<div style="font-size:13px;color:var(--gris2);">Error al cargar el rango</div>';}
+}window.cargarProduccionRango=cargarProduccionRango;
+function limpiarProduccionRango(){
+  const a=document.getElementById('prod-rango-de');if(a)a.value='';
+  const b=document.getElementById('prod-rango-ha');if(b)b.value='';
+  const f=document.getElementById('produccion-fecha')?.value;
+  const lblProd=document.getElementById('admin-produccion-fecha-label');
+  if(lblProd)lblProd.textContent=(!f||f===hoy())?'':'📅 '+fmtFecha(f);
+  cargarProduccionHoy(f||undefined);
+}window.limpiarProduccionRango=limpiarProduccionRango;
+
 </script>
 </body>
 </html>
