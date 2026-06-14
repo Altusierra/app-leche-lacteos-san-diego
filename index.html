@@ -5850,6 +5850,20 @@ async function cargarProduccionRango(){
             lineasReproc.push(`<div style="font-size:12px;padding:3px 0;border-bottom:1px solid var(--gris1);color:#92400E;">🔄 ${fmtFechaCorta(f)} · Tanda #${t.numero} (${t.proveedorNombre}): ${det}</div>`);
           }
         });
+        // Req 2: resumen del día (filas gris + verde) debajo de las tandas de cada día en la vista de rango
+        const _promDia=blqRealesDia>0?((litrosDia/blqRealesDia)/5).toFixed(2):'—';
+        lineasTandas.push(`<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:6px;text-align:center;margin:6px 0;">
+          <div><div style="font-size:9px;color:var(--gris2);font-weight:600;">TANDAS</div><div style="font-size:18px;font-weight:800;">${tandas.length}</div></div>
+          <div><div style="font-size:8px;color:var(--gris2);font-weight:600;">LECHE PROC.</div><div style="font-size:18px;font-weight:800;">${fmtL(litrosDia)}</div></div>
+          <div><div style="font-size:9px;color:var(--gris2);font-weight:600;">BLOQUES</div><div style="font-size:18px;font-weight:800;">${bloquesDia}</div></div>
+          <div><div style="font-size:8px;color:#15803d;font-weight:600;">BLQ. REALES</div><div style="font-size:18px;font-weight:800;color:#15803d;">${blqRealesDia}</div></div>
+          <div><div style="font-size:9px;color:var(--gris2);font-weight:600;">PROMEDIO</div><div style="font-size:18px;font-weight:800;">${_promDia}</div></div>
+        </div>`);
+        lineasTandas.push(`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;margin-bottom:8px;background:#DCFCE7;border-radius:10px;padding:8px;">
+          <div><div style="font-size:9px;color:#15803d;font-weight:600;">CANASTAS</div><div style="font-size:20px;font-weight:800;color:#15803d;">${canDia}</div></div>
+          <div><div style="font-size:9px;color:#15803d;font-weight:600;">UNIDADES</div><div style="font-size:20px;font-weight:800;color:#15803d;">${uniDia}</div></div>
+          <div><div style="font-size:9px;color:#15803d;font-weight:600;">REPROC.</div><div style="font-size:20px;font-weight:800;color:#D97706;">${reprocDia}</div></div>
+        </div>`);
       }
     });
     const blqReales=totBloques-totReproc;
