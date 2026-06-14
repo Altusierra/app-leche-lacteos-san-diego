@@ -3006,7 +3006,7 @@ async function cargarProduccionHoy(fechaParam){
       const sInterP=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','==',fecha)));
       sInterP.forEach(d=>{lechePlatRecibidor+=parseFloat(d.data().litros)||0;});
       if(lechePlatRecibidor>0){
-        // Diferencia leche = leche procesada - leche recibidor
+        // Diferencia leche = leche procesada - leche recibidor (solo si hay datos del recibidor)
         const difLeche=totalLitros-lechePlatRecibidor;
         const difOk=Math.abs(difLeche)<1;
         html+=`<div style="background:${difOk?'#F3E8FF':'#FEF3C7'};padding:8px;border-radius:8px;font-size:12px;margin-top:6px;margin-bottom:6px;">
@@ -3014,9 +3014,12 @@ async function cargarProduccionHoy(fechaParam){
           <div style="color:${difOk?'#9333EA':'#92400E'};">Procesada: ${fmtL(totalLitros)}L · Recibidor: ${fmtL(lechePlatRecibidor)}L · <strong>Dif: ${difLeche>0?'+':''}${fmtL(difLeche)}L</strong></div>
           <div style="font-size:11px;margin-top:3px;color:${difOk?'#9333EA':difLeche>0?'#15803d':'#DC2626'};font-weight:600;">${difOk?'Las cuentas cuadran':difLeche>0?'✅ Se procesó más leche de la que reportó el recibidor':'🔴 Se procesó menos leche de la que llegó — revisar'}</div>
         </div>`;
-        // Comparación leche plataforma recibidor vs cuajador (si hay cierre)
-        if(cierre&&cierre.lechePlataforma){
-          const lechePlatCuajador=cierre.lechePlataforma;
+      }
+      // Leche plataforma: se muestra SIEMPRE (haya o no datos del recibidor / cierre)
+      {
+        const lechePlatCuajador=cierre?(parseFloat(cierre.lechePlataforma)||0):0;
+        const tieneRec=lechePlatRecibidor>0;const tieneCuaj=lechePlatCuajador>0;
+        if(tieneCuaj&&tieneRec){
           const diffPlat=lechePlatRecibidor-lechePlatCuajador;
           const coincide=Math.abs(diffPlat)<1;
           html+=`<div style="background:${coincide?'#DCFCE7':'#FEF3C7'};padding:8px;border-radius:8px;font-size:12px;margin-bottom:6px;">
@@ -3024,20 +3027,21 @@ async function cargarProduccionHoy(fechaParam){
             <div style="color:${coincide?'#15803d':'#92400E'};">Cuajador: ${fmtL(lechePlatCuajador)}L · Recibidor: ${fmtL(lechePlatRecibidor)}L${coincide?'':` · Dif: ${diffPlat>0?'+':''}${fmtL(diffPlat)}L`}</div>
           </div>`;
         } else {
-          // Día sin cerrar (o sin lectura del cuajador): mostrar el lado del recibidor; el cuajador queda pendiente
+          const cuajTxt=tieneCuaj?`${fmtL(lechePlatCuajador)}L`:'pendiente';
+          const recTxt=tieneRec?`${fmtL(lechePlatRecibidor)}L`:'pendiente';
           html+=`<div style="background:#FEF3C7;padding:8px;border-radius:8px;font-size:12px;margin-bottom:6px;">
             <div style="font-weight:700;color:#92400E;margin-bottom:4px;">⚠️ Leche plataforma</div>
-            <div style="color:#92400E;">Recibidor: ${fmtL(lechePlatRecibidor)}L · Cuajador: <em>pendiente (sin cerrar)</em></div>
+            <div style="color:#92400E;">Cuajador: <em>${cuajTxt}</em> · Recibidor: ${recTxt}</div>
           </div>`;
         }
-        // Mejora C: leche sobra para el siguiente día (se muestra siempre; si no está cerrado → 0L)
-        {
-          const _sobra=cierre?(parseFloat(cierre.lecheSobra)||0):0;
-          html+=`<div style="background:#EFF6FF;padding:8px;border-radius:8px;font-size:12px;margin-bottom:6px;">
-            <div style="font-weight:700;color:#1D4ED8;margin-bottom:2px;">🥛 Leche sobra para el siguiente día</div>
-            <div style="color:#1D4ED8;font-weight:800;font-size:14px;">${fmtL(_sobra)}L</div>
-          </div>`;
-        }
+      }
+      // Mejora C: leche sobra para el siguiente día (se muestra SIEMPRE; si no está cerrado → "pendiente")
+      {
+        const _sobraTxt=cierre?`${fmtL(parseFloat(cierre.lecheSobra)||0)}L`:'pendiente';
+        html+=`<div style="background:#EFF6FF;padding:8px;border-radius:8px;font-size:12px;margin-bottom:6px;">
+          <div style="font-weight:700;color:#1D4ED8;margin-bottom:2px;">🥛 Leche sobra para el siguiente día</div>
+          <div style="color:#1D4ED8;font-weight:800;font-size:14px;">${_sobraTxt}</div>
+        </div>`;
       }
     }catch(e){}
     if(cierre&&cierre.camposEditados&&cierre.camposEditados.length>0){html+=`<div style="background:#FEF3C7;padding:8px;border-radius:8px;font-size:12px;color:#92400E;margin-top:6px;">⚠️ Campos editados: ${cierre.camposEditados.join(', ')} — Motivo: "${cierre.motivoEdicion||'—'}"</div>`;}
