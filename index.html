@@ -5816,14 +5816,15 @@ async function cargarProduccionRango(){
       try{const cDoc=await getDoc(doc(db,'cierresDia',f));if(cDoc.exists())cierres[f]=cDoc.data();}catch(e){}
       if(mi!==_prodHoyVer)return;
     }
-    // Leche recibidor del rango (recepciones + intermediarios)
+    // Leche recibidor del rango (recepciones + intermediarios) — total y POR DÍA
     let lecheRecibidor=0;
+    const recibidorPorDia={};
     const sRecP=await getDocs(query(collection(db,'recepciones'),where('fecha','>=',de),where('fecha','<=',ha)));
     if(mi!==_prodHoyVer)return;
-    sRecP.forEach(d=>{lecheRecibidor+=parseFloat(d.data().litros)||0;});
+    sRecP.forEach(d=>{const x=d.data();const l=parseFloat(x.litros)||0;lecheRecibidor+=l;recibidorPorDia[x.fecha]=(recibidorPorDia[x.fecha]||0)+l;});
     const sIntP=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','>=',de),where('fecha','<=',ha)));
     if(mi!==_prodHoyVer)return;
-    sIntP.forEach(d=>{lecheRecibidor+=parseFloat(d.data().litros)||0;});
+    sIntP.forEach(d=>{const x=d.data();const l=parseFloat(x.litros)||0;lecheRecibidor+=l;recibidorPorDia[x.fecha]=(recibidorPorDia[x.fecha]||0)+l;});
     // Acumuladores (REGLA SAGRADA: reproceso se calcula POR DÍA y se suman los resultados)
     let totTandas=0,totLitros=0,totBloques=0,totReproc=0,totCanastas=0,totUnidades=0,lechePlatCuaj=0,diasConCierre=0,diasConActividad=0;
     const lineasDiasCerrados=[];const lineasTandas=[];const lineasReproc=[];const sobraPorDia=[];
@@ -5880,6 +5881,45 @@ async function cargarProduccionRango(){
           <div><div style="font-size:9px;color:#15803d;font-weight:600;">UNIDADES</div><div style="font-size:20px;font-weight:800;color:#15803d;">${uniDia}</div></div>
           <div><div style="font-size:9px;color:#15803d;font-weight:600;">REPROC.</div><div style="font-size:20px;font-weight:800;color:#D97706;">${reprocDia}</div></div>
         </div>`);
+        // Bloques de control por día (Diferencia leche, Leche plataforma, Leche sobra) — igual que en la vista de un día
+        const _recDia=recibidorPorDia[f]||0;
+        if(_recDia>0){
+          const _difD=litrosDia-_recDia;const _okD=Math.abs(_difD)<1;
+          lineasTandas.push(`<div style="background:${_okD?'#F3E8FF':'#FEF3C7'};padding:8px;border-radius:8px;font-size:12px;margin-bottom:6px;">
+            <div style="font-weight:700;color:${_okD?'#9333EA':'#92400E'};margin-bottom:4px;">${_okD?'✅':'📊'} Diferencia leche</div>
+            <div style="color:${_okD?'#9333EA':'#92400E'};">Procesada: ${fmtL(litrosDia)}L · Recibidor: ${fmtL(_recDia)}L · <strong>Dif: ${_difD>0?'+':''}${fmtL(_difD)}L</strong></div>
+            <div style="font-size:11px;margin-top:3px;color:${_okD?'#9333EA':_difD>0?'#15803d':'#DC2626'};font-weight:600;">${_okD?'Las cuentas cuadran':_difD>0?'✅ Se procesó más leche de la que reportó el recibidor':'🔴 Se procesó menos leche de la que llegó — revisar'}</div>
+          </div>`);
+        } else {
+          lineasTandas.push(`<div style="background:#FEF3C7;padding:8px;border-radius:8px;font-size:12px;margin-bottom:6px;">
+            <div style="font-weight:700;color:#92400E;margin-bottom:4px;">📊 Diferencia leche</div>
+            <div style="color:#92400E;">Procesada: ${fmtL(litrosDia)}L · Recibidor: <em>pendiente</em></div>
+          </div>`);
+        }
+        {
+          const _platCD=cierre?(parseFloat(cierre.lechePlataforma)||0):0;
+          const _tRec=_recDia>0;const _tCuaj=_platCD>0;
+          if(_tCuaj&&_tRec){
+            const _dP=_recDia-_platCD;const _coin=Math.abs(_dP)<1;
+            lineasTandas.push(`<div style="background:${_coin?'#DCFCE7':'#FEF3C7'};padding:8px;border-radius:8px;font-size:12px;margin-bottom:6px;">
+              <div style="font-weight:700;color:${_coin?'#15803d':'#92400E'};margin-bottom:4px;">${_coin?'✅':'⚠️'} Leche plataforma</div>
+              <div style="color:${_coin?'#15803d':'#92400E'};">Cuajador: ${fmtL(_platCD)}L · Recibidor: ${fmtL(_recDia)}L${_coin?'':` · Dif: ${_dP>0?'+':''}${fmtL(_dP)}L`}</div>
+            </div>`);
+          } else {
+            const _cT=_tCuaj?`${fmtL(_platCD)}L`:'pendiente';const _rT=_tRec?`${fmtL(_recDia)}L`:'pendiente';
+            lineasTandas.push(`<div style="background:#FEF3C7;padding:8px;border-radius:8px;font-size:12px;margin-bottom:6px;">
+              <div style="font-weight:700;color:#92400E;margin-bottom:4px;">⚠️ Leche plataforma</div>
+              <div style="color:#92400E;">Cuajador: <em>${_cT}</em> · Recibidor: ${_rT}</div>
+            </div>`);
+          }
+        }
+        {
+          const _sobraTxtD=cierre?`${fmtL(parseFloat(cierre.lecheSobra)||0)}L`:'pendiente';
+          lineasTandas.push(`<div style="background:#EFF6FF;padding:8px;border-radius:8px;font-size:12px;margin-bottom:6px;">
+            <div style="font-weight:700;color:#1D4ED8;margin-bottom:2px;">🥛 Leche sobra para el siguiente día</div>
+            <div style="color:#1D4ED8;font-weight:800;font-size:14px;">${_sobraTxtD}</div>
+          </div>`);
+        }
       }
     });
     const blqReales=totBloques-totReproc;
