@@ -3005,14 +3005,20 @@ async function cargarProduccionHoy(fechaParam){
       let lechePlatRecibidor=0;sRecP.forEach(d=>{lechePlatRecibidor+=parseFloat(d.data().litros)||0;});
       const sInterP=await getDocs(query(collection(db,'recepcionesInter'),where('fecha','==',fecha)));
       sInterP.forEach(d=>{lechePlatRecibidor+=parseFloat(d.data().litros)||0;});
+      // Diferencia leche: se muestra SIEMPRE (si no hay datos del recibidor → "pendiente", sin diferencia)
       if(lechePlatRecibidor>0){
-        // Diferencia leche = leche procesada - leche recibidor (solo si hay datos del recibidor)
         const difLeche=totalLitros-lechePlatRecibidor;
         const difOk=Math.abs(difLeche)<1;
         html+=`<div style="background:${difOk?'#F3E8FF':'#FEF3C7'};padding:8px;border-radius:8px;font-size:12px;margin-top:6px;margin-bottom:6px;">
           <div style="font-weight:700;color:${difOk?'#9333EA':'#92400E'};margin-bottom:4px;">${difOk?'✅':'📊'} Diferencia leche</div>
           <div style="color:${difOk?'#9333EA':'#92400E'};">Procesada: ${fmtL(totalLitros)}L · Recibidor: ${fmtL(lechePlatRecibidor)}L · <strong>Dif: ${difLeche>0?'+':''}${fmtL(difLeche)}L</strong></div>
           <div style="font-size:11px;margin-top:3px;color:${difOk?'#9333EA':difLeche>0?'#15803d':'#DC2626'};font-weight:600;">${difOk?'Las cuentas cuadran':difLeche>0?'✅ Se procesó más leche de la que reportó el recibidor':'🔴 Se procesó menos leche de la que llegó — revisar'}</div>
+        </div>`;
+      } else {
+        // Sin datos del recibidor (p. ej. día pasado sin recepciones): mostrar procesada y recibidor pendiente, sin diferencia
+        html+=`<div style="background:#FEF3C7;padding:8px;border-radius:8px;font-size:12px;margin-top:6px;margin-bottom:6px;">
+          <div style="font-weight:700;color:#92400E;margin-bottom:4px;">📊 Diferencia leche</div>
+          <div style="color:#92400E;">Procesada: ${fmtL(totalLitros)}L · Recibidor: <em>pendiente</em></div>
         </div>`;
       }
       // Leche plataforma: se muestra SIEMPRE (haya o no datos del recibidor / cierre)
