@@ -3023,10 +3023,16 @@ async function cargarProduccionHoy(fechaParam){
             <div style="font-weight:700;color:${coincide?'#15803d':'#92400E'};margin-bottom:4px;">${coincide?'✅':'⚠️'} Leche plataforma</div>
             <div style="color:${coincide?'#15803d':'#92400E'};">Cuajador: ${fmtL(lechePlatCuajador)}L · Recibidor: ${fmtL(lechePlatRecibidor)}L${coincide?'':` · Dif: ${diffPlat>0?'+':''}${fmtL(diffPlat)}L`}</div>
           </div>`;
+        } else {
+          // Día sin cerrar (o sin lectura del cuajador): mostrar el lado del recibidor; el cuajador queda pendiente
+          html+=`<div style="background:#FEF3C7;padding:8px;border-radius:8px;font-size:12px;margin-bottom:6px;">
+            <div style="font-weight:700;color:#92400E;margin-bottom:4px;">⚠️ Leche plataforma</div>
+            <div style="color:#92400E;">Recibidor: ${fmtL(lechePlatRecibidor)}L · Cuajador: <em>pendiente (sin cerrar)</em></div>
+          </div>`;
         }
-        // Mejora C: leche sobra para el siguiente día (siempre que haya cierre, aunque sea 0)
-        if(cierre){
-          const _sobra=parseFloat(cierre.lecheSobra)||0;
+        // Mejora C: leche sobra para el siguiente día (se muestra siempre; si no está cerrado → 0L)
+        {
+          const _sobra=cierre?(parseFloat(cierre.lecheSobra)||0):0;
           html+=`<div style="background:#EFF6FF;padding:8px;border-radius:8px;font-size:12px;margin-bottom:6px;">
             <div style="font-weight:700;color:#1D4ED8;margin-bottom:2px;">🥛 Leche sobra para el siguiente día</div>
             <div style="color:#1D4ED8;font-weight:800;font-size:14px;">${fmtL(_sobra)}L</div>
