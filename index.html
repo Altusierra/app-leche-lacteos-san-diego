@@ -146,7 +146,7 @@
 .tarjetas-dias-scroll{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;}
 .tarjetas-dias-scroll>div{flex:0 0 auto;}
     /* ══ ADELANTOS Y ABONOS (FAB ADMIN) — AGREGADO ══ */
-    .adv-fab{position:fixed;z-index:240;display:flex;align-items:center;gap:8px;background:var(--verde);color:#fff;border:none;border-radius:30px;padding:13px 18px;font-size:15px;font-weight:800;box-shadow:0 6px 20px rgba(0,0,0,0.30);cursor:pointer;opacity:0.8;white-space:nowrap;touch-action:none;user-select:none;-webkit-user-select:none;transition:opacity .25s ease,transform .25s ease;}
+    .adv-fab{position:fixed;z-index:240;display:flex;align-items:center;justify-content:center;width:56px;height:56px;background:var(--verde);color:#fff;border:none;border-radius:50%;box-shadow:0 6px 20px rgba(0,0,0,0.30);cursor:pointer;opacity:0.8;touch-action:none;user-select:none;-webkit-user-select:none;transition:opacity .25s ease,transform .25s ease;}
     .adv-fab .adv-fab-ico{font-size:22px;line-height:1;}
     .adv-fab.pressed{opacity:1;}
     .adv-fab.min{opacity:0.12;transform:scale(0.62);}
@@ -804,6 +804,7 @@
   <div style="padding:20px;">
     <div class="card">
       <div class="card-titulo" style="color:#1D4ED8;">⛽ Combustible</div>
+      <button class="btn" style="width:100%;background:#1D4ED8;color:white;font-size:15px;padding:14px;margin-bottom:12px;" onclick="abrirCombAdmin()">⛽ Meter combustible</button>
       <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap;">
         <label style="font-size:13px;font-weight:600;">Desde</label><input type="date" id="costos-desde" style="padding:6px 10px;border:1.5px solid var(--gris1);border-radius:8px;font-size:13px;">
         <label style="font-size:13px;font-weight:600;">Hasta</label><input type="date" id="costos-hasta" style="padding:6px 10px;border:1.5px solid var(--gris1);border-radius:8px;font-size:13px;">
@@ -1057,6 +1058,22 @@
     <div class="fila" style="margin-top:8px;">
       <button class="btn btn-gris" onclick="cerrarModal('modal-combustible')">Cancelar</button>
       <button class="btn" style="background:#1D4ED8;color:white;" onclick="guardarCombustible()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ METER COMBUSTIBLE (ADMIN, desde Costos) — AGREGADO ══ -->
+<div class="modal-overlay" id="modal-comb-admin">
+  <div class="modal">
+    <div class="modal-titulo">⛽ Meter Combustible</div>
+    <div class="alerta alerta-rojo" id="m-cadmin-error"></div>
+    <div class="campo"><label>¿Para quién? *</label><select id="m-cadmin-persona" style="width:100%;padding:16px;font-size:16px;border:2px solid #d1d5db;border-radius:12px;background:white;"></select></div>
+    <div class="campo"><label>Fecha *</label><input type="date" id="m-cadmin-fecha"></div>
+    <div class="campo"><label>Valor pagado ($) *</label><input type="text" id="m-cadmin-valor" placeholder="Ej: 50.000" inputmode="numeric" oninput="formatearValorComb(this)"></div>
+    <div class="campo"><label>Galones *</label><input type="number" id="m-cadmin-galones" placeholder="Ej: 25.3" step="0.1" inputmode="decimal"></div>
+    <div class="fila" style="margin-top:8px;">
+      <button class="btn btn-gris" onclick="cerrarModal('modal-comb-admin')">Cancelar</button>
+      <button class="btn" style="background:#1D4ED8;color:white;" onclick="guardarCombAdmin()">Guardar</button>
     </div>
   </div>
 </div>
@@ -4421,8 +4438,8 @@ async function cargarSeccionCostos(){
   // Tabla combustible
   if(combFilt.length===0){document.getElementById('costos-tabla').innerHTML='<div style="font-size:13px;color:var(--gris2);text-align:center;padding:12px;">Sin registros de combustible</div>';}
   else{
-    let tH='<table class="tabla"><thead><tr><th>Fecha</th><th>Hora</th><th>Recogedor</th><th>Valor</th><th>Galones</th></tr></thead><tbody>';
-    combFilt.sort((a,b)=>b.fecha>a.fecha?1:b.fecha<a.fecha?-1:b.hora>a.hora?1:-1).forEach(c=>{tH+=`<tr><td>${c.fecha}</td><td>${c.hora}</td><td>${c.recogedorNombre}</td><td>${fmtPeso(c.valor)}</td><td>${c.galones}</td></tr>`;});
+    let tH='<table class="tabla"><thead><tr><th>Fecha</th><th>Hora</th><th>Recogedor</th><th>Valor</th><th>Galones</th><th></th></tr></thead><tbody>';
+    combFilt.sort((a,b)=>b.fecha>a.fecha?1:b.fecha<a.fecha?-1:b.hora>a.hora?1:-1).forEach(c=>{tH+=`<tr><td>${c.fecha}</td><td>${c.hora}</td><td>${c.recogedorNombre}</td><td>${fmtPeso(c.valor)}</td><td>${c.galones}</td><td style="text-align:center;"><button onclick="borrarCombustibleAdmin('${c.id}')" style="background:#FEE2E2;color:var(--rojo);border:none;border-radius:8px;padding:4px 8px;font-size:13px;cursor:pointer;" aria-label="Borrar combustible">🗑️</button></td></tr>`;});
     tH+='</tbody></table>';
     document.getElementById('costos-tabla').innerHTML=tH;
   }
@@ -6276,6 +6293,67 @@ async function advBorrarMov(coleccion,id,tipoLabel,monto){
 }
 window.advBorrarMov=advBorrarMov;
 
+// ── METER COMBUSTIBLE DESDE COSTOS (ADMIN) — recogedor o persona de nómina, atado a ID único ──
+let _combAdminPersonas=[];
+async function abrirCombAdmin(){
+  const err=document.getElementById('m-cadmin-error');err.textContent='';err.classList.remove('show');
+  document.getElementById('m-cadmin-valor').value='';
+  document.getElementById('m-cadmin-galones').value='';
+  const fIn=document.getElementById('m-cadmin-fecha');fIn.value=hoy();fIn.max=hoy();
+  const sel=document.getElementById('m-cadmin-persona');sel.innerHTML='<option value="">Cargando...</option>';
+  document.getElementById('modal-comb-admin').classList.add('show');
+  try{
+    _combAdminPersonas=[];
+    const snapU=await getDocs(query(collection(db,'usuarios'),orderBy('nombre')));
+    snapU.forEach(d=>{const x=d.data();if(x.rol!=='admin')_combAdminPersonas.push({id:d.id,nombre:x.nombre||x.email||'(sin nombre)',rol:x.rol||'',tipo:'usuario'});});
+    try{const snapC=await getDocs(collection(db,'colaboradoresNomina'));snapC.forEach(d=>{const x=d.data();if(x.activo!==false)_combAdminPersonas.push({id:d.id,nombre:x.nombre||'(sin nombre)',rol:x.rol||'',tipo:'colaborador'});});}catch(e){}
+    const ordRol={recogedor:0,recibidor:1,cuajador:2};
+    _combAdminPersonas.sort((a,b)=>(ordRol[a.rol]??98)-(ordRol[b.rol]??98)||a.nombre.localeCompare(b.nombre,'es'));
+    if(_combAdminPersonas.length===0){sel.innerHTML='<option value="">No hay personas</option>';return;}
+    sel.innerHTML='<option value="">— Elige una persona —</option>'+_combAdminPersonas.map((p,i)=>`<option value="${i}">${p.nombre}${p.rol?' ('+p.rol+')':''}${p.tipo==='colaborador'?' · solo nómina':''}</option>`).join('');
+  }catch(e){console.error(e);sel.innerHTML='<option value="">Error al cargar</option>';}
+}
+window.abrirCombAdmin=abrirCombAdmin;
+
+async function guardarCombAdmin(){
+  if(!navigator.onLine){alerta('m-cadmin-error','Sin conexión a internet','rojo');return;}
+  const idx=document.getElementById('m-cadmin-persona').value;
+  if(idx===''){alerta('m-cadmin-error','Elige para quién es el combustible','rojo');return;}
+  const persona=_combAdminPersonas[parseInt(idx)];
+  if(!persona){alerta('m-cadmin-error','Persona no válida','rojo');return;}
+  const fecha=document.getElementById('m-cadmin-fecha').value;
+  if(!fecha){alerta('m-cadmin-error','Elige la fecha','rojo');return;}
+  const valor=parseFloat((document.getElementById('m-cadmin-valor').value||'').replace(/\./g,'').replace(/,/g,''))||0;
+  if(valor<=0){alerta('m-cadmin-error','Escribe el valor pagado','rojo');return;}
+  const galones=parseFloat(document.getElementById('m-cadmin-galones').value)||0;
+  if(galones<=0){alerta('m-cadmin-error','Escribe los galones','rojo');return;}
+  try{
+    await addDoc(collection(db,'combustible'),{recogedorId:persona.id,recogedorNombre:persona.nombre,personaTipo:persona.tipo,personaRol:persona.rol,fecha,hora:horaAhora(),valor,galones,registradoPorAdmin:true,registradoPorId:UA.uid,registradoPorNombre:UA.nombre||UA.email,timestamp:serverTimestamp()});
+    cerrarModal('modal-comb-admin');
+    await modalAlert('✅ Combustible guardado para '+persona.nombre);
+    const d=document.getElementById('costos-desde')?.value,h=document.getElementById('costos-hasta')?.value;
+    if(typeof cargarSeccionCostos==='function'&&d&&h)cargarSeccionCostos();
+  }catch(e){console.error(e);alerta('m-cadmin-error','Error al guardar','rojo');}
+}
+window.guardarCombAdmin=guardarCombAdmin;
+
+async function borrarCombustibleAdmin(id){
+  if(!navigator.onLine){await modalAlert('Sin conexión a internet');return;}
+  const motivo=await modalPrompt('¿Por qué borras este combustible?','');
+  if(motivo===null)return;
+  if(!motivo.trim()){await modalAlert('Debes escribir un motivo');return;}
+  try{
+    const snap=await getDoc(doc(db,'combustible',id));
+    if(!snap.exists()){await modalAlert('Ese registro ya no existe');return;}
+    const c=snap.data();
+    await addDoc(collection(db,'eliminaciones'),{tipo:'combustible',registroId:id,proveedorId:c.recogedorId||'',proveedorNombre:c.recogedorNombre||'',valor:c.valor||0,galones:c.galones||0,fecha:c.fecha||'',hora:c.hora||'',motivo:motivo.trim(),eliminadoEn:hoy(),eliminadoHora:horaAhora(),eliminadoPorId:UA.uid,eliminadoPorNombre:UA.nombre||UA.email,eliminadoPorRol:'admin',timestamp:serverTimestamp()});
+    await deleteDoc(doc(db,'combustible',id));
+    const d=document.getElementById('costos-desde')?.value,h=document.getElementById('costos-hasta')?.value;
+    if(typeof cargarSeccionCostos==='function'&&d&&h)cargarSeccionCostos();
+  }catch(e){console.error(e);await modalAlert('Error al borrar');}
+}
+window.borrarCombustibleAdmin=borrarCombustibleAdmin;
+
 // ── Botón flotante: solo admin, en todas sus pantallas; se esconde al hacer scroll y se puede arrastrar ──
 (function advFabInit(){
   const fab=document.getElementById('adv-fab');
@@ -6337,7 +6415,7 @@ window.advBorrarMov=advBorrarMov;
 </script>
 <!-- ══ ADELANTOS Y ABONOS (FAB ADMIN) — AGREGADO ══ -->
 <button class="adv-fab" id="adv-fab" style="display:none;" aria-label="Adelantos y abonos">
-  <span class="adv-fab-ico">💵</span><span class="adv-fab-txt">Adelantos</span>
+  <span class="adv-fab-ico">💵</span>
 </button>
 <div class="adv-screen" id="adv-screen">
   <div class="adv-top">
