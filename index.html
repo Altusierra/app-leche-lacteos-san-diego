@@ -397,6 +397,7 @@
   </div>
   <div style="padding:20px;">
     <div id="cierre-alertas" style="margin-bottom:12px;"></div>
+    <div id="cc-calculados-box" style="display:none;">
     <div style="font-weight:700;font-size:14px;color:var(--verde);margin-bottom:8px;">CALCULADOS</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px;">
       <div><label style="font-size:12px;font-weight:600;">Leche procesada</label><input type="number" id="cc-lecheProc" readonly style="width:100%;padding:10px;border:1.5px solid var(--verde3);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;background:var(--crema);"></div>
@@ -414,6 +415,7 @@
       <div><label style="font-size:12px;font-weight:600;">Dif. leche (auto)</label><input type="number" id="cc-difLeche" readonly style="width:100%;padding:10px;border:1.5px solid #9333EA;border-radius:10px;font-size:14px;font-weight:700;color:#9333EA;box-sizing:border-box;margin-top:4px;background:#F3E8FF;"></div>
       <input type="hidden" id="cc-lecheRecibidor">
     </div>
+    </div><!-- /cc-calculados-box -->
     <div style="font-weight:700;font-size:14px;color:var(--verde);margin-bottom:8px;margin-top:16px;">RESUMEN DEL DÍA</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
       <div><label style="font-size:12px;font-weight:600;">Leche plataforma</label><input type="number" id="cc-lechePlat" style="width:100%;padding:10px;border:1.5px solid var(--gris1);border-radius:10px;font-size:14px;box-sizing:border-box;margin-top:4px;"></div>
@@ -564,6 +566,7 @@
   <div class="header"><div><div class="sub">🐄 Lácteos San Diego</div><h1 id="admin-nombre-header">Admin</h1><div id="admin-rol-header" style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.7);margin-top:-4px;text-transform:uppercase;letter-spacing:1px;"></div></div><button class="btn-salir" onclick="cerrarSesion()">Salir</button></div>
   <div style="padding:20px;">
     <div id="admin-fecha" style="font-size:15px;color:var(--gris2);margin-bottom:16px;"></div>
+    <div id="admin-alertas-subida" style="margin-bottom:12px;"></div>
     <div class="card" id="resumen-comparativo-card" style="background:linear-gradient(135deg,#fef3c7,#fef9e7);border:2px solid #fde68a;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
         <div style="display:flex;align-items:center;gap:6px;"><div class="card-titulo" style="margin:0;color:#92400E;">📊 Resumen del día</div><button class="ayuda-btn" onclick="mostrarAyuda('📊 Resumen del día','Los números más importantes del día. Toca el botón naranja para comparar contra ayer: 🟢 verde = mejoró, 🔴 rojo = empeoró, ⚠️ = cayó 20% o más. Si eliges Desde y Hasta, ves una columna por cada día (desliza con el dedo) y cada día se compara con el anterior. Abajo puedes elegir 2 días para compararlos cara a cara con análisis de plata.')">?</button></div>
@@ -1427,7 +1430,7 @@ function renderGan(lista,regHoy={}){
     const reg=regHoy[g.id];
     const estado=reg!==undefined?`✅ ${fmtL(reg)}L`:'';
     const color='#15803d';
-    return`<div class="lista-item" data-ganid="${g.id}"><div><div class="nombre">${g.nombre}${reg!==undefined?` <span style="color:${color};font-size:13px;font-weight:700;">${estado}</span>`:''}</div><div class="detalle">${g.telefono||'Sin teléfono'}</div></div><span class="flecha">›</span></div>`;
+    return`<div class="lista-item" data-ganid="${g.id}"><div><div class="nombre">${g.nombre}${reg!==undefined?` <span style="color:${color};font-size:13px;font-weight:700;">${estado}</span>`:''}</div><div class="detalle">${g.vereda||'Sin vereda'}</div></div><span class="flecha">›</span></div>`;
   }).join('');
   c.querySelectorAll('[data-ganid]').forEach(function(el){
     el.addEventListener('click',function(){selGan(this.getAttribute('data-ganid'));});
@@ -1882,13 +1885,19 @@ async function cargarTandasHoy(){
   const fecha=getFechaRegCuajador();
   const el=document.getElementById('cuajador-lista-tandas');if(!el)return;
   try{
+    let _diaCerrado=false;
+    try{const _c=await getDoc(doc(db,'cierresDia',fecha));_diaCerrado=_c.exists();}catch(e){}
     const snap=await getDocs(query(collection(db,'tandas'),where('fecha','==',fecha)));
     const tandas=[];snap.forEach(d=>{const da=d.data();if(da.cuajadorId===UA.uid)tandas.push({id:d.id,...da});});
     tandas.sort((a,b)=>(a.numero||0)-(b.numero||0));
     if(tandas.length===0){el.innerHTML='<div class="vacio"><div class="ico">🧀</div><p>Sin tandas registradas</p></div>';return;}
     el.innerHTML=tandas.map(t=>{
       const nov=t.novedad?'⚠️ ':'';const rep=t.reproceso?'🔄 ':'';
-      return`<div class="lista-item" style="position:relative;flex-direction:column;align-items:stretch;" onclick="editarTanda('${t.id}')"><div style="display:flex;justify-content:space-between;align-items:center;"><div><div class="nombre">#${t.numero} · ${t.proveedorNombre}</div><div class="detalle">${rep}${nov}${fmtL(t.litros)}L · ${(t.bloques2500||0)+(t.bloques1000||0)+(t.bloques500||0)} bloques · ${t.hora||''}</div></div><span class="flecha">›</span></div><button onclick="event.stopPropagation();eliminarTanda('${t.id}')" style="background:var(--rojo2);color:var(--rojo);border:1px solid var(--rojo);border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;width:100%;text-align:center;margin-top:8px;">🗑️ Eliminar esta tanda</button></div>`;
+      const _click=_diaCerrado?'':` onclick="editarTanda('${t.id}')"`;
+      const _btnElim=_diaCerrado
+        ?`<button disabled style="background:var(--gris1);color:var(--gris2);border:1px solid var(--gris1);border-radius:8px;padding:10px;font-size:13px;font-weight:700;width:100%;text-align:center;margin-top:8px;cursor:not-allowed;">🔒 Día cerrado</button>`
+        :`<button onclick="event.stopPropagation();eliminarTanda('${t.id}')" style="background:var(--rojo2);color:var(--rojo);border:1px solid var(--rojo);border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;width:100%;text-align:center;margin-top:8px;">🗑️ Eliminar esta tanda</button>`;
+      return`<div class="lista-item" style="position:relative;flex-direction:column;align-items:stretch;"${_click}><div style="display:flex;justify-content:space-between;align-items:center;"><div><div class="nombre">#${t.numero} · ${t.proveedorNombre}</div><div class="detalle">${t.hora||''}</div></div><span class="flecha">${_diaCerrado?'🔒':'›'}</span></div>${_btnElim}</div>`;
     }).join('');
   }catch(e){console.error(e);el.innerHTML='<div class="vacio"><p>Error al cargar</p></div>';}
 }
@@ -1898,6 +1907,7 @@ async function eliminarTanda(tandaId){
     const tandaDoc=await getDoc(doc(db,'tandas',tandaId));
     if(!tandaDoc.exists()){await modalAlert('Tanda no encontrada');return;}
     const data=tandaDoc.data();
+    try{const _c=await getDoc(doc(db,'cierresDia',data.fecha||''));if(_c.exists()){await modalAlert('🔒 El día ya está cerrado. Ya no se puede eliminar esta tanda.');return;}}catch(e){}
     const motivo=await modalPrompt(`¿Por qué eliminas la tanda #${data.numero} (${data.proveedorNombre})?\n\nEscribe el motivo:`);
     if(!motivo||!motivo.trim())return;
     await addDoc(collection(db,'eliminaciones'),{tipo:'tanda',registroId:tandaId,proveedorId:data.proveedorId||'',proveedorNombre:data.proveedorNombre||'',litros:data.litros||0,hora:data.hora||'',fecha:data.fecha||'',cuajadorId:UA.uid,cuajadorNombre:UA.nombre||UA.email,motivo:motivo.trim(),eliminadoEn:hoy(),eliminadoHora:horaAhora(),eliminadoPorId:UA.uid,eliminadoPorNombre:UA.nombre||UA.email,eliminadoPorRol:'cuajador'});
@@ -2058,6 +2068,7 @@ async function editarTanda(tandaId){
   try{
     const d=await getDoc(doc(db,'tandas',tandaId));if(!d.exists())return;
     const t=d.data();
+    try{const _c=await getDoc(doc(db,'cierresDia',t.fecha||''));if(_c.exists()){await modalAlert('🔒 El día ya está cerrado. Ya no se puede abrir esta tanda.');return;}}catch(e){}
     _cuajadorEditandoId=tandaId;_cuajadorProvId=t.proveedorId;_cuajadorProvNombre=t.proveedorNombre;_cuajadorProvTipo=t.proveedorTipo;
     _cuajadorProvsSeleccionados=t.proveedores||[{id:t.proveedorId,nombre:t.proveedorNombre,tipo:t.proveedorTipo}];
     document.getElementById('cuajador-tanda-header').textContent=`Tanda #${t.numero}`;
@@ -2296,7 +2307,48 @@ async function initAdmin(){
   const inpNov=document.getElementById('novedades-fecha');if(inpNov)inpNov.value=hoy();
   cargarNovedadesDashboard(hoy());
   cargarResumenComparativo();
+  cargarAlertasSinSubir();
 }
+// ── ALERTAS DASHBOARD: quién venía activo y AYER no subió datos — AGREGADO ──
+// Regla: activo = subió algo en los 3 días antes de ayer. Si su último dato es más
+// viejo que eso, ya no se alerta (se asume que no está trabajando). Bloqueados no cuentan.
+async function cargarAlertasSinSubir(){
+  const el=document.getElementById('admin-alertas-subida');if(!el)return;
+  try{
+    const fmt=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const base=new Date();
+    const dAyer=new Date(base);dAyer.setDate(base.getDate()-1);const ayer=fmt(dAyer);
+    const dIni=new Date(base);dIni.setDate(base.getDate()-4);const iniVentana=fmt(dIni);
+    const [snapU,snapRec,snapRep,snapRepI,snapTan,cierreAyerDoc]=await Promise.all([
+      getDocs(collection(db,'usuarios')),
+      getDocs(query(collection(db,'recolecciones'),where('fecha','>=',iniVentana),where('fecha','<=',ayer))),
+      getDocs(query(collection(db,'recepciones'),where('fecha','>=',iniVentana),where('fecha','<=',ayer))),
+      getDocs(query(collection(db,'recepcionesInter'),where('fecha','>=',iniVentana),where('fecha','<=',ayer))),
+      getDocs(query(collection(db,'tandas'),where('fecha','>=',iniVentana),where('fecha','<=',ayer))),
+      getDoc(doc(db,'cierresDia',ayer))
+    ]);
+    const act={rec:{},reci:{},cuaj:{}};
+    const marcar=(m,id,fecha)=>{if(!id)return;if(!m[id])m[id]={ayer:false,antes:false};if(fecha===ayer)m[id].ayer=true;else m[id].antes=true;};
+    snapRec.forEach(d=>{const x=d.data();marcar(act.rec,x.recogedorId,x.fecha);});
+    snapRep.forEach(d=>{const x=d.data();marcar(act.reci,x.recibidorId,x.fecha);});
+    snapRepI.forEach(d=>{const x=d.data();marcar(act.reci,x.recibidorId,x.fecha);});
+    let tandasAyer=false;
+    snapTan.forEach(d=>{const x=d.data();marcar(act.cuaj,x.cuajadorId,x.fecha);if(x.fecha===ayer)tandasAyer=true;});
+    const alertas=[];
+    snapU.forEach(d=>{
+      const u=d.data();if(u.bloqueado)return;
+      const nombre=u.nombre||u.email||'(sin nombre)';
+      if(u.rol==='recogedor'){const a=act.rec[d.id];if(a&&a.antes&&!a.ayer)alertas.push(`🚛 ${nombre} (recogedor) no subió recolecciones ayer`);}
+      else if(u.rol==='recibidor'){const a=act.reci[d.id];if(a&&a.antes&&!a.ayer)alertas.push(`🏭 ${nombre} (recibidor) no registró recepciones ayer`);}
+      else if(u.rol==='cuajador'){const a=act.cuaj[d.id];if(a&&a.antes&&!a.ayer)alertas.push(`🧀 ${nombre} (cuajador) no registró tandas ayer`);}
+    });
+    const cierreAyer=cierreAyerDoc.exists();
+    if(tandasAyer&&!cierreAyer)alertas.push('📋 Ayer no se cerró el día en planta');
+    if(cierreAyer&&!tandasAyer)alertas.push('📋 Ayer se cerró el día SIN tandas registradas');
+    el.innerHTML=alertas.length===0?'':alertas.map(t=>`<div style="background:#FEE2E2;border:2px solid #DC2626;border-radius:10px;padding:12px;margin-bottom:8px;font-size:14px;color:#DC2626;font-weight:700;">⚠️ ${t}</div>`).join('');
+  }catch(e){console.error('alertasSinSubir:',e);el.innerHTML='';}
+}
+
 function renderRecibidoresInfo(filtroId,esCombinada,hijosUids){
   if(!_recepcionesPlanta||_recepcionesPlanta.length===0)return '';
   let registros=[];
@@ -6135,10 +6187,24 @@ function limpiarFiltroNovedades(){
 //  Aparte de la liquidación. Colecciones: 'adelantos' y 'abonosGanadero'.
 //  Saldo del ganadero = suma adelantos − suma abonos.
 // ══════════════════════════════════════════
-let _advGans=[],_advAdel={},_advAbo={},_advSel=null;
+let _advGans=[],_advInters=[],_advNomina=[],_advSel=null,_advTipo='ganadero';
+let _advAdel={ganadero:{},intermediario:{},nomina:{}},_advAbo={ganadero:{},intermediario:{},nomina:{}};
+const ADV_TIPOS={
+  ganadero:{singular:'ganadero',plural:'ganaderos',nadie:'Ningún ganadero debe adelantos',placeholder:'Buscar ganadero...'},
+  intermediario:{singular:'intermediario',plural:'intermediarios',nadie:'Ningún intermediario debe adelantos',placeholder:'Buscar intermediario...'},
+  nomina:{singular:'persona de nómina',plural:'personas de nómina',nadie:'Nadie de nómina debe adelantos',placeholder:'Buscar en nómina...'}
+};
+function advListaActual(){return _advTipo==='intermediario'?_advInters:_advTipo==='nomina'?_advNomina:_advGans;}
+function advSetTipo(t,recargar){
+  _advTipo=t;
+  document.querySelectorAll('.adv-tab').forEach(b=>{const on=b.dataset.tipo===t;b.style.background=on?'var(--verde)':'white';b.style.color=on?'white':'var(--verde)';});
+  const inp=document.getElementById('adv-buscar-input');if(inp){inp.value='';inp.placeholder=ADV_TIPOS[t].placeholder;}
+  if(recargar!==false)advFiltrar();
+}
+window.advSetTipo=advSetTipo;
 
-function advSaldo(gid){return (_advAdel[gid]||0)-(_advAbo[gid]||0);}
-function advTuvoMov(gid){return (_advAdel[gid]||0)>0||(_advAbo[gid]||0)>0;}
+function advSaldo(gid){return ((_advAdel[_advTipo]||{})[gid]||0)-((_advAbo[_advTipo]||{})[gid]||0);}
+function advTuvoMov(gid){return ((_advAdel[_advTipo]||{})[gid]||0)>0||((_advAbo[_advTipo]||{})[gid]||0)>0;}
 function advEstado(gid){
   const s=advSaldo(gid);
   if(s>0.5)return{clase:'badge-rojo',txt:'DEBE '+fmtPeso(s),orden:0};
@@ -6149,6 +6215,7 @@ function advEstado(gid){
 async function advAbrir(){
   document.getElementById('adv-screen').classList.add('show');
   document.getElementById('adv-buscar-input').value='';
+  advSetTipo('ganadero',false);
   await advCargar();
 }
 function advCerrar(){document.getElementById('adv-screen').classList.remove('show');}
@@ -6158,32 +6225,42 @@ async function advCargar(){
   const cont=document.getElementById('adv-lista');
   cont.innerHTML='<div style="text-align:center;color:var(--gris2);padding:30px;">Cargando...</div>';
   try{
-    const [sg,sa,sb]=await Promise.all([
+    const [sg,si,su,sc,sa,sb]=await Promise.all([
       getDocs(query(collection(db,'ganaderos'),orderBy('nombre'))),
+      getDocs(collection(db,'intermediarios')),
+      getDocs(query(collection(db,'usuarios'),orderBy('nombre'))),
+      getDocs(collection(db,'colaboradoresNomina')).catch(()=>null),
       getDocs(collection(db,'adelantos')),
       getDocs(collection(db,'abonosGanadero'))
     ]);
     _advGans=[];sg.forEach(d=>_advGans.push({id:d.id,...d.data()}));
-    _advAdel={};sa.forEach(d=>{const x=d.data();_advAdel[x.ganaderoId]=(_advAdel[x.ganaderoId]||0)+(parseFloat(x.monto)||0);});
-    _advAbo={};sb.forEach(d=>{const x=d.data();_advAbo[x.ganaderoId]=(_advAbo[x.ganaderoId]||0)+(parseFloat(x.monto)||0);});
+    _advInters=[];si.forEach(d=>_advInters.push({id:d.id,...d.data()}));
+    _advInters.sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es'));
+    _advNomina=[];su.forEach(d=>{const x=d.data();if(x.rol!=='admin')_advNomina.push({id:d.id,nombre:x.nombre||x.email||'(sin nombre)',rol:x.rol||'',activo:!x.bloqueado});});
+    if(sc)sc.forEach(d=>{const x=d.data();if(x.activo!==false)_advNomina.push({id:d.id,nombre:x.nombre||'(sin nombre)',rol:x.rol||'',activo:true});});
+    _advNomina.sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es'));
+    _advAdel={ganadero:{},intermediario:{},nomina:{}};
+    sa.forEach(d=>{const x=d.data();const tp=x.personaTipo||'ganadero';if(!_advAdel[tp])_advAdel[tp]={};_advAdel[tp][x.ganaderoId]=(_advAdel[tp][x.ganaderoId]||0)+(parseFloat(x.monto)||0);});
+    _advAbo={ganadero:{},intermediario:{},nomina:{}};
+    sb.forEach(d=>{const x=d.data();const tp=x.personaTipo||'ganadero';if(!_advAbo[tp])_advAbo[tp]={};_advAbo[tp][x.ganaderoId]=(_advAbo[tp][x.ganaderoId]||0)+(parseFloat(x.monto)||0);});
     advFiltrar();
   }catch(e){console.error(e);cont.innerHTML='<div style="text-align:center;color:var(--rojo);padding:30px;">Error al cargar. Revisa tu internet.</div>';}
 }
 
 function advFiltrar(){
   const t=(document.getElementById('adv-buscar-input').value||'').trim();
-  let lista=_advGans.filter(g=>matchInicio(g.nombre,t));
+  let lista=advListaActual().filter(g=>matchInicio(g.nombre,t));
   lista.sort((a,b)=>{const ea=advEstado(a.id),eb=advEstado(b.id);if(ea.orden!==eb.orden)return ea.orden-eb.orden;if(ea.orden===0)return advSaldo(b.id)-advSaldo(a.id);return a.nombre.localeCompare(b.nombre,'es');});
-  const deben=_advGans.filter(g=>advSaldo(g.id)>0.5);
+  const deben=advListaActual().filter(g=>advSaldo(g.id)>0.5);
   const totalDeuda=deben.reduce((s,g)=>s+advSaldo(g.id),0);
   document.getElementById('adv-resumen').innerHTML=deben.length>0
-    ?`<div style="background:var(--rojo2);border:2px solid var(--rojo);border-radius:12px;padding:12px;margin-bottom:14px;"><div style="font-size:13px;color:var(--rojo);font-weight:800;">🔴 ${deben.length} ganadero${deben.length>1?'s deben':' debe'} ${fmtPeso(totalDeuda)}</div></div>`
-    :`<div style="background:var(--verde3);border-radius:12px;padding:12px;margin-bottom:14px;"><div style="font-size:13px;color:var(--verde);font-weight:800;">✅ Nadie debe adelantos</div></div>`;
+    ?`<div style="background:var(--rojo2);border:2px solid var(--rojo);border-radius:12px;padding:12px;margin-bottom:14px;"><div style="font-size:13px;color:var(--rojo);font-weight:800;">🔴 ${deben.length} ${deben.length>1?ADV_TIPOS[_advTipo].plural+' deben':ADV_TIPOS[_advTipo].singular+' debe'} ${fmtPeso(totalDeuda)}</div></div>`
+    :`<div style="background:var(--verde3);border-radius:12px;padding:12px;margin-bottom:14px;"><div style="font-size:13px;color:var(--verde);font-weight:800;">✅ ${ADV_TIPOS[_advTipo].nadie}</div></div>`;
   const cont=document.getElementById('adv-lista');
   if(lista.length===0){cont.innerHTML='<div style="text-align:center;color:var(--gris2);padding:30px;">Sin resultados</div>';return;}
   cont.innerHTML=lista.map(g=>{
     const e=advEstado(g.id);
-    const sub=g.vereda?('📍 '+g.vereda):(g.telefono?('📞 '+g.telefono):'');
+    const sub=_advTipo==='nomina'?(g.rol?('👤 '+g.rol):''):(g.vereda?('📍 '+g.vereda):(g.telefono?('📞 '+g.telefono):''));
     return `<div class="adv-item" onclick="advVer('${g.id}')">
       <div style="min-width:0;"><div style="font-weight:700;font-size:16px;">${g.nombre}${g.activo===false?' <span class="badge badge-gris" style="font-size:10px;">Inactivo</span>':''}</div>${sub?`<div style="font-size:12px;color:var(--gris2);margin-top:2px;">${sub}</div>`:''}</div>
       <span class="badge ${e.clase}" style="font-size:13px;white-space:nowrap;">${e.txt}</span>
@@ -6193,7 +6270,7 @@ function advFiltrar(){
 window.advFiltrar=advFiltrar;
 
 async function advVer(gid){
-  _advSel=_advGans.find(g=>g.id===gid);if(!_advSel)return;
+  _advSel=advListaActual().find(g=>g.id===gid);if(!_advSel)return;
   document.getElementById('adv-det-overlay').classList.add('show');
   await advRenderDet();
 }
@@ -6211,9 +6288,9 @@ async function advRenderDet(){
       getDocs(query(collection(db,'abonosGanadero'),where('ganaderoId','==',g.id)))
     ]);
     let movs=[],tot=0,totAbo=0;
-    sa.forEach(d=>{const x=d.data();const m=parseFloat(x.monto)||0;movs.push({id:d.id,tipo:'adelanto',monto:m,fecha:x.fecha||'',hora:x.hora||'',quien:x.registradoPorNombre||''});tot+=m;});
-    sb.forEach(d=>{const x=d.data();const m=parseFloat(x.monto)||0;movs.push({id:d.id,tipo:'abono',monto:m,fecha:x.fecha||'',hora:x.hora||'',quien:x.registradoPorNombre||''});totAbo+=m;});
-    _advAdel[g.id]=tot;_advAbo[g.id]=totAbo;
+    sa.forEach(d=>{const x=d.data();if((x.personaTipo||'ganadero')!==_advTipo)return;const m=parseFloat(x.monto)||0;movs.push({id:d.id,tipo:'adelanto',monto:m,fecha:x.fecha||'',hora:x.hora||'',quien:x.registradoPorNombre||'',nota:x.nota||''});tot+=m;});
+    sb.forEach(d=>{const x=d.data();if((x.personaTipo||'ganadero')!==_advTipo)return;const m=parseFloat(x.monto)||0;movs.push({id:d.id,tipo:'abono',monto:m,fecha:x.fecha||'',hora:x.hora||'',quien:x.registradoPorNombre||'',nota:x.nota||''});totAbo+=m;});
+    _advAdel[_advTipo][g.id]=tot;_advAbo[_advTipo][g.id]=totAbo;
     const saldo=tot-totAbo;
     movs.sort((a,b)=>(b.fecha+(b.hora||'')).localeCompare(a.fecha+(a.hora||'')));
     const deudaBox=saldo>0.5
@@ -6224,7 +6301,7 @@ async function advRenderDet(){
     const histHtml=movs.length===0
       ?'<div style="text-align:center;color:var(--gris2);padding:18px;font-size:13px;">Sin movimientos todavía</div>'
       :movs.map(m=>{const esAd=m.tipo==='adelanto';const col=esAd?'var(--rojo)':'var(--verde)';return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--gris1);gap:8px;">
-          <div style="min-width:0;"><div style="font-weight:700;font-size:14px;color:${col};">${esAd?'➕ Adelanto':'✅ Abono'}</div><div style="font-size:11px;color:var(--gris2);">${m.fecha}${m.hora?' · '+m.hora:''}${m.quien?' · '+m.quien:''}</div></div>
+          <div style="min-width:0;"><div style="font-weight:700;font-size:14px;color:${col};">${esAd?'➕ Adelanto':'✅ Abono'}</div><div style="font-size:11px;color:var(--gris2);">${m.fecha}${m.hora?' · '+m.hora:''}${m.quien?' · '+m.quien:''}</div>${m.nota?`<div style="font-size:11px;color:var(--gris3);margin-top:2px;">📝 ${m.nota}</div>`:''}</div>
           <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;"><div style="font-weight:800;font-size:15px;color:${col};">${esAd?'+':'−'}${fmtPeso(m.monto)}</div><button onclick="advBorrarMov('${esAd?'adelantos':'abonosGanadero'}','${m.id}','${esAd?'adelanto':'abono ganadero'}',${m.monto})" style="background:var(--rojo2);color:var(--rojo);border:none;width:32px;height:32px;border-radius:8px;font-size:15px;cursor:pointer;flex-shrink:0;" aria-label="Borrar movimiento">🗑️</button></div>
         </div>`;}).join('');
     cont.innerHTML=`
@@ -6232,7 +6309,7 @@ async function advRenderDet(){
         <div style="font-size:22px;font-weight:900;">${g.nombre}</div>
         <button onclick="advCerrarDet()" style="background:var(--gris1);border:none;font-size:18px;width:36px;height:36px;border-radius:10px;cursor:pointer;">✕</button>
       </div>
-      <div style="font-size:12px;color:var(--gris2);">${g.vereda?'📍 '+g.vereda:''}${g.telefono?(g.vereda?' · ':'')+'📞 '+g.telefono:''}</div>
+      <div style="font-size:12px;color:var(--gris2);">${_advTipo==='nomina'?(g.rol?'👤 '+g.rol:''):`${g.vereda?'📍 '+g.vereda:''}${g.telefono?(g.vereda?' · ':'')+'📞 '+g.telefono:''}`}</div>
       ${deudaBox}
       <div style="display:flex;gap:10px;margin-bottom:18px;">
         <button onclick="advDarAdelanto()" style="flex:1;background:var(--verde);color:#fff;border:none;border-radius:14px;padding:16px 8px;font-size:15px;font-weight:800;cursor:pointer;line-height:1.2;">➕ DAR<br>ADELANTO</button>
@@ -6250,10 +6327,14 @@ async function advDarAdelanto(){
   if(raw===null)return;
   const monto=parseFloat(raw)||0;
   if(monto<=0){await modalAlert('Escribe un monto válido');return;}
+  let nota='';
+  if(_advTipo==='intermediario'){const nRaw=await modalPrompt('📝 Nota del adelanto (opcional). Puedes dejarla vacía:','');if(nRaw===null)return;nota=nRaw.trim();}
   const ok=await modalConfirm('¿Dar '+fmtPeso(monto)+' de adelanto a '+_advSel.nombre+'?');
   if(!ok)return;
   try{
-    await addDoc(collection(db,'adelantos'),{ganaderoId:_advSel.id,ganaderoNombre:_advSel.nombre,monto,fecha:hoy(),hora:horaAhora(),registradoPor:UA.uid,registradoPorNombre:UA.nombre||UA.email,timestamp:serverTimestamp()});
+    const docAdel={ganaderoId:_advSel.id,ganaderoNombre:_advSel.nombre,personaTipo:_advTipo,monto,fecha:hoy(),hora:horaAhora(),registradoPor:UA.uid,registradoPorNombre:UA.nombre||UA.email,timestamp:serverTimestamp()};
+    if(nota)docAdel.nota=nota;
+    await addDoc(collection(db,'adelantos'),docAdel);
     await advRenderDet();
   }catch(e){console.error(e);await modalAlert('Error al guardar el adelanto');}
 }
@@ -6270,10 +6351,14 @@ async function advRegistrarAbono(){
   if(raw===null)return;
   const monto=parseFloat(raw)||0;
   if(monto<=0){await modalAlert('Escribe un monto válido');return;}
+  let nota='';
+  if(_advTipo==='intermediario'){const nRaw=await modalPrompt('📝 Nota del abono (opcional). Puedes dejarla vacía:','');if(nRaw===null)return;nota=nRaw.trim();}
   const ok=await modalConfirm('¿Registrar abono de '+fmtPeso(monto)+' de '+_advSel.nombre+'?');
   if(!ok)return;
   try{
-    await addDoc(collection(db,'abonosGanadero'),{ganaderoId:_advSel.id,ganaderoNombre:_advSel.nombre,monto,fecha:hoy(),hora:horaAhora(),registradoPor:UA.uid,registradoPorNombre:UA.nombre||UA.email,timestamp:serverTimestamp()});
+    const docAbo={ganaderoId:_advSel.id,ganaderoNombre:_advSel.nombre,personaTipo:_advTipo,monto,fecha:hoy(),hora:horaAhora(),registradoPor:UA.uid,registradoPorNombre:UA.nombre||UA.email,timestamp:serverTimestamp()};
+    if(nota)docAbo.nota=nota;
+    await addDoc(collection(db,'abonosGanadero'),docAbo);
     await advRenderDet();
   }catch(e){console.error(e);await modalAlert('Error al guardar el abono');}
 }
@@ -6286,7 +6371,7 @@ async function advBorrarMov(coleccion,id,tipoLabel,monto){
   if(motivo===null)return;
   if(!motivo.trim()){await modalAlert('Debes escribir un motivo');return;}
   try{
-    await addDoc(collection(db,'eliminaciones'),{tipo:tipoLabel,registroId:id,ganaderoId:_advSel.id,ganaderoNombre:_advSel.nombre,valor:monto,motivo:motivo.trim(),eliminadoEn:hoy(),eliminadoHora:horaAhora(),eliminadoPorId:UA.uid,eliminadoPorNombre:UA.nombre||UA.email,eliminadoPorRol:'admin',timestamp:serverTimestamp()});
+    await addDoc(collection(db,'eliminaciones'),{tipo:tipoLabel,registroId:id,ganaderoId:_advSel.id,ganaderoNombre:_advSel.nombre,valor:monto,personaTipo:_advTipo,motivo:motivo.trim(),eliminadoEn:hoy(),eliminadoHora:horaAhora(),eliminadoPorId:UA.uid,eliminadoPorNombre:UA.nombre||UA.email,eliminadoPorRol:'admin',timestamp:serverTimestamp()});
     await deleteDoc(doc(db,coleccion,id));
     await advRenderDet();
   }catch(e){console.error(e);await modalAlert('Error al borrar');}
@@ -6419,10 +6504,15 @@ window.borrarCombustibleAdmin=borrarCombustibleAdmin;
 </button>
 <div class="adv-screen" id="adv-screen">
   <div class="adv-top">
-    <div><div style="font-size:18px;font-weight:800;">💵 Adelantos y Abonos</div><div style="font-size:12px;opacity:.85;">Busca un ganadero</div></div>
+    <div><div style="font-size:18px;font-weight:800;">💵 Adelantos y Abonos</div><div style="font-size:12px;opacity:.85;">Elige a quién: ganaderos, intermediarios o nómina</div></div>
     <button onclick="advCerrar()" style="background:rgba(255,255,255,.2);border:none;color:#fff;font-size:18px;width:38px;height:38px;border-radius:10px;cursor:pointer;">✕</button>
   </div>
   <div class="adv-cuerpo">
+    <div style="display:flex;gap:6px;margin-bottom:12px;">
+      <button type="button" class="adv-tab" data-tipo="ganadero" onclick="advSetTipo('ganadero')" style="flex:1;border:2px solid var(--verde);border-radius:10px;padding:10px 4px;font-size:12px;font-weight:800;cursor:pointer;background:var(--verde);color:white;">🐄 Ganaderos</button>
+      <button type="button" class="adv-tab" data-tipo="intermediario" onclick="advSetTipo('intermediario')" style="flex:1;border:2px solid var(--verde);border-radius:10px;padding:10px 4px;font-size:12px;font-weight:800;cursor:pointer;background:white;color:var(--verde);">🚛 Intermediarios</button>
+      <button type="button" class="adv-tab" data-tipo="nomina" onclick="advSetTipo('nomina')" style="flex:1;border:2px solid var(--verde);border-radius:10px;padding:10px 4px;font-size:12px;font-weight:800;cursor:pointer;background:white;color:var(--verde);">💰 Nómina</button>
+    </div>
     <div class="buscador"><span class="ico">🔍</span><input type="text" id="adv-buscar-input" placeholder="Buscar ganadero..." oninput="advFiltrar()"></div>
     <div id="adv-resumen"></div>
     <div id="adv-lista"><div style="text-align:center;color:var(--gris2);padding:30px;">Cargando...</div></div>
