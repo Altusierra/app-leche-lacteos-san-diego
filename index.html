@@ -190,7 +190,8 @@
       <button class="btn btn-amarillo" style="font-size:17px;padding:20px;" onclick="abrirModalNuevoGanaderoRec()">🐄 NUEVO GANADERO</button>
     </div>
     <button class="btn" style="width:100%;font-size:17px;padding:18px;margin-bottom:16px;background:#1D4ED8;color:white;border:none;border-radius:14px;font-weight:700;cursor:pointer;" onclick="abrirModalCombustible()">⛽ REGISTRAR COMBUSTIBLE</button>
-    <div style="margin-bottom:12px;font-size:16px;font-weight:700;color:var(--gris3);">Mis registros de hoy</div>
+    <div id="rec-pendientes-box"></div>
+    <div style="margin-bottom:12px;font-size:16px;font-weight:700;color:var(--gris3);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">Mis registros de hoy <span id="rec-contador-verde" style="background:var(--verde3);color:var(--verde);border-radius:999px;padding:4px 10px;font-size:13px;font-weight:800;">✅ Ya recogiste: 0</span></div>
     <div id="rec-lista-hoy"><div class="loading">Cargando...</div></div>
   </div>
 </div>
@@ -1369,6 +1370,54 @@ function cambiarFechaRecogedor(){
   const regInp=document.getElementById('reg-fecha');if(regInp)regInp.value=fechaReg;
   cargarGanaderos();resumenRec();
 }window.cambiarFechaRecogedor=cambiarFechaRecogedor;
+// ── "TE FALTA RECOGER" (recogedor) — AGREGADO ──
+// Un ganadero sale en la caja SOLO si: (1) este recogedor lo recogió en los últimos 3 días,
+// (2) él fue el ÚLTIMO en recogerlo (si otro lo recogió después, ya lo lleva otro), y
+// (3) HOY todavía NADIE lo ha recogido (ni él ni otro). Se quita solo al registrarlo hoy.
+async function cargarPendientesRec(){
+  const box=document.getElementById('rec-pendientes-box');if(!box)return;
+  try{
+    if(getFechaReg()!==hoy()){box.innerHTML='';return;}
+    const fmt=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const b=new Date();const dIni=new Date(b);dIni.setDate(b.getDate()-3);
+    const hoyStr=hoy(),iniStr=fmt(dIni);
+    const snap=await getDocs(query(collection(db,'recolecciones'),where('fecha','>=',iniStr),where('fecha','<=',hoyStr)));
+    const gan={};
+    snap.forEach(d=>{const x=d.data();const id=x.ganaderoId;if(!id)return;
+      if(!gan[id])gan[id]={nombre:x.ganaderoNombre||'',recogidoHoy:false,ultFecha:'',ultHora:'',ultRecogedor:''};
+      const g=gan[id];
+      if(x.fecha===hoyStr){g.recogidoHoy=true;return;}
+      const clave=(x.fecha||'')+' '+(x.hora||'');
+      if(clave>(g.ultFecha+' '+g.ultHora)){g.ultFecha=x.fecha||'';g.ultHora=x.hora||'';g.ultRecogedor=x.recogedorId||'';if(x.ganaderoNombre)g.nombre=x.ganaderoNombre;}
+    });
+    const miBase=Object.values(gan).filter(g=>g.ultRecogedor===UA.uid);
+    const pend=miBase.filter(g=>!g.recogidoHoy).sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
+    const total=miBase.length,hechos=total-pend.length;
+    if(total===0){box.innerHTML='';return;}
+    const pct=Math.round(hechos*100/total);
+    const barra=`<div style="background:rgba(255,255,255,.7);border-radius:999px;height:14px;overflow:hidden;margin:10px 0 4px;"><div style="background:var(--verde);height:100%;width:${pct}%;border-radius:999px;transition:width .3s;"></div></div><div style="font-size:12px;font-weight:700;text-align:center;">Ya vas ${hechos} de ${total}</div>`;
+    if(pend.length===0){
+      box.innerHTML=`<div style="background:var(--verde3);border:2px solid var(--verde);border-radius:14px;padding:14px;margin-bottom:16px;text-align:center;">
+        <div style="font-size:26px;">🎉</div>
+        <div style="font-size:17px;font-weight:900;color:var(--verde);">¡LISTO! Recogiste todos tus ganaderos</div>
+        <div style="font-size:12px;color:var(--verde);margin-top:2px;">No te falta ninguno por hoy</div>
+        <div style="color:var(--verde);">${barra}</div>
+      </div>`;
+      return;
+    }
+    box.innerHTML=`<div style="background:var(--rojo2);border:2px solid var(--rojo);border-radius:14px;padding:14px;margin-bottom:16px;">
+      <div style="text-align:center;">
+        <div style="font-size:14px;font-weight:900;color:var(--rojo);letter-spacing:.5px;">🔴 TE FALTA RECOGER</div>
+        <div style="font-size:44px;font-weight:900;color:var(--rojo);line-height:1;">${pend.length}</div>
+        <div style="font-size:13px;font-weight:700;color:var(--rojo);">${pend.length===1?'ganadero':'ganaderos'}</div>
+      </div>
+      <div style="color:var(--rojo);">${barra}</div>
+      <div style="text-align:center;margin-top:8px;">${pend.map(g=>`<span style="display:inline-block;background:white;border:1.5px solid var(--rojo);color:var(--rojo);border-radius:999px;padding:6px 12px;margin:3px;font-weight:700;font-size:13px;">${g.nombre}</span>`).join('')}</div>
+      <div style="font-size:11px;color:var(--rojo);text-align:center;margin-top:8px;">Los recogiste hace poco y HOY nadie los ha recogido.<br>Registra sus litros y se quitan solos ✅</div>
+    </div>`;
+  }catch(e){console.error('pendientesRec:',e);box.innerHTML='';}
+}
+
 async function resumenRec(){
   try{
     const fechaHoy=getFechaReg();
@@ -1377,6 +1426,8 @@ async function resumenRec(){
     s.forEach(d=>{const da=d.data();L+=parseFloat(da.litros)||0;it.push(da);});
     document.getElementById('rec-litros-hoy').textContent=fmtL(L);
     document.getElementById('rec-registros-hoy').textContent=it.length;
+    const contVerde=document.getElementById('rec-contador-verde');if(contVerde)contVerde.textContent='✅ Ya recogiste: '+it.length;
+    cargarPendientesRec();
     const listaEl=document.getElementById('rec-lista-hoy');
     let htmlReg='';
     if(it.length===0){htmlReg='<div class="vacio"><div class="ico">🐄</div><p>Sin registros hoy</p></div>';}
