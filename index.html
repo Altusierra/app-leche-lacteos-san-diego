@@ -357,6 +357,7 @@
     <h1 style="font-size:20px;" id="cuajador-tanda-header">Tanda #1</h1><div></div>
   </div>
   <div style="padding:20px;">
+    <div id="ct-aviso-historico" style="display:none;background:var(--amarillo2);border:2px solid var(--amarillo);border-radius:12px;padding:12px 14px;margin-bottom:14px;"><div style="font-size:14px;font-weight:800;color:var(--amarillo);">🔓 Día cerrado — editando en modo histórico</div><div id="ct-aviso-historico-txt" style="font-size:12px;color:var(--gris3);margin-top:4px;"></div></div>
     <div id="cuajador-prov-nombre" style="font-size:16px;font-weight:700;color:var(--verde);margin-bottom:16px;"></div>
     <div id="ct-lote-auto" style="background:var(--verde3);border:2px solid var(--verde);border-radius:12px;padding:12px;margin-bottom:16px;text-align:center;"><span style="font-size:13px;color:var(--verde);font-weight:700;">LOTE DEL DÍA:</span> <span id="ct-lote-num" style="font-size:22px;font-weight:800;color:var(--verde);">#1</span></div>
     <div style="margin-bottom:12px;"><label style="font-size:13px;font-weight:600;">Litros</label><input type="number" id="ct-litros" placeholder="800" style="width:100%;padding:12px;border:1.5px solid var(--gris1);border-radius:10px;font-size:18px;font-weight:700;box-sizing:border-box;margin-top:4px;"></div>
@@ -1892,11 +1893,64 @@ let _cuajadorSensorial=null,_cuajadorEmpacado=null;
 let _cuajadorCamposEditados=new Set();
 let _cuajadorAutoCalc={};
 let _cuajadorProvsList=[];
+let _cuajadorModoHistorico=false;
+let _cuajadorEditandoDiaCerrado=false;
 
 function getFechaRegCuajador(){
   const inp=document.getElementById('cuajador-fecha-input');
   return(inp&&inp.value)?inp.value:hoy();
 }
+
+// ── Modo histórico cuajador: edición de días cerrados ──
+async function esDiaCerradoCuajador(fecha){
+  if(!fecha)return false;
+  try{const _c=await getDoc(doc(db,'cierresDia',fecha));return _c.exists();}catch(e){return false;}
+}
+
+function mostrarAvisoDiaCerrado(activo,fecha){
+  _cuajadorEditandoDiaCerrado=!!activo;
+  const el=document.getElementById('ct-aviso-historico');if(!el)return;
+  el.style.display=activo?'block':'none';
+  const txt=document.getElementById('ct-aviso-historico-txt');
+  if(txt)txt.textContent=activo?`El día ${fecha||''} ya está cerrado. Al guardar, los totales del cierre se recalculan automáticamente.`:'';
+}
+
+// Recalcula SOLO los campos automáticos de cierresDia/{fecha} a partir de las tandas.
+// Los campos manuales (cuarto frío, sobras, saldos, ventas, leche plataforma) NO se tocan.
+async function recalcularCierreDia(fecha){
+  if(!fecha)return false;
+  try{
+    const cRef=doc(db,'cierresDia',fecha);
+    const cDoc=await getDoc(cRef);
+    if(!cDoc.exists())return false;
+    const c=cDoc.data();
+    const snap=await getDocs(query(collection(db,'tandas'),where('fecha','==',fecha)));
+    const tandas=[];snap.forEach(d=>{const da=d.data();if(da.cuajadorId===UA.uid)tandas.push({id:d.id,...da});});
+    // MISMAS fórmulas que abrirCierreDia (no cambiar)
+    const lecheProc=tandas.reduce((s,t)=>s+(parseFloat(t.litros)||0),0);
+    const totalBloques=tandas.reduce((s,t)=>s+(parseInt(t.bloques2500)||0)+(parseInt(t.bloques1000)||0)+(parseInt(t.bloques500)||0),0);
+    const totalReprocBloquesDir=tandas.reduce((s,t)=>{if(!t.reproceso)return s;const tipo=t.reprocTipo||'bloques';if(tipo==='bloques'||tipo==='ambos')return s+(parseInt(t.reprocBloques)||0);return s;},0);
+    const totalReprocLitros=tandas.reduce((s,t)=>{if(!t.reproceso)return s;const tipo=t.reprocTipo||'bloques';if(tipo==='litros'||tipo==='ambos')return s+(parseFloat(t.reprocLitros)||0);return s;},0);
+    const reprocDia=totalReprocBloquesDir+Math.floor(totalReprocLitros/3);
+    const bloquesReales=totalBloques-reprocDia;
+    // MISMA fórmula que calcularBloquesReales (no cambiar) — los manuales salen del cierre guardado
+    const canastasFC=parseInt(c.canastasFC)||0;
+    const unidadesFC=parseInt(c.unidadesFC)||0;
+    let ventasBlq2500=0;
+    if(Array.isArray(c.ventasPlanta))c.ventasPlanta.forEach(v=>{if(v&&v.tamano==='2500g')ventasBlq2500+=parseInt(v.unidades)||0;});
+    const bloquesParaCanastas=bloquesReales-ventasBlq2500;
+    const canastasProduccion=Math.floor(bloquesParaCanastas/16);
+    const unidadesProduccion=bloquesParaCanastas-(canastasProduccion*16);
+    let canastasReales=canastasProduccion+canastasFC;
+    let unidadesReales=unidadesProduccion+unidadesFC;
+    if(unidadesReales>=16){canastasReales+=Math.floor(unidadesReales/16);unidadesReales=unidadesReales%16;}
+    const lecheRecibidor=parseFloat(c.lecheRecibidor)||0;
+    const diferenciaLeche=lecheRecibidor>0?(lecheProc-lecheRecibidor):0;
+    await updateDoc(cRef,{lecheProc,totalBloques,reprocDia,bloquesReales,canastasReales,unidadesReales,diferenciaLeche,
+      recalculadoEn:hoy(),recalculadoHora:horaAhora(),recalculadoPorId:UA.uid,recalculadoPorNombre:UA.nombre||UA.email,recalculadoTimestamp:serverTimestamp()});
+    return true;
+  }catch(e){console.error('recalcularCierreDia:',e);return false;}
+}window.recalcularCierreDia=recalcularCierreDia;
 
 async function initCuajador(){
   document.getElementById('cuajador-nombre-header').textContent=UA.nombre||'Cuajador';
@@ -1906,10 +1960,11 @@ async function initCuajador(){
   try{
     const uDoc=await getDoc(doc(db,'usuarios',UA.uid));
     if(uDoc.exists()&&uDoc.data().modoHistorico){
+      _cuajadorModoHistorico=true;
       document.getElementById('cuajador-fecha-selector').style.display='block';
       document.getElementById('cuajador-fecha-input').value=hoy();
-    }else{document.getElementById('cuajador-fecha-selector').style.display='none';}
-  }catch(e){}
+    }else{_cuajadorModoHistorico=false;document.getElementById('cuajador-fecha-selector').style.display='none';}
+  }catch(e){_cuajadorModoHistorico=false;}
   ir('screen-cuajador-home');
   cargarResumenCuajadorSemanal();
   cargarTandasHoy();
@@ -1938,17 +1993,25 @@ async function cargarTandasHoy(){
   try{
     let _diaCerrado=false;
     try{const _c=await getDoc(doc(db,'cierresDia',fecha));_diaCerrado=_c.exists();}catch(e){}
+    const _histActivo=_diaCerrado&&_cuajadorModoHistorico;
+    const _puedeEditar=!_diaCerrado||_cuajadorModoHistorico;
+    const _avisoHist=_histActivo
+      ?`<div style="background:var(--amarillo2);border:2px solid var(--amarillo);border-radius:12px;padding:12px 14px;margin-bottom:12px;"><div style="font-size:14px;font-weight:800;color:var(--amarillo);">🔓 Día cerrado — editando en modo histórico</div><div style="font-size:12px;color:var(--gris3);margin-top:4px;">Estás modificando un día ya cerrado. Los totales del cierre se recalculan solos al guardar.</div></div>`
+      :'';
     const snap=await getDocs(query(collection(db,'tandas'),where('fecha','==',fecha)));
     const tandas=[];snap.forEach(d=>{const da=d.data();if(da.cuajadorId===UA.uid)tandas.push({id:d.id,...da});});
     tandas.sort((a,b)=>(a.numero||0)-(b.numero||0));
-    if(tandas.length===0){el.innerHTML='<div class="vacio"><div class="ico">🧀</div><p>Sin tandas registradas</p></div>';return;}
-    el.innerHTML=tandas.map(t=>{
+    if(tandas.length===0){el.innerHTML=_avisoHist+'<div class="vacio"><div class="ico">🧀</div><p>Sin tandas registradas</p></div>';return;}
+    el.innerHTML=_avisoHist+tandas.map(t=>{
       const nov=t.novedad?'⚠️ ':'';const rep=t.reproceso?'🔄 ':'';
-      const _click=_diaCerrado?'':` onclick="editarTanda('${t.id}')"`;
-      const _btnElim=_diaCerrado
-        ?`<button disabled style="background:var(--gris1);color:var(--gris2);border:1px solid var(--gris1);border-radius:8px;padding:10px;font-size:13px;font-weight:700;width:100%;text-align:center;margin-top:8px;cursor:not-allowed;">🔒 Día cerrado</button>`
-        :`<button onclick="event.stopPropagation();eliminarTanda('${t.id}')" style="background:var(--rojo2);color:var(--rojo);border:1px solid var(--rojo);border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;width:100%;text-align:center;margin-top:8px;">🗑️ Eliminar esta tanda</button>`;
-      return`<div class="lista-item" style="position:relative;flex-direction:column;align-items:stretch;"${_click}><div style="display:flex;justify-content:space-between;align-items:center;"><div><div class="nombre">#${t.numero} · ${t.proveedorNombre}</div><div class="detalle">${t.hora||''}</div></div><span class="flecha">${_diaCerrado?'🔒':'›'}</span></div>${_btnElim}</div>`;
+      const _click=_puedeEditar?` onclick="editarTanda('${t.id}')"`:'';
+      const _btnElim=_puedeEditar
+        ?`<button onclick="event.stopPropagation();eliminarTanda('${t.id}')" style="background:var(--rojo2);color:var(--rojo);border:1px solid var(--rojo);border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;width:100%;text-align:center;margin-top:8px;">🗑️ Eliminar esta tanda</button>`
+        :`<button disabled style="background:var(--gris1);color:var(--gris2);border:1px solid var(--gris1);border-radius:8px;padding:10px;font-size:13px;font-weight:700;width:100%;text-align:center;margin-top:8px;cursor:not-allowed;">🔒 Día cerrado</button>`;
+      const _borde=_histActivo?'border-left:5px solid var(--amarillo);':'';
+      const _chip=_histActivo?`<div style="font-size:10px;font-weight:800;color:var(--amarillo);letter-spacing:0.5px;margin-top:2px;">🔓 DÍA CERRADO · MODO HISTÓRICO</div>`:'';
+      const _flecha=_histActivo?'🔓':(_diaCerrado?'🔒':'›');
+      return`<div class="lista-item" style="position:relative;flex-direction:column;align-items:stretch;${_borde}"${_click}><div style="display:flex;justify-content:space-between;align-items:center;"><div><div class="nombre">#${t.numero} · ${t.proveedorNombre}</div><div class="detalle">${t.hora||''}</div>${_chip}</div><span class="flecha">${_flecha}</span></div>${_btnElim}</div>`;
     }).join('');
   }catch(e){console.error(e);el.innerHTML='<div class="vacio"><p>Error al cargar</p></div>';}
 }
@@ -1958,11 +2021,15 @@ async function eliminarTanda(tandaId){
     const tandaDoc=await getDoc(doc(db,'tandas',tandaId));
     if(!tandaDoc.exists()){await modalAlert('Tanda no encontrada');return;}
     const data=tandaDoc.data();
-    try{const _c=await getDoc(doc(db,'cierresDia',data.fecha||''));if(_c.exists()){await modalAlert('🔒 El día ya está cerrado. Ya no se puede eliminar esta tanda.');return;}}catch(e){}
+    let _diaCerrado=false;
+    try{const _c=await getDoc(doc(db,'cierresDia',data.fecha||''));_diaCerrado=_c.exists();}catch(e){}
+    if(_diaCerrado&&!_cuajadorModoHistorico){await modalAlert('🔒 El día ya está cerrado. Ya no se puede eliminar esta tanda.');return;}
+    if(_diaCerrado){const _ok=await modalConfirm(`🔓 MODO HISTÓRICO\n\nEl día ${data.fecha||''} ya está cerrado.\n\nSi eliminas la tanda #${data.numero}, los totales del cierre se recalculan automáticamente.\n\n¿Continuar?`);if(!_ok)return;}
     const motivo=await modalPrompt(`¿Por qué eliminas la tanda #${data.numero} (${data.proveedorNombre})?\n\nEscribe el motivo:`);
     if(!motivo||!motivo.trim())return;
     await addDoc(collection(db,'eliminaciones'),{tipo:'tanda',registroId:tandaId,proveedorId:data.proveedorId||'',proveedorNombre:data.proveedorNombre||'',litros:data.litros||0,hora:data.hora||'',fecha:data.fecha||'',cuajadorId:UA.uid,cuajadorNombre:UA.nombre||UA.email,motivo:motivo.trim(),eliminadoEn:hoy(),eliminadoHora:horaAhora(),eliminadoPorId:UA.uid,eliminadoPorNombre:UA.nombre||UA.email,eliminadoPorRol:'cuajador'});
     await deleteDoc(doc(db,'tandas',tandaId));
+    if(_diaCerrado)await recalcularCierreDia(data.fecha||'');
     cargarTandasHoy();cargarResumenCuajadorSemanal();
   }catch(e){console.error(e);await modalAlert('Error al eliminar');}
 }window.eliminarTanda=eliminarTanda;
@@ -2018,6 +2085,7 @@ async function continuarATanda(){
   if(_cuajadorProvsSeleccionados.length===0)return;
   _cuajadorEditandoId=null;_cuajadorReproceso=false;
   const fecha=getFechaRegCuajador();
+  mostrarAvisoDiaCerrado(await esDiaCerradoCuajador(fecha),fecha);
   const snap=await getDocs(query(collection(db,'tandas'),where('fecha','==',fecha)));
   let num=0;snap.forEach(d=>{if(d.data().cuajadorId===UA.uid)num++;});
   document.getElementById('cuajador-tanda-header').textContent=`Tanda #${num+1}`;
@@ -2045,6 +2113,7 @@ async function selProveedorCuajador(id,nombre,tipo){
   _cuajadorEditandoId=null;_cuajadorReproceso=false;
   // Count existing tandas for this date to assign number
   const fecha=getFechaRegCuajador();
+  mostrarAvisoDiaCerrado(await esDiaCerradoCuajador(fecha),fecha);
   const snap=await getDocs(query(collection(db,'tandas'),where('fecha','==',fecha)));
   let num=0;snap.forEach(d=>{if(d.data().cuajadorId===UA.uid)num++;});
   document.getElementById('cuajador-tanda-header').textContent=`Tanda #${num+1}`;
@@ -2109,7 +2178,8 @@ async function guardarTanda(){
       tandaId=`${UA.uid}_${fecha}_${String(numero).padStart(2,'0')}`;
     }
     await setDoc(doc(db,'tandas',tandaId),{cuajadorId:UA.uid,cuajadorNombre:UA.nombre||UA.email,fecha,hora:horaAhora(),numero,proveedorId:proveedores[0].id,proveedorNombre:proveedores.map(p=>p.nombre).join(' + '),proveedorTipo:proveedores[0].tipo,proveedores,litros,cuajo,acidez,citrato,acidoCitrico:parseFloat(document.getElementById('ct-acidoCitrico')?.value)||0,bloques2500,bloques1000,bloques500,reproceso:_cuajadorReproceso,reprocTipo,reprocBloques,reprocLitros,novedad,timestamp:serverTimestamp()});
-    document.getElementById('cuajador-exito-detalle').textContent=`Tanda #${numero} · ${proveedores.map(p=>p.nombre).join(' + ')} · ${litros}L`;
+    const _recalc=await recalcularCierreDia(fecha);
+    document.getElementById('cuajador-exito-detalle').textContent=`Tanda #${numero} · ${proveedores.map(p=>p.nombre).join(' + ')} · ${litros}L${_recalc?' · 🔓 Cierre del día recalculado':''}`;
     btnG.disabled=false;btnG.textContent='💾 GUARDAR TANDA';
     ir('screen-cuajador-exito');cargarTandasHoy();cargarResumenCuajadorSemanal();
   }catch(e){console.error(e);document.getElementById('ct-error').textContent='❌ Error al guardar';document.getElementById('ct-error').style.display='block';btnG.disabled=false;btnG.textContent='💾 GUARDAR TANDA';}
@@ -2119,7 +2189,9 @@ async function editarTanda(tandaId){
   try{
     const d=await getDoc(doc(db,'tandas',tandaId));if(!d.exists())return;
     const t=d.data();
-    try{const _c=await getDoc(doc(db,'cierresDia',t.fecha||''));if(_c.exists()){await modalAlert('🔒 El día ya está cerrado. Ya no se puede abrir esta tanda.');return;}}catch(e){}
+    const _diaCerrado=await esDiaCerradoCuajador(t.fecha||'');
+    if(_diaCerrado&&!_cuajadorModoHistorico){await modalAlert('🔒 El día ya está cerrado. Ya no se puede abrir esta tanda.');return;}
+    mostrarAvisoDiaCerrado(_diaCerrado,t.fecha||'');
     _cuajadorEditandoId=tandaId;_cuajadorProvId=t.proveedorId;_cuajadorProvNombre=t.proveedorNombre;_cuajadorProvTipo=t.proveedorTipo;
     _cuajadorProvsSeleccionados=t.proveedores||[{id:t.proveedorId,nombre:t.proveedorNombre,tipo:t.proveedorTipo}];
     document.getElementById('cuajador-tanda-header').textContent=`Tanda #${t.numero}`;
